@@ -1,0 +1,29 @@
+services:
+  wekode.mml.media:
+    image: ${IMAGE}
+    build:
+      context: .
+      dockerfile: Media.API/Dockerfile
+      args:
+        - UID=${UID}
+        - GID=${GUID}
+        - DOT_NET_BUILD_CONFIG=${DOT_NET_BUILD_CONFIG}
+    container_name: wekode.mml.media
+    restart: always
+    user: ${UID}:${GUID}
+    volumes:
+      - ${VOL_CERTS}:/etc/ssl/certs:ro
+      - ${APPSETTINGS}:/configs/appsettings.json:ro
+      - /etc/localtime:/etc/localtime:ro
+    networks:
+      - wekode.mml
+    logging:
+      driver: "json-file"
+      options:
+        mode: "non-blocking"
+        max-size: "${LOG_MAX_SIZE}"
+        max-file: "${LOG_MAX_FILE}"
+
+networks:
+  wekode.mml:
+    external: true
