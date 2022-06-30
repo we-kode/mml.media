@@ -1,10 +1,12 @@
 using Autofac;
 using AutoMapper;
+using Media.DBContext;
 using Media.Filters;
 using Media.Middleware;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -98,10 +100,23 @@ public class Startup
   /// <param name="cBuilder"><see cref="ContainerBuilder"/></param>
   public void ConfigureContainer(ContainerBuilder cBuilder)
   {
+    // db context
+    Func<ApplicationDBContext> factory = () =>
+    {
+      var optionsBuilder = new DbContextOptionsBuilder<ApplicationDBContext>();
+      optionsBuilder.UseNpgsql(Configuration.GetConnectionString("MediaConnection"));
+
+      return new ApplicationDBContext(optionsBuilder.Options);
+    };
+
+    cBuilder.RegisterInstance(factory);
+    _MigrateDB(factory);
+
     // automapper
     cBuilder.Register(context => new MapperConfiguration(cfg =>
     {
-      // TODO configure automapping classes
+      // configure automapping classes here
+
     })).AsSelf().SingleInstance();
     cBuilder.Register(c =>
     {
@@ -113,6 +128,15 @@ public class Startup
     .As<IMapper>()
     .InstancePerLifetimeScope();
 
-    // TODO configure your di here
+    // configure your di here
+  }
+
+  private void _MigrateDB(Func<ApplicationDBContext> factory)
+  {
+    using var context = factory();
+    if (context.Database.IsRelational())
+    {
+      context.Database.Migrate();
+    }
   }
 }

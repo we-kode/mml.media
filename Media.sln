@@ -7,6 +7,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Media.API", "Media.API\Medi
 EndProject
 Project("{E53339B2-1760-4266-BCC7-CA923CBCF16C}") = "docker-compose", "docker-compose.dcproj", "{BE058426-6201-4374-A4A2-8E26EB20AE78}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Media.DBContext", "Media.DBContext\Media.DBContext.csproj", "{50405A0E-AF7D-470B-AF3D-519AA4257F9F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,10 @@ Global
 		{BE058426-6201-4374-A4A2-8E26EB20AE78}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{BE058426-6201-4374-A4A2-8E26EB20AE78}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{BE058426-6201-4374-A4A2-8E26EB20AE78}.Release|Any CPU.Build.0 = Release|Any CPU
+		{50405A0E-AF7D-470B-AF3D-519AA4257F9F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{50405A0E-AF7D-470B-AF3D-519AA4257F9F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{50405A0E-AF7D-470B-AF3D-519AA4257F9F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{50405A0E-AF7D-470B-AF3D-519AA4257F9F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
