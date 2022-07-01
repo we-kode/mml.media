@@ -1,10 +1,12 @@
 FROM mcr.microsoft.com/dotnet/aspnet:6.0 AS base
+RUN apt update && apt install ffmpeg -y
 ARG USERNAME=mml
 ARG UID
 ARG GID
 RUN groupadd --gid $GID $USERNAME \
     && useradd --uid $UID --gid $GID -m $USERNAME
 USER $USERNAME
+RUN mkdir -p /records_tmp
 WORKDIR /app
 EXPOSE 5052
 ENV ASPNETCORE_ENVIRONMENT=Release

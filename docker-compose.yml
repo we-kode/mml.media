@@ -13,6 +13,7 @@ services:
     user: ${UID}:${GUID}
     volumes:
       - ${VOL_CERTS}:/etc/ssl/certs:ro
+      - ${VOL_RECORDS}:/records
       - ${APPSETTINGS}:/configs/appsettings.json:ro
       - /etc/localtime:/etc/localtime:ro
     networks:

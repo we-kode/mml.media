@@ -11,6 +11,8 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.OpenApi.Models;
+using OpenIddict.Abstractions;
+using OpenIddict.Validation.AspNetCore;
 using System;
 
 namespace Media.API;
@@ -29,6 +31,7 @@ public class Startup
     services.AddControllers();
     _ConfigureApiServices(services);
     _ConfigureCorsServices(services);
+    _ConfigureAuth(services);
   }
 
   private void _ConfigureApiServices(IServiceCollection services)
@@ -65,10 +68,54 @@ public class Startup
     });
   }
 
+  private void _ConfigureAuth(IServiceCollection services)
+  {
+    services.AddAuthentication(OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme);
+    services.AddAuthorization(option =>
+    {
+      option.AddPolicy("Admin", policy =>
+      {
+        policy.AddAuthenticationSchemes(OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme);
+        policy.RequireAuthenticatedUser();
+        policy.RequireClaim(OpenIddictConstants.Claims.Role, "Admin");
+      });
+      option.AddPolicy("Client", policy =>
+      {
+        policy.AddAuthenticationSchemes(OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme);
+        policy.RequireAuthenticatedUser();
+        policy.RequireClaim(OpenIddictConstants.Claims.Role, "Client");
+      });
+
+      //option.AddPolicy(Identity.Application.IdentityConstants.Roles.Admin, policy =>
+      //{
+      //  policy.AddAuthenticationSchemes(OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme);
+      //  policy.RequireAuthenticatedUser();
+      //  policy.RequireClaim(OpenIddictConstants.Claims.Role, Identity.Application.IdentityConstants.Roles.Admin);
+      //});
+      //option.AddPolicy(Identity.Application.IdentityConstants.Roles.Client, policy =>
+      //{
+      //  policy.AddAuthenticationSchemes(OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme);
+      //  policy.RequireAuthenticatedUser();
+      //  policy.RequireClaim(OpenIddictConstants.Claims.Role, Identity.Application.IdentityConstants.Roles.Client);
+      //});
+    });
+    services.AddOpenIddict()
+    .AddValidation(options =>
+    {
+      options.SetIssuer(new Uri("https://dev.wekode:5050/"));
+      options.AddAudiences("resource_server_1");
+      options.UseIntrospection()
+               .SetClientId("resource_server_1")
+               .SetClientSecret("846B62D0-DEF9-4215-A99D-86E6B8DAB342");
+      options.UseAspNetCore();
+      options.UseSystemNetHttp();
+    });
+  }
+
   // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
   public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
   {
-    app.UseApiKeyValidation();
+    //app.UseApiKeyValidation();
     // Configure the HTTP request pipeline.
     if (env.IsDevelopment())
     {
@@ -83,10 +130,8 @@ public class Startup
     app.UseHttpsRedirection();
     app.UseRouting();
     app.UseCors();
-
-    // TODO
-    //app.UseAuthentication();
-    //app.UseAuthorization();
+    app.UseAuthentication();
+    app.UseAuthorization();
 
     app.UseEndpoints(endpoints =>
     {
