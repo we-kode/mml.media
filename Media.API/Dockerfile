@@ -15,6 +15,7 @@ FROM mcr.microsoft.com/dotnet/sdk:6.0 AS build
 ARG DOT_NET_BUILD_CONFIG=Release
 WORKDIR /src
 COPY ["Media.API/Media.API.csproj", "Media.API/"]
+COPY ["Media.DBContext/Media.DBContext.csproj", "Media.DBContext/"]
 RUN dotnet restore "Media.API/Media.API.csproj"
 COPY . .
 WORKDIR "/src/Media.API"

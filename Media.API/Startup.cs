@@ -104,6 +104,7 @@ public class Startup
     {
       options.SetIssuer(new Uri("https://dev.wekode:5050/"));
       options.AddAudiences("resource_server_1");
+      options.AddEncryptionCertificate(new System.Security.Cryptography.X509Certificates.X509Certificate2(Configuration["OpenId:EncryptionCert"]));
       options.UseIntrospection()
                .SetClientId("resource_server_1")
                .SetClientSecret("846B62D0-DEF9-4215-A99D-86E6B8DAB342");
