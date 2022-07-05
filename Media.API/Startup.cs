@@ -85,19 +85,6 @@ public class Startup
         policy.RequireAuthenticatedUser();
         policy.RequireClaim(OpenIddictConstants.Claims.Role, "Client");
       });
-
-      //option.AddPolicy(Identity.Application.IdentityConstants.Roles.Admin, policy =>
-      //{
-      //  policy.AddAuthenticationSchemes(OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme);
-      //  policy.RequireAuthenticatedUser();
-      //  policy.RequireClaim(OpenIddictConstants.Claims.Role, Identity.Application.IdentityConstants.Roles.Admin);
-      //});
-      //option.AddPolicy(Identity.Application.IdentityConstants.Roles.Client, policy =>
-      //{
-      //  policy.AddAuthenticationSchemes(OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme);
-      //  policy.RequireAuthenticatedUser();
-      //  policy.RequireClaim(OpenIddictConstants.Claims.Role, Identity.Application.IdentityConstants.Roles.Client);
-      //});
     });
     services.AddOpenIddict()
     .AddValidation(options =>
@@ -116,7 +103,7 @@ public class Startup
   // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
   public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
   {
-    //app.UseApiKeyValidation();
+    app.UseApiKeyValidation();
     // Configure the HTTP request pipeline.
     if (env.IsDevelopment())
     {
