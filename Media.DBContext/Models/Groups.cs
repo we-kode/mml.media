@@ -19,7 +19,7 @@ public class Groups
   /// Name of the group.
   /// </summary>
   public string Name { get; set; } = null!;
-  
+
   /// <summary>
   /// True, if group will be assigned default to new records.
   /// </summary>
