@@ -89,12 +89,12 @@ public class Startup
     services.AddOpenIddict()
     .AddValidation(options =>
     {
-      options.SetIssuer(new Uri("https://dev.wekode:5050/"));
-      options.AddAudiences("resource_server_1");
+      options.SetIssuer(new Uri(Configuration["OpenId:Issuer"]));
+      options.AddAudiences(Configuration["ApiClient:ClientId"]);
       options.AddEncryptionCertificate(new System.Security.Cryptography.X509Certificates.X509Certificate2(Configuration["OpenId:EncryptionCert"]));
       options.UseIntrospection()
-               .SetClientId("resource_server_1")
-               .SetClientSecret("846B62D0-DEF9-4215-A99D-86E6B8DAB342");
+               .SetClientId(Configuration["ApiClient:ClientId"])
+               .SetClientSecret(Configuration["ApiClient:ClientSecret"]);
       options.UseAspNetCore();
       options.UseSystemNetHttp();
     });
