@@ -22,5 +22,14 @@
   "ApiClient": {
     "ClientId": "e505b488-7bc9-43aa-937a-b0367bab9b4d",
     "ClientSecret": "54c78a16-7710-49ef-8bff-8cc4a0c6c0ce"
+  },
+  "MassTransit": {
+    "Host": "wekode.mml.mbus",
+    "User": "guest",
+    "Password": "guest",
+    "VirtualHost": "/",
+    "WaitUntilStarted": true,
+    "StartTimeoutSeconds": 10,
+    "StopTimeoutSeconds": 30
   }
 }

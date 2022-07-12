@@ -1,8 +1,13 @@
 using Autofac;
 using AutoMapper;
+using MassTransit;
+using Media.Application.Consumers;
+using Media.Application.Models;
 using Media.DBContext;
 using Media.Filters;
+using Media.Infrastructure;
 using Media.Middleware;
+using Messages;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
@@ -30,6 +35,7 @@ public class Startup
   {
     services.AddControllers();
     _ConfigureApiServices(services);
+    _ConfigureMBusServices(services);
     _ConfigureCorsServices(services);
     _ConfigureAuth(services);
   }
@@ -53,6 +59,32 @@ public class Startup
        config.EnableAnnotations();
      });
     }
+  }
+
+  private void _ConfigureMBusServices(IServiceCollection services)
+  {
+    services.AddMassTransit(mt =>
+    {
+      mt.AddConsumer<IndexingRecordConsumer>();
+      mt.AddConsumer<GroupConsumer>();
+      mt.UsingRabbitMq((context, cfg) =>
+      {
+        cfg.Host(Configuration["MassTransit:Host"], Configuration["MassTransit:VirtualHost"], h =>
+        {
+          h.Username(Configuration["MassTransit:User"]);
+          h.Password(Configuration["MassTransit:Password"]);
+        });
+
+        cfg.ConfigureEndpoints(context);
+      });
+    });
+    services.AddOptions<MassTransitHostOptions>()
+      .Configure(options =>
+      {
+        options.WaitUntilStarted = bool.Parse(Configuration["MassTransit:WaitUntilStarted"]);
+        options.StartTimeout = TimeSpan.FromSeconds(double.Parse(Configuration["MassTransit:StartTimeoutSeconds"]));
+        options.StopTimeout = TimeSpan.FromSeconds(double.Parse(Configuration["MassTransit:StopTimeoutSeconds"]));
+      });
   }
 
   private void _ConfigureCorsServices(IServiceCollection services)
@@ -149,6 +181,8 @@ public class Startup
     cBuilder.Register(context => new MapperConfiguration(cfg =>
     {
       // configure automapping classes here
+      cfg.CreateMap<GroupCreated, Group>();
+      cfg.CreateMap<GroupUpdated, Group>();
 
     })).AsSelf().SingleInstance();
     cBuilder.Register(c =>
@@ -161,7 +195,9 @@ public class Startup
     .As<IMapper>()
     .InstancePerLifetimeScope();
 
-    // configure your di here
+    cBuilder.RegisterType<SqlSettingsRepository>().AsImplementedInterfaces();
+    cBuilder.RegisterType<SqlRecordsRepository>().AsImplementedInterfaces();
+    cBuilder.RegisterType<SqlGroupRepository>().AsImplementedInterfaces();
   }
 
   private void _MigrateDB(Func<ApplicationDBContext> factory)
