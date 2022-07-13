@@ -34,6 +34,11 @@ public class IndexingRecordConsumer : IConsumer<FileUploaded>
     var inputPath = @$"/tmp/records/{context.Message.FileName}";
     var inputFile = new InputFile(inputPath);
 
+    if (!File.Exists(inputPath))
+    {
+      return;
+    }
+
     // calculate new file name.
     var outputFileName = checksumService.Calculate(inputPath);
     var outputPath = @$"/records/";

@@ -65,7 +65,13 @@ public class Startup
   {
     services.AddMassTransit(mt =>
     {
-      mt.AddConsumer<IndexingRecordConsumer>();
+      mt.AddConsumer<IndexingRecordConsumer>(cc =>
+      {
+        if (int.TryParse(Configuration["MassTransit:ConcurrentMessageLimit"], out var limit))
+        {
+          cc.ConcurrentMessageLimit = limit;
+        }
+      });
       mt.AddConsumer<GroupConsumer>();
       mt.UsingRabbitMq((context, cfg) =>
       {

@@ -30,6 +30,7 @@
     "VirtualHost": "/",
     "WaitUntilStarted": true,
     "StartTimeoutSeconds": 10,
-    "StopTimeoutSeconds": 30
+    "StopTimeoutSeconds": 30,
+    "ConcurrentMessageLimit":  10
   }
 }
