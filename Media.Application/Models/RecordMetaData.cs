@@ -40,6 +40,11 @@ namespace Media.Application.Models
     public DateTime Date { get; set; }
 
     /// <summary>
+    /// The duration of the record.
+    /// </summary>
+    public TimeSpan Duration { get; set; }
+
+    /// <summary>
     /// Default group of this record or null if no default group exists.
     /// </summary>
     public Guid? DefaultGroupId { get; set; }

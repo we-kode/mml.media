@@ -46,6 +46,12 @@ public class Records
   public DateTime Date { get; set; }
 
   /// <summary>
+  /// The duration of the record.
+  /// </summary>
+  [Required]
+  public TimeSpan Duration { get; set; }
+
+  /// <summary>
   /// The track number of the record.
   /// </summary>
   [Required]

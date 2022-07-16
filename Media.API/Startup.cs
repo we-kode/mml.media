@@ -1,6 +1,7 @@
 using Autofac;
 using AutoMapper;
 using MassTransit;
+using Media.API.Contracts;
 using Media.Application.Consumers;
 using Media.Application.Models;
 using Media.DBContext;
@@ -141,7 +142,7 @@ public class Startup
   // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
   public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
   {
-    app.UseApiKeyValidation();
+    //app.UseApiKeyValidation();
     // Configure the HTTP request pipeline.
     if (env.IsDevelopment())
     {
@@ -189,6 +190,10 @@ public class Startup
       // configure automapping classes here
       cfg.CreateMap<GroupCreated, Group>();
       cfg.CreateMap<GroupUpdated, Group>();
+      cfg.CreateMap<TagFilter, Application.Contracts.TagFilter>();
+      cfg.CreateMap<DBContext.Models.Albums, Album>();
+      cfg.CreateMap<DBContext.Models.Genres, Genre>();
+      cfg.CreateMap<DBContext.Models.Artists, Artist>();
 
     })).AsSelf().SingleInstance();
     cBuilder.Register(c =>
