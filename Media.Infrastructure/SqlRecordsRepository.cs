@@ -4,6 +4,7 @@ using Media.DBContext;
 using Media.DBContext.Models;
 using System;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Transactions;
 
 namespace Media.Infrastructure
@@ -23,7 +24,7 @@ namespace Media.Infrastructure
       return context.Records.Any(record => record.Checksum == checksum);
     }
 
-    public void SaveMetaData(RecordMetaData metaData)
+    public async Task SaveMetaData(RecordMetaData metaData)
     {
       using var scope = new TransactionScope();
       using var context = _contextFactory();
@@ -98,7 +99,7 @@ namespace Media.Infrastructure
       }
 
       context.Records.Add(record);
-      context.SaveChanges();
+      await context.SaveChangesAsync().ConfigureAwait(false);
       scope.Complete();
     }
   }
