@@ -2,9 +2,11 @@
 using Media.Messages;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using MimeDetective;
 using OpenIddict.Validation.AspNetCore;
 using System;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace Media.API.Controllers;
@@ -16,6 +18,11 @@ namespace Media.API.Controllers;
 public class UploadController : ControllerBase
 {
   private readonly IPublishEndpoint _publishEndpoint;
+  private readonly ContentInspector inspector = new ContentInspectorBuilder()
+  {
+    Definitions = MimeDetective.Definitions.Default.FileTypes.Audio.MP3(),
+    Parallel = true
+  }.Build();
 
   public UploadController(IPublishEndpoint publishEndpoint)
   {
@@ -37,19 +44,23 @@ public class UploadController : ControllerBase
       var pathToSave = Path.Combine("/tmp/records");
       Directory.CreateDirectory(pathToSave);
 
-      // if file is not mp3 bad request. Won't uploading it.
-      if (!file.FileName.EndsWith(".mp3"))
-      {
-        return BadRequest();
-      }
-
       if (file.Length > 0)
       {
+
+        using var readStream = file.OpenReadStream();
+        var mimeResult = inspector.Inspect(readStream);
+        var resultsByMimeType = mimeResult.ByMimeType();
+        readStream.Close();
+
+        if (!resultsByMimeType.Any(result => result.MimeType == "audio/mpeg3"))
+        {
+          return BadRequest();
+        }
 
         var fileName = file.FileName;
         var fullPath = Path.Combine(pathToSave, file.FileName);
         using (var stream = new FileStream(fullPath, FileMode.Create))
-        {
+        { 
           file.CopyTo(stream);
         }
 
