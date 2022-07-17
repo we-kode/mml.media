@@ -27,7 +27,7 @@ public class SqlRecordsRepository : IRecordsRepository
     return context.Records.Any(record => record.Checksum == checksum);
   }
 
-  public Application.Models.Records List(string filter, TagFilter tagFilter, bool filterByGroups, IList<Guid> groups, int skip = Application.Constants.List.Skip, int take = Application.Constants.List.Take)
+  public Records List(string filter, TagFilter tagFilter, bool filterByGroups, IList<Guid> groups, int skip = Application.Constants.List.Skip, int take = Application.Constants.List.Take)
   {
     using var context = _contextFactory();
     var query = context.Records
@@ -37,8 +37,8 @@ public class SqlRecordsRepository : IRecordsRepository
       .Include(rec => rec.Groups)
       .Where(rec => !tagFilter.StartDate.HasValue || !tagFilter.EndDate.HasValue || tagFilter.EndDate >= tagFilter.StartDate && tagFilter.StartDate.Value.ToUniversalTime().Date <= rec.Date.ToUniversalTime().Date && rec.Date.ToUniversalTime().Date <= tagFilter.EndDate.Value.ToUniversalTime().Date)
       .Where(rec => tagFilter.Artists.Count == 0 || (rec.ArtistId.HasValue && tagFilter.Artists.Contains(rec.ArtistId.Value)))
-      .Where(rec => tagFilter.Genres.Count == 0 || (rec.GenreId.HasValue && tagFilter.Artists.Contains(rec.GenreId.Value)))
-      .Where(rec => tagFilter.Albums.Count == 0 || (rec.AlbumId.HasValue && tagFilter.Artists.Contains(rec.AlbumId.Value)))
+      .Where(rec => tagFilter.Genres.Count == 0 || (rec.GenreId.HasValue && tagFilter.Genres.Contains(rec.GenreId.Value)))
+      .Where(rec => tagFilter.Albums.Count == 0 || (rec.AlbumId.HasValue && tagFilter.Albums.Contains(rec.AlbumId.Value)))
       .Where(rec => !filterByGroups || rec.Groups.Any(g => groups.Contains(g.GroupId)))
       .Where(rec => string.IsNullOrEmpty(filter) || EF.Functions.ILike((rec.Title ?? "").ToLower(), $"%{filter.ToLower()}%"))
       .OrderByDescending(rec => rec.Date.Date)
@@ -51,7 +51,7 @@ public class SqlRecordsRepository : IRecordsRepository
       .Take(take)
       .ToList();
 
-    return new Application.Models.Records
+    return new Records
     {
       TotalCount = count,
       Items = records
@@ -199,7 +199,7 @@ public class SqlRecordsRepository : IRecordsRepository
      .OrderBy(g => g.Name);
 
     var count = query.Count();
-    var artists = query
+    var genres = query
       .Select(g => mapper.Map<Genre>(g))
       .Skip(skip)
       .Take(take)
@@ -208,7 +208,7 @@ public class SqlRecordsRepository : IRecordsRepository
     return new Genres
     {
       TotalCount = count,
-      Items = artists
+      Items = genres
     };
   }
 }
