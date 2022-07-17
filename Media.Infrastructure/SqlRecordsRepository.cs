@@ -46,14 +46,11 @@ namespace Media.Infrastructure
         Title = metaData.Title ?? metaData.OriginalFileName
       };
 
-      if (metaData.DefaultGroupId.HasValue)
+      // add groups
+      var groups = context.Groups.Where(g => g.IsDefault);
+      foreach (var group in groups)
       {
-        // add groups
-        var group = context.Groups.FirstOrDefault(g => g.GroupId == metaData.DefaultGroupId.Value);
-        if (group != null)
-        {
-          record.Groups.Add(group);
-        }
+        record.Groups.Add(group);
       }
 
       if (!string.IsNullOrEmpty(metaData.Artist))

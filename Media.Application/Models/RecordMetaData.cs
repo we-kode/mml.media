@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 
 namespace Media.Application.Models
 {
@@ -38,11 +39,6 @@ namespace Media.Application.Models
     /// Date when the record was last time modified.
     /// </summary>
     public DateTime Date { get; set; }
-
-    /// <summary>
-    /// Default group of this record or null if no default group exists.
-    /// </summary>
-    public Guid? DefaultGroupId { get; set; }
 
     /// <summary>
     /// The filename without extension of the file which was uploaded.

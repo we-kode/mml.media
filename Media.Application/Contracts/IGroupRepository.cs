@@ -1,5 +1,6 @@
 ﻿using Media.Application.Models;
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace Media.Application.Contracts
@@ -8,10 +9,10 @@ namespace Media.Application.Contracts
   {
 
     /// <summary>
-    /// Returns the group which is set as default.
+    /// Returns the groups which are set as default.
     /// </summary>
-    /// <returns><see cref="Guid"/> ipf group or null if no default group exists.</returns>
-    Guid? GetDefaultGroup();
+    /// <returns><see cref="List"/> of <see cref="Guid"/> if group or null if no default group exists.</returns>
+    IList<Guid>? GetDefaultGroups();
 
     /// <summary>
     /// Creates a new group in the db.

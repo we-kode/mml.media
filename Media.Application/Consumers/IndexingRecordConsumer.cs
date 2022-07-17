@@ -20,13 +20,11 @@ public class IndexingRecordConsumer : IConsumer<FileUploaded>
   private readonly IFileChecksumService checksumService = new FileChecksumService(new Sha1Algorithm(), EncodingType.Hex);
   private readonly ISettingsRepository settingsRepository;
   private readonly IRecordsRepository recordsRepository;
-  private readonly IGroupRepository groupRepository;
 
-  public IndexingRecordConsumer(ISettingsRepository settingsRepository, IRecordsRepository recordsRepository, IGroupRepository groupRepository)
+  public IndexingRecordConsumer(ISettingsRepository settingsRepository, IRecordsRepository recordsRepository)
   {
     this.settingsRepository = settingsRepository;
     this.recordsRepository = recordsRepository;
-    this.groupRepository = groupRepository;
   }
 
   public async Task Consume(ConsumeContext<FileUploaded> context)
@@ -64,8 +62,7 @@ public class IndexingRecordConsumer : IConsumer<FileUploaded>
       Date = context.Message.Date.ToUniversalTime().Date,
       OriginalFileName = Path.GetFileNameWithoutExtension(context.Message.FileName),
       PhysicalFilePath = outputPath,
-      Checksum = outputFileName,
-      DefaultGroupId = groupRepository.GetDefaultGroup()
+      Checksum = outputFileName
     };
     taglibFile.RemoveTags(TagLib.TagTypes.AllTags);
     taglibFile.Save();
