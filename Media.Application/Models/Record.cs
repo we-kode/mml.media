@@ -54,18 +54,14 @@ public class Record
   /// <param name="recordId">Id of the record entry.</param>
   /// <param name="title">Title of the record.</param>
   /// <param name="artist">The artists or null if no one provided.</param>
-  /// <param name="genre">Genre of the record or null if no one provided.</param>
-  /// <param name="album">Album of the record or null if no one provided.</param>
   /// <param name="date">Date when the record was last time modified.</param>
   /// <param name="duration">The duration of the record in microseconds.</param>
   /// <param name="groups">List of groups the record is assigned to.</param>
-  public Record(Guid recordId, string title, string? artist, string? genre, string? album, DateTime date, TimeSpan duration, ICollection<Group> groups)
+  public Record(Guid recordId, string title, string? artist, DateTime date, TimeSpan duration, ICollection<Group> groups)
   {
     RecordId = recordId;
     Title = title;
     Artist = artist;
-    Genre = genre;
-    Album = album;
     Date = date;
     Duration = duration.TotalMilliseconds;
     Groups = groups ?? new List<Group>();

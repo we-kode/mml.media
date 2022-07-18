@@ -33,15 +33,35 @@ public class SqlRecordsRepository : IRecordsRepository
     using var context = _contextFactory();
     var query = context.Records
       .Include(rec => rec.Artist)
-      .Include(rec => rec.Album)
-      .Include(rec => rec.Genre)
       .Include(rec => rec.Groups)
-      .Where(rec => !tagFilter.StartDate.HasValue || !tagFilter.EndDate.HasValue || tagFilter.EndDate >= tagFilter.StartDate && tagFilter.StartDate.Value.ToUniversalTime().Date <= rec.Date.ToUniversalTime().Date && rec.Date.ToUniversalTime().Date <= tagFilter.EndDate.Value.ToUniversalTime().Date)
-      .Where(rec => tagFilter.Artists.Count == 0 || (rec.ArtistId.HasValue && tagFilter.Artists.Contains(rec.ArtistId.Value)))
-      .Where(rec => tagFilter.Genres.Count == 0 || (rec.GenreId.HasValue && tagFilter.Genres.Contains(rec.GenreId.Value)))
-      .Where(rec => tagFilter.Albums.Count == 0 || (rec.AlbumId.HasValue && tagFilter.Albums.Contains(rec.AlbumId.Value)))
-      .Where(rec => !filterByGroups || rec.Groups.Any(g => groups.Contains(g.GroupId)))
-      .Where(rec => string.IsNullOrEmpty(filter) || EF.Functions.ILike((rec.Title ?? "").ToLower(), $"%{filter.ToLower()}%"))
+      .Where(rec => string.IsNullOrEmpty(filter) || EF.Functions.ILike((rec.Title ?? "").ToLower(), $"%{filter.ToLower()}%"));
+
+    if (filterByGroups)
+    {
+      query = query.Where(rec => !filterByGroups || rec.Groups.Any(g => groups.Contains(g.GroupId)));
+    }
+
+    if (tagFilter.StartDate.HasValue && tagFilter.EndDate.HasValue && tagFilter.EndDate >= tagFilter.StartDate)
+    {
+      query = query.Where(rec => tagFilter.StartDate.Value.ToUniversalTime().Date <= rec.Date.ToUniversalTime().Date && rec.Date.ToUniversalTime().Date <= tagFilter.EndDate.Value.ToUniversalTime().Date);
+    }
+
+    if (tagFilter.Artists.Count > 0)
+    {
+      query = query.Where(rec => (rec.ArtistId.HasValue && tagFilter.Artists.Contains(rec.ArtistId.Value)));
+    }
+
+    if (tagFilter.Genres.Count > 0)
+    {
+      query = query.Where(rec => (rec.GenreId.HasValue && tagFilter.Genres.Contains(rec.GenreId.Value)));
+    }
+
+    if (tagFilter.Albums.Count == 0)
+    {
+      query = query.Where(rec => (rec.AlbumId.HasValue && tagFilter.Albums.Contains(rec.AlbumId.Value)));
+    }
+
+    query = query
       .OrderByDescending(rec => rec.Date.Date)
       .ThenBy(rec => rec.Date.ToLocalTime());
 
@@ -65,8 +85,6 @@ public class SqlRecordsRepository : IRecordsRepository
       record.RecordId,
       record.Title,
       record.Artist?.Name,
-      record.Genre?.Name,
-      record.Album?.AlbumName,
       record.Date,
       record.Duration,
       record.Groups.Select(g => new Group(g.GroupId, g.Name, g.IsDefault)).ToArray()
