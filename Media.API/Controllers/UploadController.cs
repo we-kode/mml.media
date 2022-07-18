@@ -54,7 +54,7 @@ public class UploadController : ControllerBase
 
         if (!resultsByMimeType.Any(result => result.MimeType == "audio/mpeg3"))
         {
-          return BadRequest();
+          return BadRequest("INVALID_FORMAT_MP3");
         }
 
         var fileName = file.FileName;
@@ -75,7 +75,7 @@ public class UploadController : ControllerBase
       }
       else
       {
-        return BadRequest();
+        return BadRequest("INVALID_FILE_EMPTY");
       }
     }
     catch (Exception)
