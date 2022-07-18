@@ -6,7 +6,6 @@ ARG GID
 RUN groupadd --gid $GID $USERNAME \
     && useradd --uid $UID --gid $GID -m $USERNAME
 USER $USERNAME
-RUN mkdir -p /records_tmp
 WORKDIR /app
 EXPOSE 5052
 ENV ASPNETCORE_ENVIRONMENT=Release
@@ -16,6 +15,9 @@ ARG DOT_NET_BUILD_CONFIG=Release
 WORKDIR /src
 COPY ["Media.API/Media.API.csproj", "Media.API/"]
 COPY ["Media.DBContext/Media.DBContext.csproj", "Media.DBContext/"]
+COPY ["Media.Application/Media.Application.csproj", "Media.Application/"]
+COPY ["Media.Infrastructure/Media.Infrastructure.csproj", "Media.Infrastructure/"]
+COPY ["Media.Messages/Media.Messages.csproj", "Media.Messages/"]
 RUN dotnet restore "Media.API/Media.API.csproj"
 COPY . .
 WORKDIR "/src/Media.API"

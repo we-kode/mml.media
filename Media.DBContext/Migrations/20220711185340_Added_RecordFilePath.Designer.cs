@@ -3,6 +3,7 @@ using System;
 using Media.DBContext;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,10 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Media.DBContext.Migrations
 {
     [DbContext(typeof(ApplicationDBContext))]
-    partial class ApplicationDBContextModelSnapshot : ModelSnapshot
+    [Migration("20220711185340_Added_RecordFilePath")]
+    partial class Added_RecordFilePath
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -132,11 +134,6 @@ namespace Media.DBContext.Migrations
                     b.Property<Guid?>("ArtistId")
                         .HasColumnType("uuid")
                         .HasColumnName("artist_id");
-
-                    b.Property<string>("Checksum")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("checksum");
 
                     b.Property<DateTime>("Date")
                         .HasColumnType("timestamp with time zone")

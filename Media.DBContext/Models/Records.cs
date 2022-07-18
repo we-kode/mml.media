@@ -16,6 +16,18 @@ public class Records
   public Guid RecordId { get; set; }
 
   /// <summary>
+  /// The path where the file is saved.
+  /// </summary>
+  [Required]
+  public string FilePath { get; set; } = string.Empty;
+
+  /// <summary>
+  /// The file checksum
+  /// </summary>
+  [Required]
+  public string Checksum { get; set; } = string.Empty;
+
+  /// <summary>
   /// Mime type of the record. Default Value is audio/mpeg as described in https://www.rfc-editor.org/rfc/rfc3003.
   /// </summary>
   [Required]
