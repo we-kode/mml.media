@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 
 namespace Media.Application.Models
 {
@@ -43,11 +44,6 @@ namespace Media.Application.Models
     /// The duration of the record.
     /// </summary>
     public TimeSpan Duration { get; set; }
-
-    /// <summary>
-    /// Default group of this record or null if no default group exists.
-    /// </summary>
-    public Guid? DefaultGroupId { get; set; }
 
     /// <summary>
     /// The filename without extension of the file which was uploaded.

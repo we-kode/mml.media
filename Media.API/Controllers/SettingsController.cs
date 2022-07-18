@@ -8,7 +8,7 @@ namespace Media.API.Controllers;
 [ApiController]
 [ApiVersion("1.0")]
 [Route("api/v{version:apiVersion}/media/[controller]")]
-[Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme, Policy = "Admin")]
+[Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme, Policy = Application.Constants.Roles.Admin)]
 public class SettingsController : ControllerBase
 {
 
@@ -24,7 +24,7 @@ public class SettingsController : ControllerBase
   /// </summary>
   /// <returns>Saved compression rate.</returns>
   [HttpGet()]
-  public string compressionRate([FromQuery] string key)
+  public string Get([FromQuery] string key)
   {
     return settingsRepository.Get(key, string.Empty);
   }
@@ -35,7 +35,7 @@ public class SettingsController : ControllerBase
   /// <param name="key">The key.</param>
   /// <param name="value">The value to be saved.</param>
   [HttpPost()]
-  public IActionResult compressionRate([FromQuery] string key, [FromQuery] string value)
+  public IActionResult Set([FromQuery] string key, [FromQuery] string value)
   {
     settingsRepository.Save(key, value);
     return Ok();

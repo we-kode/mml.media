@@ -20,13 +20,11 @@ public class IndexingRecordConsumer : IConsumer<FileUploaded>
   private readonly IFileChecksumService checksumService = new FileChecksumService(new Sha1Algorithm(), EncodingType.Hex);
   private readonly ISettingsRepository settingsRepository;
   private readonly IRecordsRepository recordsRepository;
-  private readonly IGroupRepository groupRepository;
 
-  public IndexingRecordConsumer(ISettingsRepository settingsRepository, IRecordsRepository recordsRepository, IGroupRepository groupRepository)
+  public IndexingRecordConsumer(ISettingsRepository settingsRepository, IRecordsRepository recordsRepository)
   {
     this.settingsRepository = settingsRepository;
     this.recordsRepository = recordsRepository;
-    this.groupRepository = groupRepository;
   }
 
   public async Task Consume(ConsumeContext<FileUploaded> context)
@@ -42,7 +40,8 @@ public class IndexingRecordConsumer : IConsumer<FileUploaded>
     // calculate new file name.
     var outputFileName = checksumService.Calculate(inputPath);
     var outputPath = @$"/records/";
-    var outputFile = new OutputFile($"{outputPath}{outputFileName}");
+    var outputFilePath = $"{outputPath}{outputFileName}";
+    var outputFile = new OutputFile(outputFilePath);
 
     // if file is indexed already skip
     if (File.Exists($"{outputPath}{outputFileName}") && recordsRepository.IsIndexed(outputFileName))
@@ -64,26 +63,33 @@ public class IndexingRecordConsumer : IConsumer<FileUploaded>
       Duration = taglibFile.Properties.Duration,
       OriginalFileName = Path.GetFileNameWithoutExtension(context.Message.FileName),
       PhysicalFilePath = outputPath,
-      Checksum = outputFileName,
-      DefaultGroupId = groupRepository.GetDefaultGroup()
+      Checksum = outputFileName
     };
     taglibFile.RemoveTags(TagLib.TagTypes.AllTags);
     taglibFile.Save();
     taglibFile.Dispose();
 
-    // compress and write file to output
-    var conversionOptions = new ConversionOptions
+    if (int.TryParse(settingsRepository.Get(Constants.Settings.CompressionRateKey, ""), out var compressionRate))
     {
-      AudioBitRate = int.Parse(settingsRepository.Get(ISettingsRepository.CompressionRateKey, "96")),
-      ExtraArguments = "-f mp3"
-    };
-    await engine.ConvertAsync(inputFile, outputFile, conversionOptions, default).ConfigureAwait(false);
+      // compress and write file to output
+      var conversionOptions = new ConversionOptions
+      {
+
+        AudioBitRate = compressionRate,
+        ExtraArguments = "-f mp3"
+      };
+      await engine.ConvertAsync(inputFile, outputFile, conversionOptions, default).ConfigureAwait(false);
+    }
+    else
+    {
+      File.Copy(inputPath, outputFilePath, true);
+    }
 
     // remove original file
     DeleteFile(inputPath);
 
     // save indexed file
-    recordsRepository.SaveMetaData(metadata);
+    await recordsRepository.SaveMetaData(metadata).ConfigureAwait(false);
   }
 
   /// <summary>

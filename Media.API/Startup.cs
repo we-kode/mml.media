@@ -112,17 +112,17 @@ public class Startup
     services.AddAuthentication(OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme);
     services.AddAuthorization(option =>
     {
-      option.AddPolicy("Admin", policy =>
+      option.AddPolicy(Application.Constants.Roles.Admin, policy =>
       {
         policy.AddAuthenticationSchemes(OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme);
         policy.RequireAuthenticatedUser();
-        policy.RequireClaim(OpenIddictConstants.Claims.Role, "Admin");
+        policy.RequireClaim(OpenIddictConstants.Claims.Role, Application.Constants.Roles.Admin);
       });
-      option.AddPolicy("Client", policy =>
+      option.AddPolicy(Application.Constants.Roles.Admin, policy =>
       {
         policy.AddAuthenticationSchemes(OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme);
         policy.RequireAuthenticatedUser();
-        policy.RequireClaim(OpenIddictConstants.Claims.Role, "Client");
+        policy.RequireClaim(OpenIddictConstants.Claims.Role, Application.Constants.Roles.Admin);
       });
     });
     services.AddOpenIddict()

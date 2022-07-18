@@ -3,8 +3,6 @@
 public interface ISettingsRepository
 {
 
-  public const string CompressionRateKey = "MML.CompressionRate";
-
   /// <summary>
   /// Returns saved value of given key.
   /// </summary>

@@ -4,6 +4,7 @@ using Media.Application.Models;
 using Media.DBContext;
 using Media.DBContext.Models;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -49,10 +50,10 @@ namespace Media.Infrastructure
       await context.SaveChangesAsync().ConfigureAwait(false);
     }
 
-    public Guid? GetDefaultGroup()
+    public IList<Guid>? GetDefaultGroups()
     {
       var context = _contextFactory();
-      return context.Groups.FirstOrDefault(g => g.IsDefault)?.GroupId;
+      return context.Groups.Where(g => g.IsDefault).Select(g => g.GroupId).ToList();
     }
 
     public async Task Update(Group group)

@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Transactions;
 
 namespace Media.Infrastructure;
@@ -72,7 +73,7 @@ public class SqlRecordsRepository : IRecordsRepository
       );
   }
 
-  public void SaveMetaData(RecordMetaData metaData)
+  public async Task SaveMetaData(RecordMetaData metaData)
   {
     using var scope = new TransactionScope();
     using var context = _contextFactory();
@@ -95,14 +96,11 @@ public class SqlRecordsRepository : IRecordsRepository
       Title = metaData.Title ?? metaData.OriginalFileName
     };
 
-    if (metaData.DefaultGroupId.HasValue)
+    // add groups
+    var groups = context.Groups.Where(g => g.IsDefault);
+    foreach (var group in groups)
     {
-      // add groups
-      var group = context.Groups.FirstOrDefault(g => g.GroupId == metaData.DefaultGroupId.Value);
-      if (group != null)
-      {
-        record.Groups.Add(group);
-      }
+      record.Groups.Add(group);
     }
 
     if (!string.IsNullOrEmpty(metaData.Artist))
@@ -148,8 +146,9 @@ public class SqlRecordsRepository : IRecordsRepository
     }
 
     context.Records.Add(record);
-    context.SaveChanges();
+    await context.SaveChangesAsync().ConfigureAwait(false);
     scope.Complete();
+    return;
   }
 
   public Albums ListAlbums(int skip = Application.Constants.List.Skip, int take = Application.Constants.List.Take)
