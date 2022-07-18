@@ -38,7 +38,7 @@ public class SqlRecordsRepository : IRecordsRepository
 
     if (filterByGroups)
     {
-      query = query.Where(rec => !filterByGroups || rec.Groups.Any(g => groups.Contains(g.GroupId)));
+      query = query.Where(rec => rec.Groups.Any(g => groups.Contains(g.GroupId)));
     }
 
     if (tagFilter.StartDate.HasValue && tagFilter.EndDate.HasValue && tagFilter.EndDate >= tagFilter.StartDate)
@@ -56,7 +56,7 @@ public class SqlRecordsRepository : IRecordsRepository
       query = query.Where(rec => (rec.GenreId.HasValue && tagFilter.Genres.Contains(rec.GenreId.Value)));
     }
 
-    if (tagFilter.Albums.Count == 0)
+    if (tagFilter.Albums.Count > 0)
     {
       query = query.Where(rec => (rec.AlbumId.HasValue && tagFilter.Albums.Contains(rec.AlbumId.Value)));
     }
