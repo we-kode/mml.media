@@ -91,7 +91,7 @@ public class SqlRecordsRepository : IRecordsRepository
       );
   }
 
-  public async Task SaveMetaData(RecordMetaData metaData)
+  public void SaveMetaData(RecordMetaData metaData)
   {
     using var scope = new TransactionScope();
     using var context = _contextFactory();
@@ -164,9 +164,8 @@ public class SqlRecordsRepository : IRecordsRepository
     }
 
     context.Records.Add(record);
-    await context.SaveChangesAsync().ConfigureAwait(false);
+    context.SaveChanges();
     scope.Complete();
-    return;
   }
 
   public Albums ListAlbums(int skip = Application.Constants.List.Skip, int take = Application.Constants.List.Take)
