@@ -35,24 +35,27 @@ public interface IRecordsRepository
   /// <summary>
   /// Loads list of albums.
   /// </summary>
+  /// <param name="filter">Albums will be filtered by given filter</param>
   /// <param name="skip">Elements to be skipped. default <see cref="List.Skip"/></param>
   /// <param name="take">Elements to be loaded in one chunk. Default <see cref="List.Take"/></param>
   /// <returns><see cref="Albums"/></returns>
-  Albums ListAlbums(int skip = Constants.List.Skip, int take = Constants.List.Take);
+  Albums ListAlbums(string? filter, int skip = Constants.List.Skip, int take = Constants.List.Take);
 
   /// <summary>
   /// Loads list of artists.
   /// </summary>
+  /// <param name="filter">Artists will be filtered by given filter</param>
   /// <param name="skip">Elements to be skipped. default <see cref="List.Skip"/></param>
   /// <param name="take">Elements to be loaded in one chunk. Default <see cref="List.Take"/></param>
   /// <returns><see cref="Artists"/></returns>
-  Artists ListArtists(int skip = Constants.List.Skip, int take = Constants.List.Take);
+  Artists ListArtists(string? filter, int skip = Constants.List.Skip, int take = Constants.List.Take);
 
   /// <summary>
   /// Loads list of genres.
   /// </summary>
+  /// <param name="filter">Genres will be filtered by given filter</param>
   /// <param name="skip">Elements to be skipped. default <see cref="List.Skip"/></param>
   /// <param name="take">Elements to be loaded in one chunk. Default <see cref="List.Take"/></param>
   /// <returns><see cref="Genres"/></returns>
-  Genres ListGenres(int skip = Constants.List.Skip, int take = Constants.List.Take);
+  Genres ListGenres(string? filter, int skip = Constants.List.Skip, int take = Constants.List.Take);
 }

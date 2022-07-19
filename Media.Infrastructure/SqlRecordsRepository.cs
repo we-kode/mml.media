@@ -63,7 +63,7 @@ public class SqlRecordsRepository : IRecordsRepository
 
     query = query
       .OrderByDescending(rec => rec.Date.Date)
-      .ThenBy(rec => rec.Date.ToLocalTime());
+      .ThenBy(rec => rec.Date);
 
     var count = query.Count();
     var records = query
@@ -168,10 +168,11 @@ public class SqlRecordsRepository : IRecordsRepository
     scope.Complete();
   }
 
-  public Albums ListAlbums(int skip = Application.Constants.List.Skip, int take = Application.Constants.List.Take)
+  public Albums ListAlbums(string? filter, int skip = Application.Constants.List.Skip, int take = Application.Constants.List.Take)
   {
     using var context = _contextFactory();
     var query = context.Albums
+     .Where(al => string.IsNullOrEmpty(filter) || EF.Functions.ILike((al.AlbumName ?? "").ToLower(), $"%{filter.ToLower()}%"))
      .OrderBy(album => album.AlbumName);
 
     var count = query.Count();
@@ -188,10 +189,11 @@ public class SqlRecordsRepository : IRecordsRepository
     };
   }
 
-  public Artists ListArtists(int skip = Application.Constants.List.Skip, int take = Application.Constants.List.Take)
+  public Artists ListArtists(string? filter, int skip = Application.Constants.List.Skip, int take = Application.Constants.List.Take)
   {
     using var context = _contextFactory();
     var query = context.Artists
+     .Where(ar => string.IsNullOrEmpty(filter) || EF.Functions.ILike((ar.Name ?? "").ToLower(), $"%{filter.ToLower()}%"))
      .OrderBy(artist => artist.Name);
 
     var count = query.Count();
@@ -208,10 +210,11 @@ public class SqlRecordsRepository : IRecordsRepository
     };
   }
 
-  public Genres ListGenres(int skip = Application.Constants.List.Skip, int take = Application.Constants.List.Take)
+  public Genres ListGenres(string? filter, int skip = Application.Constants.List.Skip, int take = Application.Constants.List.Take)
   {
     using var context = _contextFactory();
     var query = context.Genres
+     .Where(g => string.IsNullOrEmpty(filter) || EF.Functions.ILike((g.Name ?? "").ToLower(), $"%{filter.ToLower()}%"))
      .OrderBy(g => g.Name);
 
     var count = query.Count();

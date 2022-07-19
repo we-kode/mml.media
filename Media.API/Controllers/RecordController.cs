@@ -52,36 +52,39 @@ public class RecordController : ControllerBase
   /// <summary>
   /// Loads a list of artists.
   /// </summary>
+  /// <param name="filter">Filter request to filter the list of artists.</param>
   /// <param name="skip">Offset of the list</param>
   /// <param name="take">Size of chunk to be loaded</param>
   /// <returns><see cref="Artists"/></returns>
   [HttpGet("artists")]
-  public Artists GetArtists([FromQuery] int skip = Application.Constants.List.Skip, [FromQuery] int take = Application.Constants.List.Take)
+  public Artists GetArtists([FromQuery] string? filter, [FromQuery] int skip = Application.Constants.List.Skip, [FromQuery] int take = Application.Constants.List.Take)
   {
-    return recordRepository.ListArtists(skip, take);
+    return recordRepository.ListArtists(filter, skip, take);
   }
 
   /// <summary>
   /// Loads a list of genres.
   /// </summary>
+  /// <param name="filter">Filter request to filter the list of genres</param>
   /// <param name="skip">Offset of the list</param>
   /// <param name="take">Size of chunk to be loaded</param>
   /// <returns><see cref="Artists"/></returns>
   [HttpGet("genres")]
-  public Genres GetGenres([FromQuery] int skip = Application.Constants.List.Skip, [FromQuery] int take = Application.Constants.List.Take)
+  public Genres GetGenres([FromQuery] string? filter, [FromQuery] int skip = Application.Constants.List.Skip, [FromQuery] int take = Application.Constants.List.Take)
   {
-    return recordRepository.ListGenres(skip, take);
+    return recordRepository.ListGenres(filter, skip, take);
   }
 
   /// <summary>
   /// Loads a list of albums.
   /// </summary>
+  /// <param name="filter">Filter request to filter the list of albums.</param>
   /// <param name="skip">Offset of the list</param>
   /// <param name="take">Size of chunk to be loaded</param>
   /// <returns><see cref="Albums"/></returns>
   [HttpGet("albums")]
-  public Albums GetAlbums([FromQuery] int skip = Application.Constants.List.Skip, [FromQuery] int take = Application.Constants.List.Take)
+  public Albums GetAlbums([FromQuery] string? filter, [FromQuery] int skip = Application.Constants.List.Skip, [FromQuery] int take = Application.Constants.List.Take)
   {
-    return recordRepository.ListAlbums(skip, take);
+    return recordRepository.ListAlbums(filter, skip, take);
   }
 }
