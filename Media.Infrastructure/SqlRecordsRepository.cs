@@ -91,9 +91,9 @@ public class SqlRecordsRepository : IRecordsRepository
       );
   }
 
-  public void SaveMetaData(RecordMetaData metaData)
+  public async Task SaveMetaData(RecordMetaData metaData)
   {
-    using var scope = new TransactionScope();
+    using var scope = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled);
     using var context = _contextFactory();
 
     var record = context.Records.FirstOrDefault(record => record.Checksum == metaData.Checksum);
@@ -164,7 +164,7 @@ public class SqlRecordsRepository : IRecordsRepository
     }
 
     context.Records.Add(record);
-    context.SaveChanges();
+    await context.SaveChangesAsync().ConfigureAwait(false);
     scope.Complete();
   }
 
