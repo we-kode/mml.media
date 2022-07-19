@@ -93,11 +93,11 @@ public class RecordController : ControllerBase
   /// <param name="ids">ids of the records to be removed.</param>
   [HttpPost("deleteList")]
   [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme, Policy = Roles.Admin)]
-  public IActionResult DeleteList([FromBody] IList<Guid> ids)
+  public async Task<IActionResult> DeleteList([FromBody] IList<Guid> ids)
   {
     foreach (var id in ids)
     {
-      recordRepository.DeleteRecord(id);
+      await recordRepository.DeleteRecord(id).ConfigureAwait(false);
     }
 
     return Ok();

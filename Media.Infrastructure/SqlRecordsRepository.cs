@@ -229,9 +229,9 @@ public class SqlRecordsRepository : IRecordsRepository
     };
   }
 
-  public void DeleteRecord(Guid id)
+  public async Task DeleteRecord(Guid id)
   {
-    using var scope = new TransactionScope();
+    using var scope = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled);
     using var context = _contextFactory();
 
     var record = context.Records
@@ -247,7 +247,7 @@ public class SqlRecordsRepository : IRecordsRepository
 
     // Delete entry from db
     context.Records.Remove(record);
-    context.SaveChanges();
+    await context.SaveChangesAsync().ConfigureAwait(false);
 
     // Remove artist if no record connected
     if (record.ArtistId.HasValue && !context.Records.Any(rec => rec.ArtistId == record.ArtistId))
@@ -267,7 +267,7 @@ public class SqlRecordsRepository : IRecordsRepository
       context.Genres.Remove(record.Genre!);
     }
 
-    context.SaveChanges();
+    await context.SaveChangesAsync().ConfigureAwait(false);
 
     // delete file from folder
     var filePath = $"{record.FilePath}{record.Checksum}";

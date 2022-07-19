@@ -60,5 +60,5 @@ public interface IRecordsRepository
   /// Removes one record.
   /// </summary>
   /// <param name="id">Id of record to be deleted.</param>
-  void DeleteRecord(Guid id);
+  Task DeleteRecord(Guid id);
 }
