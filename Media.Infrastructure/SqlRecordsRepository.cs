@@ -26,7 +26,7 @@ namespace Media.Infrastructure
 
     public async Task SaveMetaData(RecordMetaData metaData)
     {
-      using var scope = new TransactionScope();
+      using var scope = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled);
       using var context = _contextFactory();
 
       var record = context.Records.FirstOrDefault(record => record.Checksum == metaData.Checksum);
