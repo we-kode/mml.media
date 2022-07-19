@@ -89,7 +89,7 @@ public class IndexingRecordConsumer : IConsumer<FileUploaded>
     DeleteFile(inputPath);
 
     // save indexed file
-    await recordsRepository.SaveMetaData(metadata).ConfigureAwait(false);
+    recordsRepository.SaveMetaData(metadata);
   }
 
   /// <summary>

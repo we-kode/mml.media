@@ -11,7 +11,7 @@ public interface IRecordsRepository
   /// Stores the given metadata in index store.
   /// </summary>
   /// <param name="metaData"><see cref="RecordMetaData"/> to be stored.</param>
-  Task SaveMetaData(RecordMetaData metaData);
+  void SaveMetaData(RecordMetaData metaData);
 
   /// <summary>
   /// Checks if one file is already indexed.
@@ -55,4 +55,10 @@ public interface IRecordsRepository
   /// <param name="take">Elements to be loaded in one chunk. Default <see cref="List.Take"/></param>
   /// <returns><see cref="Genres"/></returns>
   Genres ListGenres(int skip = Constants.List.Skip, int take = Constants.List.Take);
+ 
+  /// <summary>
+  /// Removes one record.
+  /// </summary>
+  /// <param name="id">Id of record to be deleted.</param>
+  void DeleteRecord(Guid id);
 }

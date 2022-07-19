@@ -5,6 +5,7 @@ using Media.DBContext;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Transactions;
@@ -91,7 +92,7 @@ public class SqlRecordsRepository : IRecordsRepository
       );
   }
 
-  public async Task SaveMetaData(RecordMetaData metaData)
+  public void SaveMetaData(RecordMetaData metaData)
   {
     using var scope = new TransactionScope();
     using var context = _contextFactory();
@@ -164,9 +165,8 @@ public class SqlRecordsRepository : IRecordsRepository
     }
 
     context.Records.Add(record);
-    await context.SaveChangesAsync().ConfigureAwait(false);
+    context.SaveChanges();
     scope.Complete();
-    return;
   }
 
   public Albums ListAlbums(int skip = Application.Constants.List.Skip, int take = Application.Constants.List.Take)
@@ -227,5 +227,54 @@ public class SqlRecordsRepository : IRecordsRepository
       TotalCount = count,
       Items = genres
     };
+  }
+
+  public void DeleteRecord(Guid id)
+  {
+    using var scope = new TransactionScope();
+    using var context = _contextFactory();
+
+    var record = context.Records
+      .Include(rec => rec.Artist)
+      .Include(rec => rec.Album)
+      .Include(rec => rec.Genre)
+      .FirstOrDefault(record => record.RecordId == id);
+    if (record == null)
+    {
+      scope.Complete();
+      return;
+    }
+
+    // Delete entry from db
+    context.Records.Remove(record);
+    context.SaveChanges();
+
+    // Remove artist if no record connected
+    if (record.ArtistId.HasValue && !context.Records.Any(rec => rec.ArtistId == record.ArtistId))
+    {
+      context.Artists.Remove(record.Artist!);
+    }
+
+    // remove album if nor record connected
+    if (record.AlbumId.HasValue && !context.Records.Any(rec => rec.AlbumId == record.AlbumId))
+    {
+      context.Albums.Remove(record.Album!);
+    }
+
+    // remove genre if no record connected
+    if (record.GenreId.HasValue && !context.Records.Any(rec => rec.GenreId == record.GenreId))
+    {
+      context.Genres.Remove(record.Genre!);
+    }
+
+    context.SaveChanges();
+
+    // delete file from folder
+    var filePath = $"{record.FilePath}{record.Checksum}";
+    if (File.Exists(filePath))
+    {
+      File.Delete(filePath);
+    }
+    scope.Complete();
   }
 }

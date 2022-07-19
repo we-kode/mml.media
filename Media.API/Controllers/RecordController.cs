@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using Media.Application.Constants;
 using Media.Application.Contracts;
 using Media.Application.Models;
 using Microsoft.AspNetCore.Authorization;
@@ -7,6 +8,7 @@ using OpenIddict.Abstractions;
 using OpenIddict.Validation.AspNetCore;
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using static OpenIddict.Abstractions.OpenIddictConstants;
 
 namespace Media.API.Controllers;
@@ -83,5 +85,21 @@ public class RecordController : ControllerBase
   public Albums GetAlbums([FromQuery] int skip = Application.Constants.List.Skip, [FromQuery] int take = Application.Constants.List.Take)
   {
     return recordRepository.ListAlbums(skip, take);
+  }
+
+  /// <summary>
+  /// Deletes a list of existing records.
+  /// </summary>
+  /// <param name="ids">ids of the records to be removed.</param>
+  [HttpPost("deleteList")]
+  [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme, Policy = Roles.Admin)]
+  public IActionResult DeleteList([FromBody] IList<Guid> ids)
+  {
+    foreach (var id in ids)
+    {
+      recordRepository.DeleteRecord(id);
+    }
+
+    return Ok();
   }
 }
