@@ -20,6 +20,8 @@ using Microsoft.OpenApi.Models;
 using OpenIddict.Abstractions;
 using OpenIddict.Validation.AspNetCore;
 using System;
+using System.Net.Http;
+using OpenIddict.Validation.SystemNetHttp;
 
 namespace Media.API;
 public class Startup
@@ -109,7 +111,26 @@ public class Startup
 
   private void _ConfigureAuth(IServiceCollection services)
   {
-    services.AddAuthentication(OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme);
+    services
+      .AddAuthentication(OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme);
+    
+    var httpClient = services
+      .AddHttpClient(typeof(OpenIddictValidationSystemNetHttpOptions).Assembly.GetName().Name)
+      .ConfigureHttpClient(c => 
+      {
+          c.DefaultRequestHeaders.Add("ClientId", Configuration["ApiClient:ClientId"]);
+          c.DefaultRequestHeaders.Add("ClientSecret", Configuration["ApiClient:ClientSecret"]);
+      });
+
+    if (Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development")
+    {
+      httpClient
+      .ConfigurePrimaryHttpMessageHandler(_ => new HttpClientHandler
+      {
+          ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
+      });
+    }
+
     services.AddAuthorization(option =>
     {
       option.AddPolicy(Application.Constants.Roles.Admin, policy =>

@@ -616,3 +616,4 @@ appsettings.*.json
 dev.env
 env.dev
 dev
+records
