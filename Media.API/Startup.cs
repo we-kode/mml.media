@@ -38,10 +38,20 @@ public class Startup
   public void ConfigureServices(IServiceCollection services)
   {
     services.AddControllers();
+    _ConfigureLocaleServices(services);
     _ConfigureApiServices(services);
     _ConfigureMBusServices(services);
     _ConfigureCorsServices(services);
     _ConfigureAuth(services);
+  }
+
+  private void _ConfigureLocaleServices(IServiceCollection services)
+  {
+    services.AddMvc().AddDataAnnotationsLocalization(options =>
+    {
+      options.DataAnnotationLocalizerProvider = (type, factory) =>
+          factory.Create(typeof(Resources.ValidationMessages));
+    });
   }
 
   private void _ConfigureApiServices(IServiceCollection services)
@@ -175,7 +185,13 @@ public class Startup
       });
       app.UseDeveloperExceptionPage();
     }
+    var supportedCultures = new[] { "en", "en_US", "de", "de_DE", "ru", "ru_RU" };
+    var localizationOptions = new RequestLocalizationOptions()
+        .SetDefaultCulture(supportedCultures[0])
+        .AddSupportedCultures(supportedCultures)
+        .AddSupportedUICultures(supportedCultures);
 
+    app.UseRequestLocalization(localizationOptions);
     app.UseHttpsRedirection();
     app.UseRouting();
     app.UseCors();
@@ -216,6 +232,7 @@ public class Startup
       cfg.CreateMap<DBContext.Models.Albums, Album>();
       cfg.CreateMap<DBContext.Models.Genres, Genre>();
       cfg.CreateMap<DBContext.Models.Artists, Artist>();
+      cfg.CreateMap<RecordChangeRequest, Record>();
     })).AsSelf().SingleInstance();
     cBuilder.Register(c =>
     {
