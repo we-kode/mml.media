@@ -70,9 +70,9 @@ public class SqlRecordsRepository : IRecordsRepository
 
     var count = query.Count();
     var records = query
-      .Select(rec => MapModel(rec))
       .Skip(skip)
       .Take(take)
+      .Select(rec => MapModel(rec))
       .ToList();
 
     return new Records
@@ -144,9 +144,9 @@ public class SqlRecordsRepository : IRecordsRepository
 
     var count = query.Count();
     var albums = query
-      .Select(album => mapper.Map<Album>(album))
       .Skip(skip)
       .Take(take)
+      .Select(album => mapper.Map<Album>(album))
       .ToList();
 
     return new Albums
@@ -165,9 +165,9 @@ public class SqlRecordsRepository : IRecordsRepository
 
     var count = query.Count();
     var artists = query
-      .Select(artist => mapper.Map<Artist>(artist))
       .Skip(skip)
       .Take(take)
+      .Select(artist => mapper.Map<Artist>(artist))
       .ToList();
 
     return new Artists
@@ -186,9 +186,9 @@ public class SqlRecordsRepository : IRecordsRepository
 
     var count = query.Count();
     var genres = query
-      .Select(g => mapper.Map<Genre>(g))
       .Skip(skip)
       .Take(take)
+      .Select(g => mapper.Map<Genre>(g))
       .ToList();
 
     return new Genres
