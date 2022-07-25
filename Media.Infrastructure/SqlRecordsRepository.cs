@@ -37,7 +37,7 @@ public class SqlRecordsRepository : IRecordsRepository
     var query = context.Records
       .Include(rec => rec.Artist)
       .Include(rec => rec.Groups)
-      .Where(rec => string.IsNullOrEmpty(filter) || EF.Functions.ILike((rec.Title ?? "").ToLower(), $"%{filter.ToLower()}%"));
+      .Where(rec => string.IsNullOrEmpty(filter) || EF.Functions.ILike(rec.Title, $"%{filter}%"));
 
     if (filterByGroups)
     {
@@ -139,7 +139,7 @@ public class SqlRecordsRepository : IRecordsRepository
   {
     using var context = _contextFactory();
     var query = context.Albums
-     .Where(al => string.IsNullOrEmpty(filter) || EF.Functions.ILike((al.AlbumName ?? "").ToLower(), $"%{filter.ToLower()}%"))
+     .Where(al => string.IsNullOrEmpty(filter) || EF.Functions.ILike(al.AlbumName, $"%{filter}%"))
      .OrderBy(album => album.AlbumName);
 
     var count = query.Count();
@@ -160,7 +160,7 @@ public class SqlRecordsRepository : IRecordsRepository
   {
     using var context = _contextFactory();
     var query = context.Artists
-     .Where(ar => string.IsNullOrEmpty(filter) || EF.Functions.ILike((ar.Name ?? "").ToLower(), $"%{filter.ToLower()}%"))
+     .Where(ar => string.IsNullOrEmpty(filter) || EF.Functions.ILike(ar.Name, $"%{filter}%"))
      .OrderBy(artist => artist.Name);
 
     var count = query.Count();
@@ -181,7 +181,7 @@ public class SqlRecordsRepository : IRecordsRepository
   {
     using var context = _contextFactory();
     var query = context.Genres
-     .Where(g => string.IsNullOrEmpty(filter) || EF.Functions.ILike((g.Name ?? "").ToLower(), $"%{filter.ToLower()}%"))
+     .Where(g => string.IsNullOrEmpty(filter) || EF.Functions.ILike(g.Name, $"%{filter}%"))
      .OrderBy(g => g.Name);
 
     var count = query.Count();
