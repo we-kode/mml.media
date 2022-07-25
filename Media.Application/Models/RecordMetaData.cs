@@ -41,6 +41,11 @@ namespace Media.Application.Models
     public DateTime Date { get; set; }
 
     /// <summary>
+    /// The duration of the record.
+    /// </summary>
+    public TimeSpan Duration { get; set; }
+
+    /// <summary>
     /// The filename without extension of the file which was uploaded.
     /// </summary>
     public string OriginalFileName { get; set; } = string.Empty;

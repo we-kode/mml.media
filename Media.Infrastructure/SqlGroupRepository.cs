@@ -13,12 +13,10 @@ namespace Media.Infrastructure
   public class SqlGroupRepository : IGroupRepository
   {
     private readonly Func<ApplicationDBContext> _contextFactory;
-    private readonly IMapper mapper;
 
     public SqlGroupRepository(Func<ApplicationDBContext> contextFactory, IMapper mapper)
     {
       _contextFactory = contextFactory;
-      this.mapper = mapper;
     }
 
     public async Task Create(Group group)

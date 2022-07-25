@@ -1,6 +1,7 @@
 using Autofac;
 using AutoMapper;
 using MassTransit;
+using Media.API.Contracts;
 using Media.Application.Consumers;
 using Media.Application.Models;
 using Media.DBContext;
@@ -21,6 +22,7 @@ using OpenIddict.Validation.AspNetCore;
 using System;
 using System.Net.Http;
 using OpenIddict.Validation.SystemNetHttp;
+using System.Linq;
 
 namespace Media.API;
 public class Startup
@@ -112,13 +114,13 @@ public class Startup
   {
     services
       .AddAuthentication(OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme);
-    
+
     var httpClient = services
       .AddHttpClient(typeof(OpenIddictValidationSystemNetHttpOptions).Assembly.GetName().Name)
-      .ConfigureHttpClient(c => 
+      .ConfigureHttpClient(c =>
       {
-          c.DefaultRequestHeaders.Add("ClientId", Configuration["ApiClient:ClientId"]);
-          c.DefaultRequestHeaders.Add("ClientSecret", Configuration["ApiClient:ClientSecret"]);
+        c.DefaultRequestHeaders.Add("ClientId", Configuration["ApiClient:ClientId"]);
+        c.DefaultRequestHeaders.Add("ClientSecret", Configuration["ApiClient:ClientSecret"]);
       });
 
     if (Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development")
@@ -126,7 +128,7 @@ public class Startup
       httpClient
       .ConfigurePrimaryHttpMessageHandler(_ => new HttpClientHandler
       {
-          ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
+        ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
       });
     }
 
@@ -210,7 +212,10 @@ public class Startup
       // configure automapping classes here
       cfg.CreateMap<GroupCreated, Group>();
       cfg.CreateMap<GroupUpdated, Group>();
-
+      cfg.CreateMap<TagFilter, Application.Contracts.TagFilter>();
+      cfg.CreateMap<DBContext.Models.Albums, Album>();
+      cfg.CreateMap<DBContext.Models.Genres, Genre>();
+      cfg.CreateMap<DBContext.Models.Artists, Artist>();
     })).AsSelf().SingleInstance();
     cBuilder.Register(c =>
     {
