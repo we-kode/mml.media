@@ -3,6 +3,7 @@ using Media.Application.Contracts;
 using Media.Application.Models;
 using Media.DBContext;
 using Media.DBContext.Models;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -67,6 +68,14 @@ namespace Media.Infrastructure
       groups.Name = group.Name;
       groups.IsDefault = group.IsDefault;
       await context.SaveChangesAsync().ConfigureAwait(false);
+    }
+
+    public async Task<bool> GroupExists(Guid id)
+    {
+      using var context = _contextFactory();
+      return await context.Groups
+        .AnyAsync(group => group.GroupId == id)
+        .ConfigureAwait(false);
     }
   }
 }

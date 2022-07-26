@@ -31,5 +31,12 @@ namespace Media.Application.Contracts
     /// </summary>
     /// <param name="id">Id of group to be removed.</param>
     Task Delete(Guid id);
+
+    /// <summary>
+    /// Returns a boolean, that indicates whether a group with the given id exists.
+    /// </summary>
+    /// <param name="id">Id to check for.</param>
+    /// <returns>Boolean, that indicates whether a group with the given id exists.</returns>
+    Task<bool> GroupExists(Guid id);
   }
 }
