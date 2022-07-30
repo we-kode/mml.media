@@ -61,6 +61,15 @@ namespace Media.API.Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to The value must be greater than zero..
+        /// </summary>
+        public static string MinValue {
+            get {
+                return ResourceManager.GetString("MinValue", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Required.
         /// </summary>
         public static string Required {

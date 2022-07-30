@@ -1,7 +1,11 @@
-﻿using Media.Application.Contracts;
+﻿using AutoMapper;
+using Media.API.Contracts;
+using Media.Application.Contracts;
+using Media.Application.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using OpenIddict.Validation.AspNetCore;
+using System.Collections.Generic;
 
 namespace Media.API.Controllers;
 
@@ -13,31 +17,31 @@ public class SettingsController : ControllerBase
 {
 
   private readonly ISettingsRepository settingsRepository;
+  private readonly IMapper mapper;
 
-  public SettingsController(ISettingsRepository settingsRepository)
+  public SettingsController(ISettingsRepository settingsRepository, IMapper mapper)
   {
     this.settingsRepository = settingsRepository;
+    this.mapper = mapper;
   }
 
   /// <summary>
-  /// Retuns the saved value.
+  /// Returns available settings.
   /// </summary>
-  /// <returns>Saved compression rate.</returns>
-  [HttpGet()]
-  public string Get([FromQuery] string key)
+  [HttpGet]
+  public Settings Get()
   {
-    return settingsRepository.Get(key, string.Empty);
+    return settingsRepository.Get();
   }
 
   /// <summary>
-  /// Updates the saved setting.
+  /// Saves the settings.
   /// </summary>
-  /// <param name="key">The key.</param>
-  /// <param name="value">The value to be saved.</param>
-  [HttpPost()]
-  public IActionResult Set([FromQuery] string key, [FromQuery] string value)
+  /// <param name="settings">Settings map.</param>
+  [HttpPost]
+  public IActionResult Post([FromBody] SettingsRequest settings)
   {
-    settingsRepository.Save(key, value);
+    settingsRepository.Save(mapper.Map<Settings>(settings));
     return Ok();
   }
 }

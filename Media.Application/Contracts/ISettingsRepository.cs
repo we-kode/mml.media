@@ -1,4 +1,7 @@
-﻿namespace Media.Application.Contracts;
+﻿using Media.Application.Models;
+using System.Collections.Generic;
+
+namespace Media.Application.Contracts;
 
 public interface ISettingsRepository
 {
@@ -17,4 +20,16 @@ public interface ISettingsRepository
   /// <param name="key">Key to be saved.</param>
   /// <param name="value">Value to be saved.</param>
   void Save(string key, string value);
+
+  /// <summary>
+  /// Returns the saved settings.
+  /// </summary>
+  /// <returns><see cref="Settings"></see></returns>
+  Settings Get();
+
+  /// <summary>
+  /// Saves settings.
+  /// </summary>
+  /// <param name="settings">Map of settings to be saved.</param>
+  void Save(Settings settings);
 }
