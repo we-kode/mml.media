@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using Media.Application.Constants;
 using Media.Application.Contracts;
 using Media.Application.Models;
 using Media.DBContext;
@@ -14,10 +15,37 @@ namespace Media.Infrastructure
   public class SqlGroupRepository : IGroupRepository
   {
     private readonly Func<ApplicationDBContext> _contextFactory;
+    private readonly IMapper _mapper;
 
     public SqlGroupRepository(Func<ApplicationDBContext> contextFactory, IMapper mapper)
     {
       _contextFactory = contextFactory;
+      _mapper = mapper;
+    }
+
+    public Media.Application.Models.Groups ListGroups(
+      string? filter,
+      int skip = Application.Constants.List.Skip,
+      int take = Application.Constants.List.Take
+    )
+    {
+      using var context = _contextFactory();
+      var query = context.Groups
+        .Where(group => string.IsNullOrEmpty(filter) ||
+          EF.Functions.ILike(group.Name ?? "", $"%{filter}%")
+        )
+        .OrderBy(group => group.Name);
+
+      var count = query.Count();
+      var groups = query
+        .Skip(skip)
+        .Take(take == -1 ? count : take);
+
+      return new Media.Application.Models.Groups
+      {
+        TotalCount = count,
+        Items = _mapper.ProjectTo<Group>(groups).ToList()
+      };
     }
 
     public async Task Create(Group group)
@@ -29,7 +57,7 @@ namespace Media.Infrastructure
         return;
       }
 
-      groups = new Groups
+      groups = new Media.DBContext.Models.Groups
       {
         GroupId = group.Id,
         IsDefault = group.IsDefault,
@@ -63,6 +91,8 @@ namespace Media.Infrastructure
       var groups = context.Groups.FirstOrDefault(g => g.GroupId == group.Id);
       if (groups == null)
       {
+        context.Dispose();
+        await Create(group);
         return;
       }
       groups.Name = group.Name;
