@@ -8,7 +8,7 @@ namespace Media.API.Contracts;
 public class SettingsRequest
 {
   /// <summary>
-  /// The compression rate of recordss in kbit/s.
+  /// The bitrate of records in kbit/s
   /// </summary>
   [Range(1, int.MaxValue, ErrorMessageResourceName = nameof(Resources.ValidationMessages.MinValue), ErrorMessageResourceType = typeof(Resources.ValidationMessages))]
   public int? CompressionRate { get; set; }

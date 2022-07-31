@@ -8,7 +8,7 @@ namespace Media.Application.Models;
 public class Settings
 {
   /// <summary>
-  /// The compression rate in kbit/s to render records to this compression rate.
+  /// The bitrate in kbit/s to compress the records to.
   /// </summary>
   public int? CompressionRate { get; set; }
 
@@ -18,11 +18,10 @@ public class Settings
   /// <returns><see cref="IDictionary{TKey, TValue}"/></returns>
   public IDictionary<string, string> ToDictionary()
   {
-    var dict = new Dictionary<string, string>();
-    if (CompressionRate.HasValue)
+    var dict = new Dictionary<string, string>
     {
-      dict.Add(nameof(CompressionRate), CompressionRate.Value.ToString());
-    }
+      { nameof(CompressionRate), !CompressionRate.HasValue ? "" : CompressionRate.Value.ToString() }
+    };
 
     return dict;
   }
