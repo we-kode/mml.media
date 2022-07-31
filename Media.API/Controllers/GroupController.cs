@@ -31,7 +31,7 @@ namespace Media.Controllers
     /// <summary>
     /// Loads a list of existing groups.
     /// </summary>
-    /// <param name="request">Filter request to filter the list of groups.</param>
+    /// <param name="filter">Filter to filter the list of groups.</param>
     /// <param name="skip">Offset of the list.</param>
     /// <param name="take">Size of chunk to be loaded.</param>
     /// <returns><see cref="Groups"/></returns>
