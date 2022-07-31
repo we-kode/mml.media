@@ -8,5 +8,5 @@ public static class Settings
   /// <summary>
   /// Compression rate settings key.
   /// </summary>
-  public const string CompressionRateKey = "MML.CompressionRate";
+  public const string CompressionRateKey = "CompressionRate";
 }

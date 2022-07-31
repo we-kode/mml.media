@@ -22,7 +22,6 @@ using OpenIddict.Validation.AspNetCore;
 using System;
 using System.Net.Http;
 using OpenIddict.Validation.SystemNetHttp;
-using System.Linq;
 
 namespace Media.API;
 public class Startup
@@ -233,6 +232,7 @@ public class Startup
       cfg.CreateMap<DBContext.Models.Genres, Genre>();
       cfg.CreateMap<DBContext.Models.Artists, Artist>();
       cfg.CreateMap<RecordChangeRequest, Record>();
+      cfg.CreateMap<SettingsRequest, Settings>();
       cfg.CreateMap<DBContext.Models.Groups, Group>()
         .ConstructUsing(g => new Group(g.GroupId, g.Name, g.IsDefault));
     })).AsSelf().SingleInstance();
