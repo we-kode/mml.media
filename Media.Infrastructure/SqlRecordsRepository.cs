@@ -241,7 +241,12 @@ public class SqlRecordsRepository : IRecordsRepository
   public bool Exists(Guid id)
   {
     using var context = _contextFactory();
-    return context.Records.Any(rec => rec.RecordId == id);
+    var record = context.Records.FirstOrDefault(rec => rec.RecordId == id);
+    if (record == null)
+    {
+      return false;
+    }
+    return File.Exists(Path.Combine(record.FilePath, record.Checksum));
   }
 
   public Record GetRecord(Guid id)
@@ -432,5 +437,22 @@ public class SqlRecordsRepository : IRecordsRepository
     }
 
     return genre;
+  }
+
+  public RecordStream StreamRecord(Guid id)
+  {
+    using var context = _contextFactory();
+    var record = context.Records.First(rec => rec.RecordId == id);
+    var stream = File.OpenRead(Path.Combine(record.FilePath, record.Checksum));
+    return new RecordStream(record.MimeType, stream);
+  }
+
+  public bool IsInGroup(Guid id, IEnumerable<Guid> clientGroups)
+  {
+    using var context = _contextFactory();
+    var record = context.Records
+      .Include(r => r.Groups)
+      .First(rec => rec.RecordId == id);
+    return record.Groups.Any(g => clientGroups.Contains(g.GroupId));
   }
 }

@@ -1,6 +1,7 @@
 ﻿using Media.Application.Models;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Threading.Tasks;
 
 namespace Media.Application.Contracts;
@@ -19,6 +20,21 @@ public interface IRecordsRepository
   /// <param name="checksum">Checksum of the file to be checked.</param>
   /// <returns>True, if index exists.</returns>
   bool IsIndexed(string checksum);
+
+  /// <summary>
+  /// Returns the given record as file stream.
+  /// </summary>
+  /// <param name="id">Id of record to be streamed.</param>
+  /// <returns><see cref="Stream"/></returns>
+  RecordStream StreamRecord(Guid id);
+
+  /// <summary>
+  /// Checks if one record has a group in given client groups.
+  /// </summary>
+  /// <param name="id">Id of the rceord to be checked.</param>
+  /// <param name="clientGroups">List of groups.</param>
+  /// <returns>True, if record is in one of the given groups.</returns>
+  bool IsInGroup(Guid id, IEnumerable<Guid> clientGroups);
 
   /// <summary>
   /// Loads list of records.
@@ -66,7 +82,7 @@ public interface IRecordsRepository
   Task DeleteRecord(Guid id);
 
   /// <summary>
-  /// Checks if on record wxists.
+  /// Checks if on record exists.
   /// </summary>
   /// <param name="id">Id of record to be checked.</param>
   /// <returns>True if record exists.</returns>
