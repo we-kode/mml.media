@@ -446,4 +446,13 @@ public class SqlRecordsRepository : IRecordsRepository
     var stream = File.OpenRead(Path.Combine(record.FilePath, record.Checksum));
     return new RecordStream(record.MimeType, stream);
   }
+
+  public bool IsInGroup(Guid id, IEnumerable<Guid> clientGroups)
+  {
+    using var context = _contextFactory();
+    var record = context.Records
+      .Include(r => r.Groups)
+      .First(rec => rec.RecordId == id);
+    return record.Groups.Any(g => clientGroups.Contains(g.GroupId));
+  }
 }

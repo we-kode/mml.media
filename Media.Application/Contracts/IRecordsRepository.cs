@@ -29,6 +29,14 @@ public interface IRecordsRepository
   RecordStream StreamRecord(Guid id);
 
   /// <summary>
+  /// Checks if one record has a group in given client groups.
+  /// </summary>
+  /// <param name="id">Id of the rceord to be checked.</param>
+  /// <param name="clientGroups">List of groups.</param>
+  /// <returns>True, if record is in one of the given groups.</returns>
+  bool IsInGroup(Guid id, IEnumerable<Guid> clientGroups);
+
+  /// <summary>
   /// Loads list of records.
   /// </summary>
   /// <param name="filter">Records will be filtered by given filter</param>
