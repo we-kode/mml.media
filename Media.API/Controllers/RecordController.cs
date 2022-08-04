@@ -1,17 +1,17 @@
 ﻿using AutoMapper;
 using Media.API.Contracts;
+using Media.API.Extensions;
 using Media.Application.Constants;
 using Media.Application.Contracts;
 using Media.Application.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using OpenIddict.Abstractions;
 using OpenIddict.Validation.AspNetCore;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
-using static OpenIddict.Abstractions.OpenIddictConstants;
 
 namespace Media.API.Controllers;
 
@@ -40,17 +40,9 @@ public class RecordController : ControllerBase
   [HttpPost("list")]
   public Records List([FromBody] Contracts.TagFilter tagFilter, [FromQuery] string? filter, [FromQuery] int skip = Application.Constants.List.Skip, [FromQuery] int take = Application.Constants.List.Take)
   {
-    var isAdmin = (HttpContext.User.GetClaim(Claims.Role) ?? "").Contains("Admin");
-    var clientGroups = HttpContext.User.GetClaims("ClientGroup");
-    var groups = new List<Guid>();
-    foreach (var group in clientGroups)
-    {
-      if (Guid.TryParse(group, out var id))
-      {
-        groups.Add(id);
-      }
-    }
-    return recordRepository.List(filter, mapper.Map<Application.Contracts.TagFilter>(tagFilter),!isAdmin, groups, skip, take);
+    var isAdmin = HttpContext.IsAdmin();
+    var clientGroups = HttpContext.ClientGroups();
+    return recordRepository.List(filter, mapper.Map<Application.Contracts.TagFilter>(tagFilter),!isAdmin, clientGroups.ToList(), skip, take);
   }
 
   /// <summary>
