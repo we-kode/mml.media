@@ -50,21 +50,21 @@ public class SqlRecordsRepository : IRecordsRepository
     };
   }
 
-  public Guid? Next(Guid id, string? filter, TagFilter tagFilter, bool filterByGroups, IEnumerable<Guid> clientGroups, bool repeat, bool shuffle, int? seed)
-  {
-    using var context = _contextFactory();
-    var query = Filter(context, filter, tagFilter, filterByGroups, clientGroups.ToList(), shuffle, seed ?? Guid.NewGuid().GetHashCode());
-    return DetermineRecordId(query, id, repeat, shuffle);
-  }
-
-  public Guid? Previous(Guid id, string? filter, TagFilter tagFilter, bool filterByGroups, IEnumerable<Guid> clientGroups, bool repeat)
+  public Record? Next(Guid id, string? filter, TagFilter tagFilter, bool filterByGroups, IEnumerable<Guid> clientGroups, bool repeat, bool shuffle)
   {
     using var context = _contextFactory();
     var query = Filter(context, filter, tagFilter, filterByGroups, clientGroups.ToList());
-    return DetermineRecordId(query.Reverse(), id, repeat, reverse: true);
+    return DetermineRecord(query, id, repeat, shuffle);
   }
 
-  private Guid? DetermineRecordId(IQueryable<DBContext.Models.Records> query, Guid actualId, bool repeat, bool shuffle = false, bool reverse = false)
+  public Record? Previous(Guid id, string? filter, TagFilter tagFilter, bool filterByGroups, IEnumerable<Guid> clientGroups, bool repeat)
+  {
+    using var context = _contextFactory();
+    var query = Filter(context, filter, tagFilter, filterByGroups, clientGroups.ToList());
+    return DetermineRecord(query.Reverse(), id, repeat, reverse: true);
+  }
+
+  private Record? DetermineRecord(IQueryable<DBContext.Models.Records> query, Guid actualId, bool repeat, bool shuffle = false, bool reverse = false)
   {
     // If no element in result return null.
     var count = query.Count();
@@ -73,16 +73,17 @@ public class SqlRecordsRepository : IRecordsRepository
       return null;
     }
 
-    // If shuffle, than the result is randomized and only one element will be in result, so return it.
+    // If shuffle, than the result is randomized take one random value from list
     if (shuffle)
     {
-      return query.Take(1).First().RecordId;
+      var randomIndex = new Random().Next(count - 1);
+      return MapModel(query.ElementAt(randomIndex));
     }
 
     // If actual record is not in result, than filter has changed, start from beginning.
     if (query.FirstOrDefault(rec => rec.RecordId == actualId) == null)
     {
-      return query.First().RecordId;
+      return MapModel(query.First());
     }
 
     // Skip all elements until id reached. Take th next value too. If previous is expexted the query will be reversed.
@@ -91,14 +92,14 @@ public class SqlRecordsRepository : IRecordsRepository
     var next = query.SkipWhile(rec => rec.RecordId != actualId).Take(2);
     if (next.Count() <= 1)
     {
-      return !repeat ? null : (reverse ? query.Last().RecordId : query.First().RecordId);
+      return !repeat ? null : MapModel(reverse ? query.Last() : query.First());
     }
 
     // return the next value. This is valid for the previous call as the list has been reversed.
-    return next.Last().RecordId;
+    return MapModel(next.Last());
   }
 
-  private IQueryable<DBContext.Models.Records> Filter(ApplicationDBContext context, string? filter, TagFilter tagFilter, bool filterByGroups, IList<Guid> groups, bool randomSort = false, int seed = 0)
+  private IQueryable<DBContext.Models.Records> Filter(ApplicationDBContext context, string? filter, TagFilter tagFilter, bool filterByGroups, IList<Guid> groups)
   {
     var query = context.Records
      .Include(rec => rec.Artist)
@@ -128,12 +129,6 @@ public class SqlRecordsRepository : IRecordsRepository
     if (tagFilter.Albums.Count > 0)
     {
       query = query.Where(rec => (rec.AlbumId.HasValue && tagFilter.Albums.Contains(rec.AlbumId.Value)));
-    }
-
-    if (randomSort)
-    {
-      var rnd = new Random(seed);
-      return query.OrderBy(rec => rnd.Next());
     }
 
     return query

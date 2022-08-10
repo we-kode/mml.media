@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using Media.API.Extensions;
 using Media.Application.Contracts;
+using Media.Application.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -62,14 +63,13 @@ public class StreamController : ControllerBase
   /// <param name="filter">The title filter set on the request.</param>
   /// <param name="repeat">True, if the records should play endless.</param>
   /// <param name="shuffle">True, if a random record should be loaded next.</param>
-  /// <param name="seed">If set, the value will be used for getting next random record.</param>
   /// <returns><see cref="Guid" /> or null if no next record exists.</returns>
   [HttpPost("next/{id:Guid}")]
-  public Guid? Next(Guid id, [FromBody] Contracts.TagFilter tagFilter, [FromQuery] string? filter, [FromQuery] bool? repeat, [FromQuery] bool? shuffle, [FromQuery] int? seed)
+  public Record? Next(Guid id, [FromBody] Contracts.TagFilter tagFilter, [FromQuery] string? filter, [FromQuery] bool? repeat, [FromQuery] bool? shuffle)
   {
     var isAdmin = HttpContext.IsAdmin();
     var clientGroups = HttpContext.ClientGroups();
-    return repository.Next(id, filter, mapper.Map<TagFilter>(tagFilter), !isAdmin, clientGroups, repeat ?? false, shuffle ?? false, seed);
+    return repository.Next(id, filter, mapper.Map<TagFilter>(tagFilter), !isAdmin, clientGroups, repeat ?? false, shuffle ?? false);
   }
 
   /// <summary>
@@ -83,7 +83,7 @@ public class StreamController : ControllerBase
   /// <param name="repeat">True, if the records should play endless.</param>
   /// <returns><see cref="Guid" /> or null if no previous record exists.</returns>
   [HttpPost("previous/{id:Guid}")]
-  public Guid? Previous(Guid id, [FromBody] Contracts.TagFilter tagFilter, [FromQuery] string? filter, [FromQuery] bool? repeat)
+  public Record? Previous(Guid id, [FromBody] Contracts.TagFilter tagFilter, [FromQuery] string? filter, [FromQuery] bool? repeat)
   {
     var isAdmin = HttpContext.IsAdmin();
     var clientGroups = HttpContext.ClientGroups();

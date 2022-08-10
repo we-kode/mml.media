@@ -67,9 +67,8 @@ public interface IRecordsRepository
   /// <param name="clientGroups">List of groups for which the records will be loaded.</param>
   /// <param name="repeat">If set, records will be loaded endless.</param>
   /// <param name="shuffle">If set, a random record id will be returned.</param>
-  /// <param name="seed">If shuffle is set the seed is used to generate random starting point.</param>
   /// <returns><see cref="Guid"/> or null if no next record exists.</returns>
-  Guid? Next(Guid id, string? filter, TagFilter tagFilter, bool filterByGroups, IEnumerable<Guid> clientGroups, bool repeat, bool shuffle, int? seed);
+  Record? Next(Guid id, string? filter, TagFilter tagFilter, bool filterByGroups, IEnumerable<Guid> clientGroups, bool repeat, bool shuffle);
 
   /// <summary>
   /// Loads list of artists.
@@ -112,7 +111,7 @@ public interface IRecordsRepository
   /// <param name="clientGroups">List of groups for which the records will be loaded.</param>
   /// <param name="repeat">If set, records will be loaded endless.</param>
   /// <returns><see cref="Guid"/> or null if no next record exists.</returns>
-  Guid? Previous(Guid id, string? filter, TagFilter tagFilter, bool filterByGroups, IEnumerable<Guid> clientGroups, bool repeat);
+  Record? Previous(Guid id, string? filter, TagFilter tagFilter, bool filterByGroups, IEnumerable<Guid> clientGroups, bool repeat);
 
   /// <summary>
   /// Loads record.
