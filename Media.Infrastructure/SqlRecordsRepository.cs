@@ -77,7 +77,7 @@ public class SqlRecordsRepository : IRecordsRepository
     if (shuffle)
     {
       var randomIndex = new Random().Next(count - 1);
-      return MapModel(query.ElementAt(randomIndex));
+      return MapModel(query.Skip(randomIndex).First());
     }
 
     // If actual record is not in result, than filter has changed, start from beginning.
