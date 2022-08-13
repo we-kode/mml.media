@@ -43,6 +43,11 @@ public class SqlRecordsRepository : IRecordsRepository
       .Select(rec => MapModel(rec))
       .ToList();
 
+    foreach (var record in records)
+    {
+      record.Groups = context.Groups.Include(g => g.Records).Where(g => g.Records.Any(gr => gr.RecordId == record.RecordId)).Select(g => new Group(g.GroupId, g.Name, g.IsDefault)).ToArray();
+    }
+
     return new Records
     {
       TotalCount = count,
@@ -61,10 +66,10 @@ public class SqlRecordsRepository : IRecordsRepository
   {
     using var context = _contextFactory();
     var query = Filter(context, filter, tagFilter, filterByGroups, clientGroups.ToList());
-    return DetermineRecord(query.Reverse(), id, repeat, reverse: true);
+    return DetermineRecord(query, id, repeat, reverse: true);
   }
 
-  private Record? DetermineRecord(IQueryable<DBContext.Models.Records> query, Guid actualId, bool repeat, bool shuffle = false, bool reverse = false)
+  private Record? DetermineRecord(IQueryable<DBContext.Models.SeedRecords> query, Guid actualId, bool repeat, bool shuffle = false, bool reverse = false)
   {
     // If no element in result return null.
     var count = query.Count();
@@ -89,27 +94,66 @@ public class SqlRecordsRepository : IRecordsRepository
     // Skip all elements until id reached. Take th next value too. If previous is expexted the query will be reversed.
     // If only the actualId is in result, the end or beginning has been reached.
     // Return null if no repeat is set, else return the first elemtn if we want to get tjhe next value, else get the last element.
-    var next = query.SkipWhile(rec => rec.RecordId != actualId).Take(2);
-    if (next.Count() <= 1)
+    var actual = query.First(rec => rec.RecordId == actualId);
+    if (!reverse)
     {
-      return !repeat ? null : MapModel(reverse ? query.Last() : query.First());
+      var nextId = actual.NextId;
+      if (!nextId.HasValue && !repeat)
+      {
+        return null;
+      }
+
+      if (!nextId.HasValue && repeat)
+      {
+        return MapModel(query.First());
+      }
+
+      return MapModel(query.First(rec => rec.RecordId == nextId));
     }
 
-    // return the next value. This is valid for the previous call as the list has been reversed.
-    return MapModel(next.Last());
+    // return previous value
+    if (reverse)
+    {
+      var previousId = actual.PreviousId;
+      if (!previousId.HasValue && !repeat)
+      {
+        return null;
+      }
+
+      if (!previousId.HasValue && repeat)
+      {
+        return MapModel(query.Last());
+      }
+
+      return MapModel(query.First(rec => rec.RecordId == previousId));
+    }
+
+    return null;
   }
 
-  private IQueryable<DBContext.Models.Records> Filter(ApplicationDBContext context, string? filter, TagFilter tagFilter, bool filterByGroups, IList<Guid> groups)
+  private IQueryable<DBContext.Models.SeedRecords> Filter(ApplicationDBContext context, string? filter, TagFilter tagFilter, bool filterByGroups, IList<Guid> groups)
   {
-    var query = context.Records
+    var query = context.SeedRecords
      .Include(rec => rec.Artist)
-     .Include(rec => rec.Groups)
+     .Join(context.Records.Include(r => r.Groups).Where(rec => !filterByGroups || rec.Groups.Any(g => groups.Contains(g.GroupId))),
+      seed => seed.RecordId,
+      rec => rec.RecordId,
+      (seed, record) => new DBContext.Models.SeedRecords
+      {
+        Album = seed.Album,
+        AlbumId = seed.AlbumId,
+        Artist = seed.Artist,
+        ArtistId = seed.ArtistId,
+        Date = seed.Date,
+        Duration = seed.Duration,
+        Genre = seed.Genre,
+        GenreId = seed.GenreId,
+        RecordId = seed.RecordId,
+        Title = seed.Title,
+        NextId = seed.NextId,
+        PreviousId = seed.PreviousId
+      })
      .Where(rec => string.IsNullOrEmpty(filter) || EF.Functions.ILike(rec.Title, $"%{filter}%"));
-
-    if (filterByGroups)
-    {
-      query = query.Where(rec => rec.Groups.Any(g => groups.Contains(g.GroupId)));
-    }
 
     if (tagFilter.StartDate.HasValue && tagFilter.EndDate.HasValue && tagFilter.EndDate >= tagFilter.StartDate)
     {
@@ -131,12 +175,10 @@ public class SqlRecordsRepository : IRecordsRepository
       query = query.Where(rec => (rec.AlbumId.HasValue && tagFilter.Albums.Contains(rec.AlbumId.Value)));
     }
 
-    return query
-      .OrderByDescending(rec => rec.Date.Date)
-      .ThenBy(rec => rec.Date);
+    return query;
   }
 
-  private static Record MapModel(DBContext.Models.Records record)
+  private static Record MapModel(DBContext.Models.SeedRecords record)
   {
     return new Record(
       record.RecordId,
@@ -144,7 +186,7 @@ public class SqlRecordsRepository : IRecordsRepository
       record.Artist?.Name,
       record.Date,
       record.Duration,
-      record.Groups.Select(g => new Group(g.GroupId, g.Name, g.IsDefault)).ToArray(),
+      null!,
       record.Album?.AlbumName ?? string.Empty,
       record.Genre?.Name ?? string.Empty
       );
@@ -314,6 +356,20 @@ public class SqlRecordsRepository : IRecordsRepository
       .First(rec => rec.RecordId == id);
 
     return MapModel(record);
+  }
+
+  private static Record MapModel(DBContext.Models.Records record)
+  {
+    return new Record(
+      record.RecordId,
+      record.Title,
+      record.Artist?.Name,
+      record.Date,
+      record.Duration,
+      record.Groups.Select(g => new Group(g.GroupId, g.Name, g.IsDefault)).ToArray(),
+      record.Album?.AlbumName ?? string.Empty,
+      record.Genre?.Name ?? string.Empty
+      );
   }
 
   public async Task Update(Record record)

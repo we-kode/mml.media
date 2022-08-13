@@ -28,5 +28,5 @@ public class Groups
   /// <summary>
   /// List of records, which belong to the group.
   /// </summary>
-  public ICollection<Records> Records { get; set; } = new List<Records>();
+  public virtual ICollection<Records> Records { get; set; } = new List<Records>();
 }
