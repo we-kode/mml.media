@@ -34,7 +34,35 @@ public class SqlRecordsRepository : IRecordsRepository
   public Records List(string? filter, TagFilter tagFilter, bool filterByGroups, IList<Guid> groups, int skip = Application.Constants.List.Skip, int take = Application.Constants.List.Take)
   {
     using var context = _contextFactory();
-    var query = Filter(context, filter, tagFilter, filterByGroups, groups);
+    var query = context.Records
+         .Include(rec => rec.Artist)
+         .Include(rec => rec.Groups)
+         .Where(rec => string.IsNullOrEmpty(filter) || EF.Functions.ILike(rec.Title, $"%{filter}%"));
+
+    if (filterByGroups)
+    {
+      query = query.Where(rec => rec.Groups.Any(g => groups.Contains(g.GroupId)));
+    }
+
+    if (tagFilter.StartDate.HasValue && tagFilter.EndDate.HasValue && tagFilter.EndDate >= tagFilter.StartDate)
+    {
+      query = query.Where(rec => tagFilter.StartDate.Value.ToUniversalTime().Date <= rec.Date.ToUniversalTime().Date && rec.Date.ToUniversalTime().Date <= tagFilter.EndDate.Value.ToUniversalTime().Date);
+    }
+
+    if (tagFilter.Artists.Count > 0)
+    {
+      query = query.Where(rec => (rec.ArtistId.HasValue && tagFilter.Artists.Contains(rec.ArtistId.Value)));
+    }
+
+    if (tagFilter.Genres.Count > 0)
+    {
+      query = query.Where(rec => (rec.GenreId.HasValue && tagFilter.Genres.Contains(rec.GenreId.Value)));
+    }
+
+    if (tagFilter.Albums.Count > 0)
+    {
+      query = query.Where(rec => (rec.AlbumId.HasValue && tagFilter.Albums.Contains(rec.AlbumId.Value)));
+    }
 
     var count = query.Count();
     var records = query
@@ -42,11 +70,6 @@ public class SqlRecordsRepository : IRecordsRepository
       .Take(take)
       .Select(rec => MapModel(rec))
       .ToList();
-
-    foreach (var record in records)
-    {
-      record.Groups = context.Groups.Include(g => g.Records).Where(g => g.Records.Any(gr => gr.RecordId == record.RecordId)).Select(g => new Group(g.GroupId, g.Name, g.IsDefault)).ToArray();
-    }
 
     return new Records
     {
