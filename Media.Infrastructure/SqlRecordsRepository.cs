@@ -68,7 +68,6 @@ public class SqlRecordsRepository : IRecordsRepository
       .OrderByDescending(rec => rec.Date.Date)
       .ThenBy(rec => rec.Date);
 
-
     var count = query.Count();
     var records = query
       .Skip(skip)
