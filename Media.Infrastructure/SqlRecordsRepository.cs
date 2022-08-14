@@ -64,6 +64,11 @@ public class SqlRecordsRepository : IRecordsRepository
       query = query.Where(rec => (rec.AlbumId.HasValue && tagFilter.Albums.Contains(rec.AlbumId.Value)));
     }
 
+    query = query
+      .OrderByDescending(rec => rec.Date.Date)
+      .ThenBy(rec => rec.Date);
+
+
     var count = query.Count();
     var records = query
       .Skip(skip)
