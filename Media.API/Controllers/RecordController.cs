@@ -42,7 +42,7 @@ public class RecordController : ControllerBase
   {
     var isAdmin = HttpContext.IsAdmin();
     var clientGroups = HttpContext.ClientGroups();
-    return recordRepository.List(filter, mapper.Map<Application.Contracts.TagFilter>(tagFilter),!isAdmin, clientGroups.ToList(), skip, take);
+    return recordRepository.List(filter, mapper.Map<Application.Contracts.TagFilter>(tagFilter),!isAdmin, clientGroups, skip, take);
   }
 
   /// <summary>

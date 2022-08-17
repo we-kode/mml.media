@@ -34,19 +34,21 @@ public class SeedRecords
   /// Foreign key to the <see cref="Artists"/> associated with this record or null if unknown.
   /// </summary>
   public Guid? ArtistId { get; set; }
-  public Artists? Artist { get; set; }
+
+  /// <summary>
+  /// The name of the artist.
+  /// </summary>
+  public string? ArtistName { get; set; }
 
   /// <summary>
   /// Foreign key to the <see cref="Genres"/> associated with this record or null if unknown.
   /// </summary>
   public Guid? GenreId { get; set; }
-  public Genres? Genre { get; set; }
 
   /// <summary>
   /// Foreign key to the <see cref="Albums"/> associated with this record or null if unknown.
   /// </summary>
   public Guid? AlbumId { get; set; }
-  public Albums? Album { get; set; }
 
   /// <summary>
   /// The id of the next record in order or null if last.

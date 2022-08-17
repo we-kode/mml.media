@@ -109,114 +109,94 @@ public class SqlRecordsRepository : IRecordsRepository
     if (shuffle)
     {
       var randomIndex = new Random().Next(count - 1);
-      return MapModel(query.Skip(randomIndex).First());
+      return MapModel(query.Skip(randomIndex).FirstOrDefault());
     }
 
     // If actual record is not in result, than filter has changed, start from beginning.
     if (query.FirstOrDefault(rec => rec.RecordId == actualId) == null)
     {
-      return MapModel(query.First());
+      return MapModel(query.FirstOrDefault());
     }
 
     // Skip all elements until id reached. Take th next value too. If previous is expexted the query will be reversed.
     // If only the actualId is in result, the end or beginning has been reached.
     // Return null if no repeat is set, else return the first elemtn if we want to get tjhe next value, else get the last element.
-    var actual = query.First(rec => rec.RecordId == actualId);
+    var actual = query.FirstOrDefault(rec => rec.RecordId == actualId);
+    if (actual == null)
+    {
+      return null;
+    }
+
     if (!reverse)
     {
       var nextId = actual.NextId;
-      if (!nextId.HasValue && !repeat)
-      {
-        return null;
-      }
-
       if (!nextId.HasValue && repeat)
       {
-        return MapModel(query.First());
+        return MapModel(query.FirstOrDefault());
       }
 
-      return MapModel(query.First(rec => rec.RecordId == nextId));
+      return MapModel(query.FirstOrDefault(rec => rec.RecordId == nextId));
     }
 
     // return previous value
-    if (reverse)
+    var previousId = actual.PreviousId;
+    if (!previousId.HasValue && repeat)
     {
-      var previousId = actual.PreviousId;
-      if (!previousId.HasValue && !repeat)
-      {
-        return null;
-      }
-
-      if (!previousId.HasValue && repeat)
-      {
-        return MapModel(query.Last());
-      }
-
-      return MapModel(query.First(rec => rec.RecordId == previousId));
+      return MapModel(query.OrderByDescending(r => r.Date.Date).ThenBy(r => r.Date).LastOrDefault());
     }
 
-    return null;
+    return MapModel(query.FirstOrDefault(rec => rec.RecordId == previousId));
   }
 
   private IQueryable<DBContext.Models.SeedRecords> Filter(ApplicationDBContext context, string? filter, TagFilter tagFilter, bool filterByGroups, IList<Guid> groups)
   {
+    var filterQuery = string.IsNullOrEmpty(filter) ? "'%%'" : $"'%{filter}%'";
+    var filterGroupsQuery = filterByGroups ? $"AND t.group_id IN ({string.Join(',', groups.Select(id => string.Format("'{0}'", id)))})" : string.Empty;
+    var filterDateQuery = tagFilter.StartDate.HasValue && tagFilter.EndDate.HasValue && tagFilter.EndDate >= tagFilter.StartDate ? $"AND (('{tagFilter.StartDate.Value.ToUniversalTime().Date}' <= date_trunc('day', rec.date::timestamptz, 'UTC')) AND date_trunc('day', rec.date::timestamptz, 'UTC') <= '{tagFilter.EndDate.Value.ToUniversalTime().Date}')" : string.Empty;
+    var filterArtistsQuery = tagFilter.Artists.Count > 0 ? $"AND rec.artist_id IN ({string.Join(',', tagFilter.Artists.Select(id => string.Format("'{0}'", id)))})" : string.Empty;
+    var filterGenreQuery = tagFilter.Genres.Count > 0 ? $"AND rec.genre_id IN ({string.Join(',', tagFilter.Genres.Select(id => string.Format("'{0}'", id)))})" : string.Empty;
+    var filterAlbumQuery = tagFilter.Albums.Count > 0 ? $"AND rec.album_id IN ({string.Join(',', tagFilter.Albums.Select(id => string.Format("'{0}'", id)))})" : string.Empty;
+
+    var selectQuery = $@"SELECT 
+                  rec.*, a.name as artist_name, t.group_id,
+                  LEAD(rec.record_id, 1) OVER(ORDER BY Cast(rec.date as Date) DESC, rec.date) as next_id, 
+                  LAG(rec.record_id, 1) OVER(ORDER BY Cast(rec.date as Date) DESC, rec.date) as previous_id
+                  FROM public.records AS rec
+                  LEFT JOIN public.artists AS a ON rec.artist_id = a.artist_id
+                  LEFT JOIN (SELECT g1.groups_group_id, g1.records_record_id, g2.group_id
+			                       FROM public.groups_records AS g1
+			                       INNER JOIN public.groups AS g2 ON g1.groups_group_id = g2.group_id
+                            ) AS t 
+                  ON rec.record_id = t.records_record_id
+                  WHERE rec.title ILIKE {filterQuery}
+                  {filterGroupsQuery}
+                  {filterDateQuery}
+                  {filterArtistsQuery}
+                  {filterGenreQuery}
+                  {filterAlbumQuery}
+                  ORDER BY Cast(rec.date as Date) desc, rec.Date asc
+                ";
+
     var query = context.SeedRecords
-     .Include(rec => rec.Artist)
-     .Join(context.Records.Include(r => r.Groups).Where(rec => !filterByGroups || rec.Groups.Any(g => groups.Contains(g.GroupId))),
-      seed => seed.RecordId,
-      rec => rec.RecordId,
-      (seed, record) => new DBContext.Models.SeedRecords
-      {
-        Album = seed.Album,
-        AlbumId = seed.AlbumId,
-        Artist = seed.Artist,
-        ArtistId = seed.ArtistId,
-        Date = seed.Date,
-        Duration = seed.Duration,
-        Genre = seed.Genre,
-        GenreId = seed.GenreId,
-        RecordId = seed.RecordId,
-        Title = seed.Title,
-        NextId = seed.NextId,
-        PreviousId = seed.PreviousId
-      })
-     .Where(rec => string.IsNullOrEmpty(filter) || EF.Functions.ILike(rec.Title, $"%{filter}%"));
-
-    if (tagFilter.StartDate.HasValue && tagFilter.EndDate.HasValue && tagFilter.EndDate >= tagFilter.StartDate)
-    {
-      query = query.Where(rec => tagFilter.StartDate.Value.ToUniversalTime().Date <= rec.Date.ToUniversalTime().Date && rec.Date.ToUniversalTime().Date <= tagFilter.EndDate.Value.ToUniversalTime().Date);
-    }
-
-    if (tagFilter.Artists.Count > 0)
-    {
-      query = query.Where(rec => (rec.ArtistId.HasValue && tagFilter.Artists.Contains(rec.ArtistId.Value)));
-    }
-
-    if (tagFilter.Genres.Count > 0)
-    {
-      query = query.Where(rec => (rec.GenreId.HasValue && tagFilter.Genres.Contains(rec.GenreId.Value)));
-    }
-
-    if (tagFilter.Albums.Count > 0)
-    {
-      query = query.Where(rec => (rec.AlbumId.HasValue && tagFilter.Albums.Contains(rec.AlbumId.Value)));
-    }
+      .FromSqlRaw($"{selectQuery}");
 
     return query;
   }
 
-  private static Record MapModel(DBContext.Models.SeedRecords record)
+  private static Record? MapModel(DBContext.Models.SeedRecords? record)
   {
+    if (record == null)
+    {
+      return null;
+    }
+
     return new Record(
       record.RecordId,
       record.Title,
-      record.Artist?.Name,
+      record.ArtistName,
       record.Date,
       record.Duration,
-      null!,
-      record.Album?.AlbumName ?? string.Empty,
-      record.Genre?.Name ?? string.Empty
-      );
+      null!);
   }
 
   public void SaveMetaData(RecordMetaData metaData)
@@ -395,8 +375,7 @@ public class SqlRecordsRepository : IRecordsRepository
       record.Duration,
       record.Groups.Select(g => new Group(g.GroupId, g.Name, g.IsDefault)).ToArray(),
       record.Album?.AlbumName ?? string.Empty,
-      record.Genre?.Name ?? string.Empty
-      );
+      record.Genre?.Name ?? string.Empty);
   }
 
   public async Task Update(Record record)

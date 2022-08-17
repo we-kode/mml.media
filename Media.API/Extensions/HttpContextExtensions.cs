@@ -27,8 +27,8 @@ public static class HttpContextExtensions
   /// </summary>
   /// <param name="context"><see cref="HttpContext"/></param>
   /// <returns><see cref="IEnumerable{T}"/> of <see cref="Guid"/></returns>
-  public static IEnumerable<Guid> ClientGroups(this HttpContext context)
+  public static IList<Guid> ClientGroups(this HttpContext context)
   {
-    return context.User.GetClaims("ClientGroup").Select(g => Guid.Parse(g));
+    return context.User.GetClaims("ClientGroup").Select(g => Guid.Parse(g)).ToList();
   }
 }

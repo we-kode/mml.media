@@ -41,13 +41,13 @@ namespace Media.DBContext
 
       modelBuilder
     .Entity<SeedRecords>()
-    .ToSqlQuery(@"SELECT 
-                  rec.*,
-                  LEAD(rec.record_id, 1) OVER(ORDER BY Cast(rec.date as Date) DESC, rec.date) as next_id, 
-                  LAG(rec.record_id, 1) OVER(ORDER BY Cast(rec.date as Date) DESC, rec.date) as previous_id
-                  FROM public.records rec
-                  ORDER BY Cast(rec.date as Date) desc, rec.Date asc
-                ")
+    //.ToSqlQuery(@"SELECT 
+    //              rec.record_id,
+    //              LEAD(rec.record_id, 1) OVER(ORDER BY Cast(rec.date as Date) DESC, rec.date) as next_id, 
+    //              LAG(rec.record_id, 1) OVER(ORDER BY Cast(rec.date as Date) DESC, rec.date) as previous_id
+    //              FROM public.records rec
+    //              ORDER BY Cast(rec.date as Date) desc, rec.Date asc
+    //            ")
     .HasNoKey();
     }
   }

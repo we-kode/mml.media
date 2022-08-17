@@ -78,5 +78,5 @@ public class Records
   /// <summary>
   /// The groups asssociated with this record.
   /// </summary>
-  public virtual ICollection<Groups> Groups { get; set; } = new List<Groups>();
+  public ICollection<Groups> Groups { get; set; } = new List<Groups>();
 }

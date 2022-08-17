@@ -1,9 +1,7 @@
 ﻿using AutoMapper;
-using Media.Application.Constants;
 using Media.Application.Contracts;
 using Media.Application.Models;
 using Media.DBContext;
-using Media.DBContext.Models;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
