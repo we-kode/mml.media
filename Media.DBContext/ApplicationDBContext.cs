@@ -12,6 +12,7 @@ namespace Media.DBContext
     public DbSet<Genres> Genres { get; set; } = null!;
     public DbSet<Albums> Albums { get; set; } = null!;
     public DbSet<Groups> Groups { get; set; } = null!;
+    public DbSet<SeedRecords> SeedRecords { get; set; } = null!;
 
     public ApplicationDBContext(DbContextOptions<ApplicationDBContext> options) : base(options)
     {
@@ -37,6 +38,10 @@ namespace Media.DBContext
       modelBuilder.Entity<Settings>()
        .HasIndex(s => s.Key)
        .IsUnique();
+
+      modelBuilder
+       .Entity<SeedRecords>()
+       .HasNoKey();
     }
   }
 }

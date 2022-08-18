@@ -58,6 +58,19 @@ public interface IRecordsRepository
   Albums ListAlbums(string? filter, int skip = Constants.List.Skip, int take = Constants.List.Take);
 
   /// <summary>
+  /// Lists the next record id in filtered list or null.
+  /// </summary>
+  /// <param name="id">Id of the actual record.</param>
+  /// <param name="filter">Record title will be filtered by given filter.</param>
+  /// <param name="tagFilter">Tags on which the records will be filtered.</param>
+  /// <param name="filterByGroups">True if records will be filtered by groups.</param>
+  /// <param name="clientGroups">List of groups for which the records will be loaded.</param>
+  /// <param name="repeat">If set, records will be loaded endless.</param>
+  /// <param name="shuffle">If set, a random record id will be returned.</param>
+  /// <returns><see cref="Guid"/> or null if no next record exists.</returns>
+  Record? Next(Guid id, string? filter, TagFilter tagFilter, bool filterByGroups, IEnumerable<Guid> clientGroups, bool repeat, bool shuffle);
+
+  /// <summary>
   /// Loads list of artists.
   /// </summary>
   /// <param name="filter">Artists will be filtered by given filter</param>
@@ -87,6 +100,18 @@ public interface IRecordsRepository
   /// <param name="id">Id of record to be checked.</param>
   /// <returns>True if record exists.</returns>
   bool Exists(Guid id);
+
+  /// <summary>
+  /// Lists the previous record id in filtered list or null.
+  /// </summary>
+  /// <param name="id">Id of the actual record.</param>
+  /// <param name="filter">Record title will be filtered by given filter.</param>
+  /// <param name="tagFilter">Tags on which the records will be filtered.</param>
+  /// <param name="filterByGroups">True if records will be filtered by groups.</param>
+  /// <param name="clientGroups">List of groups for which the records will be loaded.</param>
+  /// <param name="repeat">If set, records will be loaded endless.</param>
+  /// <returns><see cref="Guid"/> or null if no next record exists.</returns>
+  Record? Previous(Guid id, string? filter, TagFilter tagFilter, bool filterByGroups, IEnumerable<Guid> clientGroups, bool repeat);
 
   /// <summary>
   /// Loads record.

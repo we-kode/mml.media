@@ -2,10 +2,8 @@
 using Media.Application.Models;
 using Media.DBContext;
 using System;
-using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
-using System.Reflection;
 
 namespace Media.Infrastructure
 {
@@ -28,7 +26,7 @@ namespace Media.Infrastructure
     {
       using var context = _contextFactory();
       var dbSettings = context.Settings.ToDictionary(s => s.Key, s => s.Value);
-      var settings = new Settings(); 
+      var settings = new Settings();
       foreach (var key in dbSettings.Keys)
       {
         Type type = typeof(Settings);
