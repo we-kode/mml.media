@@ -5,8 +5,10 @@ using Media.DBContext;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
+using System.Data.SqlClient;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using System.Transactions;
 
@@ -105,7 +107,7 @@ public class SqlRecordsRepository : IRecordsRepository
       return null;
     }
 
-    // If shuffle, than the result is randomized take one random value from list
+    // If shuffle, then the result is randomized take one random value from list
     if (shuffle)
     {
       var randomIndex = new Random().Next(count - 1);
@@ -150,14 +152,14 @@ public class SqlRecordsRepository : IRecordsRepository
 
   private IQueryable<DBContext.Models.SeedRecords> Filter(ApplicationDBContext context, string? filter, TagFilter tagFilter, bool filterByGroups, IList<Guid> groups)
   {
-    var filterQuery = string.IsNullOrEmpty(filter) ? "'%%'" : $"'%{filter}%'";
+    var filterQuery = string.IsNullOrEmpty(filter) ? "%%" : $"%{filter}%";
     var filterGroupsQuery = filterByGroups ? $"AND t.group_id IN ({string.Join(',', groups.Select(id => string.Format("'{0}'", id)))})" : string.Empty;
     var filterDateQuery = tagFilter.StartDate.HasValue && tagFilter.EndDate.HasValue && tagFilter.EndDate >= tagFilter.StartDate ? $"AND (('{tagFilter.StartDate.Value.ToUniversalTime().Date}' <= date_trunc('day', rec.date::timestamptz, 'UTC')) AND date_trunc('day', rec.date::timestamptz, 'UTC') <= '{tagFilter.EndDate.Value.ToUniversalTime().Date}')" : string.Empty;
     var filterArtistsQuery = tagFilter.Artists.Count > 0 ? $"AND rec.artist_id IN ({string.Join(',', tagFilter.Artists.Select(id => string.Format("'{0}'", id)))})" : string.Empty;
     var filterGenreQuery = tagFilter.Genres.Count > 0 ? $"AND rec.genre_id IN ({string.Join(',', tagFilter.Genres.Select(id => string.Format("'{0}'", id)))})" : string.Empty;
     var filterAlbumQuery = tagFilter.Albums.Count > 0 ? $"AND rec.album_id IN ({string.Join(',', tagFilter.Albums.Select(id => string.Format("'{0}'", id)))})" : string.Empty;
 
-    var selectQuery = $@"SELECT 
+    var selectQuery = @"SELECT 
                   rec.*, a.name as artist_name, t.group_id,
                   LEAD(rec.record_id, 1) OVER(ORDER BY Cast(rec.date as Date) DESC, rec.date) as next_id, 
                   LAG(rec.record_id, 1) OVER(ORDER BY Cast(rec.date as Date) DESC, rec.date) as previous_id
@@ -168,17 +170,17 @@ public class SqlRecordsRepository : IRecordsRepository
 			                       INNER JOIN public.groups AS g2 ON g1.groups_group_id = g2.group_id
                             ) AS t 
                   ON rec.record_id = t.records_record_id
-                  WHERE rec.title ILIKE {filterQuery}
-                  {filterGroupsQuery}
-                  {filterDateQuery}
-                  {filterArtistsQuery}
-                  {filterGenreQuery}
-                  {filterAlbumQuery}
-                  ORDER BY Cast(rec.date as Date) desc, rec.Date asc
-                ";
+                  WHERE rec.title ILIKE {0}";
 
-    var query = context.SeedRecords
-      .FromSqlRaw($"{selectQuery}");
+    var sb = new StringBuilder();
+    sb.AppendLine(selectQuery);
+    sb.AppendLine(filterGroupsQuery);
+    sb.AppendLine(filterDateQuery);
+    sb.AppendLine(filterArtistsQuery);
+    sb.AppendLine(filterGenreQuery);
+    sb.AppendLine(filterAlbumQuery);
+    sb.AppendLine("ORDER BY Cast(rec.date as Date) desc, rec.Date asc");
+    var query = context.SeedRecords.FromSqlRaw($"{sb}", filterQuery);
 
     return query;
   }
