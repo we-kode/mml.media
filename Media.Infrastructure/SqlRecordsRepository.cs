@@ -112,13 +112,13 @@ public class SqlRecordsRepository : IRecordsRepository
       return MapModel(query.Skip(randomIndex).FirstOrDefault());
     }
 
-    // If actual record is not in result, than filter has changed, start from beginning.
+    // If actual record is not in result, then filter has changed, start from beginning.
     if (query.FirstOrDefault(rec => rec.RecordId == actualId) == null)
     {
       return MapModel(query.FirstOrDefault());
     }
 
-    // Skip all elements until id reached. Take th next value too. If previous is expexted the query will be reversed.
+    // Skip all elements until id reached. Take the expected value. If previous is expected the query will be reversed.
     // If only the actualId is in result, the end or beginning has been reached.
     // Return null if no repeat is set, else return the first elemtn if we want to get tjhe next value, else get the last element.
     var actual = query.FirstOrDefault(rec => rec.RecordId == actualId);
