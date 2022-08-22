@@ -573,4 +573,11 @@ public class SqlRecordsRepository : IRecordsRepository
       .First(rec => rec.RecordId == id);
     return record.Groups.Any(g => clientGroups.Contains(g.GroupId));
   }
+
+  public string GetFilePath(Guid id)
+  {
+    using var context = _contextFactory();
+    var record = context.Records.First(rec => rec.RecordId == id);
+    return Path.Combine(record.FilePath, record.Checksum);
+  }
 }
