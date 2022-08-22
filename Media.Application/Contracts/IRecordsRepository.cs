@@ -125,4 +125,11 @@ public interface IRecordsRepository
   /// </summary>
   /// <param name="record"><see cref="Record"/> to be updated.</param>
   Task Update(Record record);
+
+  /// <summary>
+  /// Returns physical file path of one record
+  /// </summary>
+  /// <param name="id">Record id</param>
+  /// <returns>Path of record as string.</returns>
+  string GetFilePath(Guid id);
 }

@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Mvc;
 using OpenIddict.Validation.AspNetCore;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -136,5 +137,31 @@ public class RecordController : ControllerBase
 
     await recordRepository.Update(mapper.Map<Record>(request)).ConfigureAwait(false);
     return Ok();
+  }
+
+  /// <summary>
+  /// Downloads the given record.
+  /// </summary>
+  /// <param name="id">Record to be downloaded.</param>
+  /// <returns>The given record as a file.</returns>
+  /// <response code="404">If record does not exist.</response>
+  /// <response code="403">If record is not in group of client.</response>
+  [HttpGet("download/{id:Guid}")]
+  [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme, Policy = Roles.Client)]
+  public IActionResult Download(Guid id)
+  {
+    if (!recordRepository.Exists(id))
+    {
+      return NotFound();
+    }
+
+    var clientGroups = HttpContext.ClientGroups();
+    if (!recordRepository.IsInGroup(id, clientGroups))
+    {
+      return Forbid();
+    }
+
+    var path = recordRepository.GetFilePath(id);
+    return PhysicalFile(path, "audio/mpeg", Path.GetFileNameWithoutExtension(path));
   }
 }
