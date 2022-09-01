@@ -149,11 +149,11 @@ public class Startup
         policy.RequireAuthenticatedUser();
         policy.RequireClaim(OpenIddictConstants.Claims.Role, Application.Constants.Roles.Admin);
       });
-      option.AddPolicy(Application.Constants.Roles.Admin, policy =>
+      option.AddPolicy(Application.Constants.Roles.Client, policy =>
       {
         policy.AddAuthenticationSchemes(OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme);
         policy.RequireAuthenticatedUser();
-        policy.RequireClaim(OpenIddictConstants.Claims.Role, Application.Constants.Roles.Admin);
+        policy.RequireClaim(OpenIddictConstants.Claims.Role, Application.Constants.Roles.Client);
       });
     });
     services.AddOpenIddict()
