@@ -377,7 +377,8 @@ public class SqlRecordsRepository : IRecordsRepository
       record.Duration,
       record.Groups.Select(g => new Group(g.GroupId, g.Name, g.IsDefault)).ToArray(),
       record.Album?.AlbumName ?? string.Empty,
-      record.Genre?.Name ?? string.Empty);
+      record.Genre?.Name ?? string.Empty,
+      record.Checksum);
   }
 
   public async Task Update(Record record)
