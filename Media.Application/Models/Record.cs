@@ -43,7 +43,7 @@ public class Record
   /// </summary>
   public double Duration { get; set; }
 
-  public string? File { get; set; }
+  public string? Checksum { get; set; }
 
   /// <summary>
   /// List of groups the record is assigned to.
@@ -61,8 +61,8 @@ public class Record
   /// <param name="groups">List of groups the record is assigned to.</param>
   /// <param name="album">The album of the record.</param>
   /// <param name="genre">The genre of the record.</param>
-  /// <param name="file">The file name of record on disk.</param>
-  public Record(Guid recordId, string title, string? artist, DateTime date, TimeSpan duration, ICollection<Group> groups, string album = "", string genre = "", string file = "")
+  /// <param name="checksum">The checksum of record.</param>
+  public Record(Guid recordId, string title, string? artist, DateTime date, TimeSpan duration, ICollection<Group> groups, string album = "", string genre = "", string checksum = "")
   {
     RecordId = recordId;
     Title = title;
@@ -71,7 +71,7 @@ public class Record
     Genre = genre;
     Date = date;
     Duration = duration.TotalMilliseconds;
-    File = file;
+    Checksum = checksum;
     Groups = groups ?? new List<Group>();
   }
 
