@@ -24,4 +24,4 @@ jobs:
     - name: Build the Docker image
       run: docker build . --file Media.API/Dockerfile --build-arg UID=1001 --build-arg GID=1001 --tag ${{ secrets.DOCKER_HUB_USER }}/wekode.mml.media:${{ env.RELEASE_VERSION }}
     - name: Docker push
-      run: docker push ${{ secrets.DOCKER_HUB_USER }}/wekode.mml.media
+      run: docker push ${{ secrets.DOCKER_HUB_USER }}/wekode.mml.media:${{ env.RELEASE_VERSION }}
