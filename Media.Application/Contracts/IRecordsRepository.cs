@@ -58,6 +58,18 @@ public interface IRecordsRepository
   Albums ListAlbums(string? filter, int skip = Constants.List.Skip, int take = Constants.List.Take);
 
   /// <summary>
+  /// Loads list of record folders.
+  /// </summary>
+  /// <param name="filter">Records will be filtered by given filter</param>
+  /// <param name="tagFilter">Tags on which the records will be filtered.</param>
+  /// <param name="filterByGroups">True if records will be filtered by groups.</param>
+  /// <param name="groups">List of groups for which the records will be loaded.</param>
+  /// <param name="skip">Elements to be skipped. default <see cref="List.Skip"/></param>
+  /// <param name="take">Elements to be loaded in one chunk. Default <see cref="List.Take"/></param>
+  /// <returns><see cref="Records"/></returns>
+  RecordFolders ListFolder(string? filter, TagFilter tagFilter, bool filterByGroups, IList<Guid> groups, int skip, int take);
+
+  /// <summary>
   /// Lists the next record id in filtered list or null.
   /// </summary>
   /// <param name="id">Id of the actual record.</param>

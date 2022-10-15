@@ -47,6 +47,21 @@ public class RecordController : ControllerBase
   }
 
   /// <summary>
+  /// Loads a list of existing records grouped by folder.
+  /// </summary>
+  /// <param name="filter">Filter request to filter the list of records</param>
+  /// <param name="skip">Offset of the list</param>
+  /// <param name="take">Size of chunk to be loaded</param>
+  /// <returns><see cref="RecordFodlers"/></returns>
+  [HttpPost("listFolder")]
+  public RecordFolders ListFolder([FromBody] Contracts.TagFilter tagFilter, [FromQuery] string? filter, [FromQuery] int skip = Application.Constants.List.Skip, [FromQuery] int take = Application.Constants.List.Take)
+  {
+    var isAdmin = HttpContext.IsAdmin();
+    var clientGroups = HttpContext.ClientGroups();
+    return recordRepository.ListFolder(filter, mapper.Map<Application.Contracts.TagFilter>(tagFilter), !isAdmin, clientGroups, skip, take);
+  }
+
+  /// <summary>
   /// Loads a list of artists.
   /// </summary>
   /// <param name="filter">Filter request to filter the list of artists.</param>

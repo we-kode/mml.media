@@ -36,34 +36,10 @@ public class SqlRecordsRepository : IRecordsRepository
   public Records List(string? filter, TagFilter tagFilter, bool filterByGroups, IList<Guid> groups, int skip = Application.Constants.List.Skip, int take = Application.Constants.List.Take)
   {
     using var context = _contextFactory();
-    var query = context.Records
-         .Include(rec => rec.Artist)
-         .Include(rec => rec.Groups)
-         .Where(rec => string.IsNullOrEmpty(filter) || EF.Functions.ILike(rec.Title, $"%{filter}%"));
-
-    if (filterByGroups)
-    {
-      query = query.Where(rec => rec.Groups.Any(g => groups.Contains(g.GroupId)));
-    }
-
+    var query = FilterQuery(context, filter, tagFilter, filterByGroups, groups);
     if (tagFilter.StartDate.HasValue && tagFilter.EndDate.HasValue && tagFilter.EndDate >= tagFilter.StartDate)
     {
       query = query.Where(rec => tagFilter.StartDate.Value.ToUniversalTime().Date <= rec.Date.ToUniversalTime().Date && rec.Date.ToUniversalTime().Date <= tagFilter.EndDate.Value.ToUniversalTime().Date);
-    }
-
-    if (tagFilter.Artists.Count > 0)
-    {
-      query = query.Where(rec => (rec.ArtistId.HasValue && tagFilter.Artists.Contains(rec.ArtistId.Value)));
-    }
-
-    if (tagFilter.Genres.Count > 0)
-    {
-      query = query.Where(rec => (rec.GenreId.HasValue && tagFilter.Genres.Contains(rec.GenreId.Value)));
-    }
-
-    if (tagFilter.Albums.Count > 0)
-    {
-      query = query.Where(rec => (rec.AlbumId.HasValue && tagFilter.Albums.Contains(rec.AlbumId.Value)));
     }
 
     query = query
@@ -82,6 +58,73 @@ public class SqlRecordsRepository : IRecordsRepository
       TotalCount = count,
       Items = records
     };
+  }
+
+  public RecordFolders ListFolder(string? filter, TagFilter tagFilter, bool filterByGroups, IList<Guid> groups, int skip, int take)
+  {
+    using var context = _contextFactory();
+    var query = FilterQuery(context, filter, tagFilter, filterByGroups, groups);
+    var dateFilterSet = tagFilter.StartDate.HasValue && tagFilter.EndDate.HasValue && tagFilter.EndDate >= tagFilter.StartDate;
+    if (dateFilterSet)
+    {
+      query = query.Where(rec => tagFilter.StartDate!.Value.ToUniversalTime().Date <= rec.Date.ToUniversalTime().Date && rec.Date.ToUniversalTime().Date <= tagFilter.EndDate!.Value.ToUniversalTime().Date);
+    }
+
+    var isYearFilter = !dateFilterSet;
+    var isMonthFilter = dateFilterSet && tagFilter.StartDate!.Value.Year == tagFilter.EndDate!.Value.Year && tagFilter.StartDate!.Value.Month != tagFilter.EndDate!.Value.Month;
+    var isDayFilter = dateFilterSet && tagFilter.StartDate!.Value.Month == tagFilter.EndDate!.Value.Month;
+
+    var groupedQuery = query
+      .GroupBy(rec => isYearFilter ? rec.Date.Year : isMonthFilter ? rec.Date.Month : rec.Date.Day)
+      .OrderByDescending(rec => rec.Key);
+
+    var count = groupedQuery.Count();
+    var folders = groupedQuery
+      .Skip(skip)
+      .Take(take)
+      .Select(rec => new RecordFolder
+      {
+        Year = isYearFilter ? rec.Key : tagFilter.StartDate!.Value.Year,
+        Month = isMonthFilter ? rec.Key : isDayFilter ? tagFilter.StartDate!.Value.Month : null,
+        Day = isDayFilter ? rec.Key : null,
+      })
+      .ToList();
+
+    return new RecordFolders
+    {
+      TotalCount = count,
+      Items = folders
+    };
+  }
+
+  private static IQueryable<DBContext.Models.Records> FilterQuery(ApplicationDBContext context, string? filter, TagFilter tagFilter, bool filterByGroups, IList<Guid> groups)
+  {
+    var query = context.Records
+     .Include(rec => rec.Artist)
+     .Include(rec => rec.Groups)
+     .Where(rec => string.IsNullOrEmpty(filter) || EF.Functions.ILike(rec.Title, $"%{filter}%"));
+
+    if (filterByGroups)
+    {
+      query = query.Where(rec => rec.Groups.Any(g => groups.Contains(g.GroupId)));
+    }
+
+    if (tagFilter.Artists.Count > 0)
+    {
+      query = query.Where(rec => (rec.ArtistId.HasValue && tagFilter.Artists.Contains(rec.ArtistId.Value)));
+    }
+
+    if (tagFilter.Genres.Count > 0)
+    {
+      query = query.Where(rec => (rec.GenreId.HasValue && tagFilter.Genres.Contains(rec.GenreId.Value)));
+    }
+
+    if (tagFilter.Albums.Count > 0)
+    {
+      query = query.Where(rec => (rec.AlbumId.HasValue && tagFilter.Albums.Contains(rec.AlbumId.Value)));
+    }
+
+    return query;
   }
 
   public Record? Next(Guid id, string? filter, TagFilter tagFilter, bool filterByGroups, IEnumerable<Guid> clientGroups, bool repeat, bool shuffle)
