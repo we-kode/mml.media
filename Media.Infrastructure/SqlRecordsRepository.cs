@@ -36,11 +36,7 @@ public class SqlRecordsRepository : IRecordsRepository
   public Records List(string? filter, TagFilter tagFilter, bool filterByGroups, IList<Guid> groups, int skip = Application.Constants.List.Skip, int take = Application.Constants.List.Take)
   {
     using var context = _contextFactory();
-    var query = FilterQuery(context, filter, tagFilter, filterByGroups, groups);
-    if (tagFilter.StartDate.HasValue && tagFilter.EndDate.HasValue && tagFilter.EndDate >= tagFilter.StartDate)
-    {
-      query = query.Where(rec => tagFilter.StartDate.Value.ToUniversalTime().Date <= rec.Date.ToUniversalTime().Date && rec.Date.ToUniversalTime().Date <= tagFilter.EndDate.Value.ToUniversalTime().Date);
-    }
+    var query = CreateFilterQuery(context, filter, tagFilter, filterByGroups, tagFilter.StartDate.HasValue && tagFilter.EndDate.HasValue && tagFilter.EndDate >= tagFilter.StartDate, groups);
 
     query = query
       .OrderByDescending(rec => rec.Date.Date)
@@ -63,12 +59,8 @@ public class SqlRecordsRepository : IRecordsRepository
   public RecordFolders ListFolder(string? filter, TagFilter tagFilter, bool filterByGroups, IList<Guid> groups, int skip, int take)
   {
     using var context = _contextFactory();
-    var query = FilterQuery(context, filter, tagFilter, filterByGroups, groups);
     var dateFilterSet = tagFilter.StartDate.HasValue && tagFilter.EndDate.HasValue && tagFilter.EndDate >= tagFilter.StartDate;
-    if (dateFilterSet)
-    {
-      query = query.Where(rec => tagFilter.StartDate!.Value.ToUniversalTime().Date <= rec.Date.ToUniversalTime().Date && rec.Date.ToUniversalTime().Date <= tagFilter.EndDate!.Value.ToUniversalTime().Date);
-    }
+    var query = CreateFilterQuery(context, filter, tagFilter, filterByGroups, dateFilterSet, groups);
 
     var isYearFilter = !dateFilterSet;
     var isMonthFilter = dateFilterSet && tagFilter.StartDate!.Value.Year == tagFilter.EndDate!.Value.Year && tagFilter.StartDate!.Value.Month != tagFilter.EndDate!.Value.Month;
@@ -97,7 +89,7 @@ public class SqlRecordsRepository : IRecordsRepository
     };
   }
 
-  private static IQueryable<DBContext.Models.Records> FilterQuery(ApplicationDBContext context, string? filter, TagFilter tagFilter, bool filterByGroups, IList<Guid> groups)
+  private static IQueryable<DBContext.Models.Records> CreateFilterQuery(ApplicationDBContext context, string? filter, TagFilter tagFilter, bool filterByGroups, bool filterByDate, IList<Guid> groups)
   {
     var query = context.Records
      .Include(rec => rec.Artist)
@@ -122,6 +114,11 @@ public class SqlRecordsRepository : IRecordsRepository
     if (tagFilter.Albums.Count > 0)
     {
       query = query.Where(rec => (rec.AlbumId.HasValue && tagFilter.Albums.Contains(rec.AlbumId.Value)));
+    }
+
+    if (filterByDate)
+    {
+      query = query.Where(rec => tagFilter.StartDate!.Value.ToUniversalTime().Date <= rec.Date.ToUniversalTime().Date && rec.Date.ToUniversalTime().Date <= tagFilter.EndDate!.Value.ToUniversalTime().Date);
     }
 
     return query;
