@@ -45,4 +45,15 @@ public class RecordFolder
   public RecordFolder()
   {
   }
+
+  /// <summary>
+  /// Returns a tuple of utc start and end dates this folder includes.
+  /// </summary>
+  /// <returns><see cref="Tuple"/> of two <see cref="DateTime"/> values.</returns>
+  public Tuple<DateTime, DateTime> ToDateRange()
+  {
+    var start = new DateTime(Year, Month ?? 1, Day ?? 1);
+    var end = new DateTime(Year, Month ?? 12, Day ?? DateTime.DaysInMonth(Year, Month ?? 12));
+    return new Tuple<DateTime, DateTime>(start.ToUniversalTime(), end.ToUniversalTime());
+  }
 }

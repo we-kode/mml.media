@@ -144,4 +144,10 @@ public interface IRecordsRepository
   /// <param name="id">Record id</param>
   /// <returns>Path of record as string.</returns>
   string GetFilePath(Guid id);
+
+  /// <summary>
+  /// Removes all records, which are in given folders.
+  /// </summary>
+  /// <param name="folders">Fodlers to delete.</param>
+  Task DeleteFolders(IEnumerable<RecordFolder> folders);
 }

@@ -117,6 +117,18 @@ public class RecordController : ControllerBase
   }
 
   /// <summary>
+  /// Deletes a list of record folders.
+  /// </summary>
+  /// <param name="data"><see cref="RecordFolder"/> to be deleted.</param>
+  [HttpPost("deleteFolders")]
+  [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme, Policy = Roles.Admin)]
+  public async Task<IActionResult> DeleteFodlers([FromBody] IList<Contracts.RecordFolder> data)
+  {
+    await recordRepository.DeleteFolders(data.Select(f => mapper.Map<Application.Models.RecordFolder>(f))).ConfigureAwait(false);
+    return Ok();
+  }
+
+  /// <summary>
   /// Loads one existing record.
   /// </summary>
   /// <param name="id">id of the record to be loaded.</param>

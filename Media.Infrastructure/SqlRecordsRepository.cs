@@ -5,12 +5,12 @@ using Media.DBContext;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
-using System.Data.SqlClient;
 using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Transactions;
+using static System.Formats.Asn1.AsnWriter;
 
 namespace Media.Infrastructure;
 
@@ -343,11 +343,32 @@ public class SqlRecordsRepository : IRecordsRepository
     };
   }
 
+  public async Task DeleteFolders(IEnumerable<RecordFolder> folders)
+  {
+    using var scope = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled);
+    using var context = _contextFactory();
+    foreach (var folder in folders)
+    {
+      var dateRange = folder.ToDateRange();
+      var recordIds = context.Records.Where(rec => rec.Date.Date >= dateRange.Item1 && rec.Date.Date <= dateRange.Item2).Select(rec => rec.RecordId).ToList();
+      foreach (var recordId in recordIds)
+      {
+        await RemoveRecord(context, recordId).ConfigureAwait(false);
+      }
+    }
+    scope.Complete();
+  }
+
   public async Task DeleteRecord(Guid id)
   {
     using var scope = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled);
     using var context = _contextFactory();
+    await RemoveRecord(context, id).ConfigureAwait(false);
+    scope.Complete();
+  }
 
+  private async Task RemoveRecord(ApplicationDBContext context, Guid id)
+  {
     var record = context.Records
       .Include(rec => rec.Artist)
       .Include(rec => rec.Album)
@@ -355,7 +376,6 @@ public class SqlRecordsRepository : IRecordsRepository
       .FirstOrDefault(record => record.RecordId == id);
     if (record == null)
     {
-      scope.Complete();
       return;
     }
 
@@ -380,7 +400,6 @@ public class SqlRecordsRepository : IRecordsRepository
     {
       File.Delete(filePath);
     }
-    scope.Complete();
   }
 
   public bool Exists(Guid id)
