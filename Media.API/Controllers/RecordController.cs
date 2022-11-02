@@ -47,6 +47,21 @@ public class RecordController : ControllerBase
   }
 
   /// <summary>
+  /// Loads a list of existing records grouped by folder.
+  /// </summary>
+  /// <param name="filter">Filter request to filter the list of records</param>
+  /// <param name="skip">Offset of the list</param>
+  /// <param name="take">Size of chunk to be loaded</param>
+  /// <returns><see cref="RecordFodlers"/></returns>
+  [HttpPost("listFolder")]
+  public RecordFolders ListFolder([FromBody] Contracts.TagFilter tagFilter, [FromQuery] string? filter, [FromQuery] int skip = Application.Constants.List.Skip, [FromQuery] int take = Application.Constants.List.Take)
+  {
+    var isAdmin = HttpContext.IsAdmin();
+    var clientGroups = HttpContext.ClientGroups();
+    return recordRepository.ListFolder(filter, mapper.Map<Application.Contracts.TagFilter>(tagFilter), !isAdmin, clientGroups, skip, take);
+  }
+
+  /// <summary>
   /// Loads a list of artists.
   /// </summary>
   /// <param name="filter">Filter request to filter the list of artists.</param>
@@ -98,6 +113,18 @@ public class RecordController : ControllerBase
       await recordRepository.DeleteRecord(id).ConfigureAwait(false);
     }
 
+    return Ok();
+  }
+
+  /// <summary>
+  /// Deletes a list of record folders.
+  /// </summary>
+  /// <param name="data"><see cref="RecordFolder"/> to be deleted.</param>
+  [HttpPost("deleteFolders")]
+  [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme, Policy = Roles.Admin)]
+  public async Task<IActionResult> DeleteFodlers([FromBody] IList<Contracts.RecordFolder> data)
+  {
+    await recordRepository.DeleteFolders(data.Select(f => mapper.Map<Application.Models.RecordFolder>(f))).ConfigureAwait(false);
     return Ok();
   }
 
