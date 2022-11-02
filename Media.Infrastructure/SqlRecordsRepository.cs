@@ -5,12 +5,12 @@ using Media.DBContext;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
-using System.Data.SqlClient;
 using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Transactions;
+using static System.Formats.Asn1.AsnWriter;
 
 namespace Media.Infrastructure;
 
@@ -36,35 +36,7 @@ public class SqlRecordsRepository : IRecordsRepository
   public Records List(string? filter, TagFilter tagFilter, bool filterByGroups, IList<Guid> groups, int skip = Application.Constants.List.Skip, int take = Application.Constants.List.Take)
   {
     using var context = _contextFactory();
-    var query = context.Records
-         .Include(rec => rec.Artist)
-         .Include(rec => rec.Groups)
-         .Where(rec => string.IsNullOrEmpty(filter) || EF.Functions.ILike(rec.Title, $"%{filter}%"));
-
-    if (filterByGroups)
-    {
-      query = query.Where(rec => rec.Groups.Any(g => groups.Contains(g.GroupId)));
-    }
-
-    if (tagFilter.StartDate.HasValue && tagFilter.EndDate.HasValue && tagFilter.EndDate >= tagFilter.StartDate)
-    {
-      query = query.Where(rec => tagFilter.StartDate.Value.ToUniversalTime().Date <= rec.Date.ToUniversalTime().Date && rec.Date.ToUniversalTime().Date <= tagFilter.EndDate.Value.ToUniversalTime().Date);
-    }
-
-    if (tagFilter.Artists.Count > 0)
-    {
-      query = query.Where(rec => (rec.ArtistId.HasValue && tagFilter.Artists.Contains(rec.ArtistId.Value)));
-    }
-
-    if (tagFilter.Genres.Count > 0)
-    {
-      query = query.Where(rec => (rec.GenreId.HasValue && tagFilter.Genres.Contains(rec.GenreId.Value)));
-    }
-
-    if (tagFilter.Albums.Count > 0)
-    {
-      query = query.Where(rec => (rec.AlbumId.HasValue && tagFilter.Albums.Contains(rec.AlbumId.Value)));
-    }
+    var query = CreateFilterQuery(context, filter, tagFilter, filterByGroups, tagFilter.StartDate.HasValue && tagFilter.EndDate.HasValue && tagFilter.EndDate >= tagFilter.StartDate, groups);
 
     query = query
       .OrderByDescending(rec => rec.Date.Date)
@@ -82,6 +54,74 @@ public class SqlRecordsRepository : IRecordsRepository
       TotalCount = count,
       Items = records
     };
+  }
+
+  public RecordFolders ListFolder(string? filter, TagFilter tagFilter, bool filterByGroups, IList<Guid> groups, int skip, int take)
+  {
+    using var context = _contextFactory();
+    var dateFilterSet = tagFilter.StartDate.HasValue && tagFilter.EndDate.HasValue && tagFilter.EndDate >= tagFilter.StartDate;
+    var query = CreateFilterQuery(context, filter, tagFilter, filterByGroups, dateFilterSet, groups);
+
+    var isYearFilter = !dateFilterSet;
+    var isMonthFilter = dateFilterSet && tagFilter.StartDate!.Value.Year == tagFilter.EndDate!.Value.Year && tagFilter.StartDate!.Value.Month != tagFilter.EndDate!.Value.Month;
+    var isDayFilter = dateFilterSet && tagFilter.StartDate!.Value.Month == tagFilter.EndDate!.Value.Month;
+
+    var groupedQuery = query
+      .GroupBy(rec => isYearFilter ? rec.Date.Year : isMonthFilter ? rec.Date.Month : rec.Date.Day)
+      .OrderByDescending(rec => rec.Key);
+
+    var count = groupedQuery.Count();
+    var folders = groupedQuery
+      .Skip(skip)
+      .Take(take)
+      .Select(rec => new RecordFolder
+      {
+        Year = isYearFilter ? rec.Key : tagFilter.StartDate!.Value.Year,
+        Month = isMonthFilter ? rec.Key : isDayFilter ? tagFilter.StartDate!.Value.Month : null,
+        Day = isDayFilter ? rec.Key : null,
+      })
+      .ToList();
+
+    return new RecordFolders
+    {
+      TotalCount = count,
+      Items = folders
+    };
+  }
+
+  private static IQueryable<DBContext.Models.Records> CreateFilterQuery(ApplicationDBContext context, string? filter, TagFilter tagFilter, bool filterByGroups, bool filterByDate, IList<Guid> groups)
+  {
+    var query = context.Records
+     .Include(rec => rec.Artist)
+     .Include(rec => rec.Groups)
+     .Where(rec => string.IsNullOrEmpty(filter) || EF.Functions.ILike(rec.Title, $"%{filter}%"));
+
+    if (filterByGroups)
+    {
+      query = query.Where(rec => rec.Groups.Any(g => groups.Contains(g.GroupId)));
+    }
+
+    if (tagFilter.Artists.Count > 0)
+    {
+      query = query.Where(rec => (rec.ArtistId.HasValue && tagFilter.Artists.Contains(rec.ArtistId.Value)));
+    }
+
+    if (tagFilter.Genres.Count > 0)
+    {
+      query = query.Where(rec => (rec.GenreId.HasValue && tagFilter.Genres.Contains(rec.GenreId.Value)));
+    }
+
+    if (tagFilter.Albums.Count > 0)
+    {
+      query = query.Where(rec => (rec.AlbumId.HasValue && tagFilter.Albums.Contains(rec.AlbumId.Value)));
+    }
+
+    if (filterByDate)
+    {
+      query = query.Where(rec => tagFilter.StartDate!.Value.ToUniversalTime().Date <= rec.Date.ToUniversalTime().Date && rec.Date.ToUniversalTime().Date <= tagFilter.EndDate!.Value.ToUniversalTime().Date);
+    }
+
+    return query;
   }
 
   public Record? Next(Guid id, string? filter, TagFilter tagFilter, bool filterByGroups, IEnumerable<Guid> clientGroups, bool repeat, bool shuffle)
@@ -303,11 +343,32 @@ public class SqlRecordsRepository : IRecordsRepository
     };
   }
 
+  public async Task DeleteFolders(IEnumerable<RecordFolder> folders)
+  {
+    using var scope = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled);
+    using var context = _contextFactory();
+    foreach (var folder in folders)
+    {
+      var dateRange = folder.ToDateRange();
+      var recordIds = context.Records.Where(rec => rec.Date.Date >= dateRange.Item1 && rec.Date.Date <= dateRange.Item2).Select(rec => rec.RecordId).ToList();
+      foreach (var recordId in recordIds)
+      {
+        await RemoveRecord(context, recordId).ConfigureAwait(false);
+      }
+    }
+    scope.Complete();
+  }
+
   public async Task DeleteRecord(Guid id)
   {
     using var scope = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled);
     using var context = _contextFactory();
+    await RemoveRecord(context, id).ConfigureAwait(false);
+    scope.Complete();
+  }
 
+  private async Task RemoveRecord(ApplicationDBContext context, Guid id)
+  {
     var record = context.Records
       .Include(rec => rec.Artist)
       .Include(rec => rec.Album)
@@ -315,7 +376,6 @@ public class SqlRecordsRepository : IRecordsRepository
       .FirstOrDefault(record => record.RecordId == id);
     if (record == null)
     {
-      scope.Complete();
       return;
     }
 
@@ -340,7 +400,6 @@ public class SqlRecordsRepository : IRecordsRepository
     {
       File.Delete(filePath);
     }
-    scope.Complete();
   }
 
   public bool Exists(Guid id)

@@ -233,6 +233,7 @@ public class Startup
       cfg.CreateMap<DBContext.Models.Artists, Artist>();
       cfg.CreateMap<RecordChangeRequest, Record>();
       cfg.CreateMap<SettingsRequest, Settings>();
+      cfg.CreateMap<Contracts.RecordFolder, Application.Models.RecordFolder>();
       cfg.CreateMap<DBContext.Models.Groups, Group>()
         .ConstructUsing(g => new Group(g.GroupId, g.Name, g.IsDefault));
     })).AsSelf().SingleInstance();
