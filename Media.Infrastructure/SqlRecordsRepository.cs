@@ -10,7 +10,6 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Transactions;
-using static System.Formats.Asn1.AsnWriter;
 
 namespace Media.Infrastructure;
 
@@ -280,15 +279,20 @@ public class SqlRecordsRepository : IRecordsRepository
     scope.Complete();
   }
 
-  public Albums ListAlbums(string? filter, int skip = Application.Constants.List.Skip, int take = Application.Constants.List.Take)
+  public Albums ListAlbums(string? filter, bool filterByGroups, IEnumerable<Guid> clientGroups, int skip = Application.Constants.List.Skip, int take = Application.Constants.List.Take)
   {
     using var context = _contextFactory();
     var query = context.Albums
-     .Where(al => string.IsNullOrEmpty(filter) || EF.Functions.ILike(al.AlbumName, $"%{filter}%"))
-     .OrderBy(album => album.AlbumName);
+     .Where(al => string.IsNullOrEmpty(filter) || EF.Functions.ILike(al.AlbumName, $"%{filter}%"));
+
+    if (filterByGroups)
+    {
+      query = query.Where(album => album.Records.Any(rec => rec.Groups.Any(g => clientGroups.Contains(g.GroupId))));
+    }
 
     var count = query.Count();
     var albums = query
+      .OrderBy(album => album.AlbumName)
       .Skip(skip)
       .Take(take)
       .Select(album => mapper.Map<Album>(album))
@@ -301,15 +305,20 @@ public class SqlRecordsRepository : IRecordsRepository
     };
   }
 
-  public Artists ListArtists(string? filter, int skip = Application.Constants.List.Skip, int take = Application.Constants.List.Take)
+  public Artists ListArtists(string? filter, bool filterByGroups, IEnumerable<Guid> clientGroups, int skip = Application.Constants.List.Skip, int take = Application.Constants.List.Take)
   {
     using var context = _contextFactory();
     var query = context.Artists
-     .Where(ar => string.IsNullOrEmpty(filter) || EF.Functions.ILike(ar.Name, $"%{filter}%"))
-     .OrderBy(artist => artist.Name);
+      .Where(ar => string.IsNullOrEmpty(filter) || EF.Functions.ILike(ar.Name, $"%{filter}%"));
+    
+    if (filterByGroups)
+    {
+      query = query.Where(artist => artist.Records.Any(rec => rec.Groups.Any(g => clientGroups.Contains(g.GroupId))));
+    }
 
     var count = query.Count();
     var artists = query
+      .OrderBy(artist => artist.Name)
       .Skip(skip)
       .Take(take)
       .Select(artist => mapper.Map<Artist>(artist))
@@ -322,15 +331,20 @@ public class SqlRecordsRepository : IRecordsRepository
     };
   }
 
-  public Genres ListGenres(string? filter, int skip = Application.Constants.List.Skip, int take = Application.Constants.List.Take)
+  public Genres ListGenres(string? filter, bool filterByGroups, IEnumerable<Guid> clientGroups, int skip = Application.Constants.List.Skip, int take = Application.Constants.List.Take)
   {
     using var context = _contextFactory();
     var query = context.Genres
-     .Where(g => string.IsNullOrEmpty(filter) || EF.Functions.ILike(g.Name, $"%{filter}%"))
-     .OrderBy(g => g.Name);
+     .Where(g => string.IsNullOrEmpty(filter) || EF.Functions.ILike(g.Name, $"%{filter}%"));
 
+    if (filterByGroups)
+    {
+      query = query.Where(genre => genre.Records.Any(rec => rec.Groups.Any(g => clientGroups.Contains(g.GroupId))));
+    }
+     
     var count = query.Count();
     var genres = query
+      .OrderBy(g => g.Name)
       .Skip(skip)
       .Take(take)
       .Select(g => mapper.Map<Genre>(g))
