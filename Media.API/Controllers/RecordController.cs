@@ -71,7 +71,9 @@ public class RecordController : ControllerBase
   [HttpGet("artists")]
   public Artists GetArtists([FromQuery] string? filter, [FromQuery] int skip = Application.Constants.List.Skip, [FromQuery] int take = Application.Constants.List.Take)
   {
-    return recordRepository.ListArtists(filter, skip, take);
+    var isAdmin = HttpContext.IsAdmin();
+    var clientGroups = HttpContext.ClientGroups();
+    return recordRepository.ListArtists(filter, !isAdmin, clientGroups, skip, take);
   }
 
   /// <summary>
@@ -84,7 +86,9 @@ public class RecordController : ControllerBase
   [HttpGet("genres")]
   public Genres GetGenres([FromQuery] string? filter, [FromQuery] int skip = Application.Constants.List.Skip, [FromQuery] int take = Application.Constants.List.Take)
   {
-    return recordRepository.ListGenres(filter, skip, take);
+    var isAdmin = HttpContext.IsAdmin();
+    var clientGroups = HttpContext.ClientGroups();
+    return recordRepository.ListGenres(filter, !isAdmin, clientGroups, skip, take);
   }
 
   /// <summary>
@@ -97,7 +101,9 @@ public class RecordController : ControllerBase
   [HttpGet("albums")]
   public Albums GetAlbums([FromQuery] string? filter, [FromQuery] int skip = Application.Constants.List.Skip, [FromQuery] int take = Application.Constants.List.Take)
   {
-    return recordRepository.ListAlbums(filter, skip, take);
+    var isAdmin = HttpContext.IsAdmin();
+    var clientGroups = HttpContext.ClientGroups();
+    return recordRepository.ListAlbums(filter, !isAdmin, clientGroups, skip, take);
   }
 
   /// <summary>
