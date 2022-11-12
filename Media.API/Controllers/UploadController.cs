@@ -1,10 +1,12 @@
 ﻿using MassTransit;
+using Media.Application.Constants;
 using Media.Messages;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MimeDetective;
 using OpenIddict.Validation.AspNetCore;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -64,11 +66,22 @@ public class UploadController : ControllerBase
           file.CopyTo(stream);
         }
 
+        // determine groups
+        var groups = new List<Guid>();
+        if (Request.Form.Keys.Any(key => key == "Groups"))
+        {
+          foreach (var group in Request.Form["Groups"])
+          {
+            groups.Add(Guid.Parse(group));
+          }
+        }
+
         // publish message to start compressing file and indexing.
         await _publishEndpoint.Publish<FileUploaded>(new
         {
           FileName = fileName,
-          Date = DateTime.Parse(Request.Form["LastModifiedDate"])
+          Date = DateTime.Parse(Request.Form["LastModifiedDate"]),
+          Groups =  groups
         }).ConfigureAwait(false);
 
         return Ok();

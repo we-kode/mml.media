@@ -89,7 +89,7 @@ public class IndexingRecordConsumer : IConsumer<FileUploaded>
     DeleteFile(inputPath);
 
     // save indexed file
-    recordsRepository.SaveMetaData(metadata);
+    recordsRepository.SaveMetaData(metadata, context.Message.Groups);
   }
 
   /// <summary>
