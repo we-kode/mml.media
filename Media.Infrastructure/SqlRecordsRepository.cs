@@ -240,7 +240,7 @@ public class SqlRecordsRepository : IRecordsRepository
       null!);
   }
 
-  public void SaveMetaData(RecordMetaData metaData)
+  public void SaveMetaData(RecordMetaData metaData, List<Guid> groups)
   {
     using var scope = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled);
     using var context = _contextFactory();
@@ -264,8 +264,8 @@ public class SqlRecordsRepository : IRecordsRepository
     };
 
     // add groups
-    var groups = context.Groups.Where(g => g.IsDefault);
-    foreach (var group in groups)
+    var availableGroups = context.Groups.Where(g => groups.Contains(g.GroupId));
+    foreach (var group in availableGroups)
     {
       record.Groups.Add(group);
     }
