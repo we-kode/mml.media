@@ -12,7 +12,8 @@ public interface IRecordsRepository
   /// Stores the given metadata in index store.
   /// </summary>
   /// <param name="metaData"><see cref="RecordMetaData"/> to be stored.</param>
-  void SaveMetaData(RecordMetaData metaData);
+  /// <param name="groups">The groups of the record to be stored.</param>
+  void SaveMetaData(RecordMetaData metaData, List<Guid> groups);
 
   /// <summary>
   /// Checks if one file is already indexed.
