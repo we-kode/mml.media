@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 
 namespace Media.Messages;
 
@@ -16,4 +17,9 @@ public interface FileUploaded
   /// The last modified date of the file.
   /// </summary>
   DateTime Date { get; set; }
+
+  /// <summary>
+  /// Groups the record belongs to.
+  /// </summary>
+  List<Guid> Groups { get; set; }
 }
