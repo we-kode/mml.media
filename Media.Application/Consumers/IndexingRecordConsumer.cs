@@ -6,7 +6,10 @@ using MassTransit;
 using Media.Application.Contracts;
 using Media.Application.Models;
 using Media.Messages;
+using System;
+using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace Media.Application.Consumers;
@@ -52,16 +55,19 @@ public class IndexingRecordConsumer : IConsumer<FileUploaded>
 
     // get id3 tags and remove them from original file.
     var taglibFile = TagLib.File.Create(inputPath);
+    var originalFileName = Path.GetFileNameWithoutExtension(context.Message.FileName);
+    var trackNumber = (int)taglibFile.Tag.Track;
+    var isDateParsed = DateTime.TryParseExact(originalFileName.Split('-').FirstOrDefault(), "yyMMdd", CultureInfo.CurrentCulture, DateTimeStyles.None, out var parsedDate);
     var metadata = new RecordMetaData
     {
       Title = taglibFile.Tag.Title,
       Artist = taglibFile.Tag.FirstPerformer,
       Album = taglibFile.Tag.Album,
       Genre = taglibFile.Tag.FirstGenre,
-      TrackNumber = (int)taglibFile.Tag.Track,
-      Date = context.Message.Date.ToUniversalTime(),
+      TrackNumber = trackNumber,
+      Date = isDateParsed ? parsedDate.ToUniversalTime().AddMinutes(trackNumber) : context.Message.Date.ToUniversalTime(),
       Duration = taglibFile.Properties.Duration,
-      OriginalFileName = Path.GetFileNameWithoutExtension(context.Message.FileName),
+      OriginalFileName = originalFileName,
       PhysicalFilePath = outputPath,
       Checksum = outputFileName
     };
