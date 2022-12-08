@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 
 namespace Media.DBContext.Models;
@@ -29,6 +28,12 @@ public class SeedRecords
   /// </summary>
   [Required]
   public TimeSpan Duration { get; set; }
+
+  /// <summary>
+  /// The file checksum
+  /// </summary>
+  [Required]
+  public string Checksum { get; set; } = string.Empty;
 
   /// <summary>
   /// Foreign key to the <see cref="Artists"/> associated with this record or null if unknown.
