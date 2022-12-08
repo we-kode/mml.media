@@ -237,7 +237,8 @@ public class SqlRecordsRepository : IRecordsRepository
       record.ArtistName,
       record.Date,
       record.Duration,
-      null!);
+      null!,
+      checksum: record.Checksum);
   }
 
   public void SaveMetaData(RecordMetaData metaData, List<Guid> groups)
