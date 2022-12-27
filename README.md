@@ -8,7 +8,7 @@ Media is part of the [My Media Lib](https://we-kode.github.io/mml.project/) proj
 
 Setup your local development environment to run [.NET](https://learn.microsoft.com/en-us/dotnet/) and [docker](https://docs.docker.com/).
 
-Clone this repository and configure it, like described in the following sections. Consider that this service does not run standalone. You have to [setup the backend](https://we-kode.github.io/mml.project/setup/backend#configuration-3) to run the [My Media Lib](https://we-kode.github.io/mml.project/) project.
+Clone this repository and configure it, like described in the following sections. Consider that this service does not run standalone. You have to [setup the backend](https://we-kode.github.io/mml.project/setup/backend) to run the [My Media Lib](https://we-kode.github.io/mml.project/) project.
 
 ### Appsettings
 
@@ -29,7 +29,7 @@ docker-compose --env-file dev.env up --build -d
 ## Deployment
 ### Releases
 
-New releases will be available if new features or improvements exists. Check the corresponding release to learn what has changed. Binary releases are only available as docker images on [docker hub](https://hub.docker.com/r/w3kod3/wekode.mml.media).
+New releases will be available if new features or improvements exists. [Check](https://github.com/we-kode/mml.media/releases) the corresponding release to learn what has changed. Binary releases are only available as docker images on [docker hub](https://hub.docker.com/r/w3kod3/wekode.mml.media).
 
 ### Setup
 
