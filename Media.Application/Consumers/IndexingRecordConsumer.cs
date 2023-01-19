@@ -11,6 +11,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using Media.Application.Extensions;
 
 namespace Media.Application.Consumers;
 
@@ -64,6 +65,7 @@ public class IndexingRecordConsumer : IConsumer<FileUploaded>
       Artist = taglibFile.Tag.FirstPerformer,
       Album = taglibFile.Tag.Album,
       Genre = taglibFile.Tag.FirstGenre,
+      Language = taglibFile.LanguageTag(),
       TrackNumber = trackNumber,
       Date = isDateParsed ? parsedDate.ToUniversalTime().AddMinutes(trackNumber) : context.Message.Date.ToUniversalTime(),
       Duration = taglibFile.Properties.Duration,

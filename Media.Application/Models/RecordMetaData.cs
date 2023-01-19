@@ -26,6 +26,11 @@ namespace Media.Application.Models
     public string? Album { get; set; }
 
     /// <summary>
+    /// Language of the record or null if no one provided.
+    /// </summary>
+    public string? Language { get; set; }
+
+    /// <summary>
     /// The tracknumber of the record.
     /// </summary>
     public int TrackNumber { get; set; }

@@ -107,6 +107,21 @@ public class RecordController : ControllerBase
   }
 
   /// <summary>
+  /// Loads a list of languages.
+  /// </summary>
+  /// <param name="filter">Filter request to filter the list of albums.</param>
+  /// <param name="skip">Offset of the list</param>
+  /// <param name="take">Size of chunk to be loaded</param>
+  /// <returns><see cref="Languages"/></returns>
+  [HttpGet("languages")]
+  public Languages GetLanguages([FromQuery] string? filter, [FromQuery] int skip = Application.Constants.List.Skip, [FromQuery] int take = Application.Constants.List.Take)
+  {
+    var isAdmin = HttpContext.IsAdmin();
+    var clientGroups = HttpContext.ClientGroups();
+    return recordRepository.ListLanguages(filter, !isAdmin, clientGroups, skip, take);
+  }
+
+  /// <summary>
   /// Deletes a list of existing records.
   /// </summary>
   /// <param name="ids">ids of the records to be removed.</param>
