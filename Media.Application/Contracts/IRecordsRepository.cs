@@ -108,6 +108,17 @@ public interface IRecordsRepository
   Genres ListGenres(string? filter, bool filterByGroups, IEnumerable<Guid> clientGroups, int skip = Constants.List.Skip, int take = Constants.List.Take);
 
   /// <summary>
+  /// Loads list of languages.
+  /// </summary>
+  /// <param name="filter">Languages will be filtered by given filter</param>
+  /// <param name="filterByGroups">True if records will be filtered by groups.</param>
+  /// <param name="clientGroups">List of groups for which the records will be loaded.</param>
+  /// <param name="skip">Elements to be skipped. default <see cref="List.Skip"/></param>
+  /// <param name="take">Elements to be loaded in one chunk. Default <see cref="List.Take"/></param>
+  /// <returns><see cref="Languages"/></returns>
+  Languages ListLanguages(string? filter, bool filterByGroups, IEnumerable<Guid> clientGroups, int skip = Constants.List.Skip, int take = Constants.List.Take);
+
+  /// <summary>
   /// Removes one record.
   /// </summary>
   /// <param name="id">Id of record to be deleted.</param>

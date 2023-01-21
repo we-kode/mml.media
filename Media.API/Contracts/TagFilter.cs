@@ -24,6 +24,11 @@ public class TagFilter
   public IList<Guid> Albums { get; set; }
 
   /// <summary>
+  /// List of language ids.
+  /// </summary>
+  public IList<Guid> Languages { get; set; }
+
+  /// <summary>
   /// Date filter start date.
   /// </summary>
   public DateTime? StartDate { get; set; }
@@ -38,5 +43,6 @@ public class TagFilter
     Artists = new List<Guid>();
     Genres = new List<Guid>();
     Albums = new List<Guid>();
+    Languages = new List<Guid>();
   }
 }
