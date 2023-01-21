@@ -12,6 +12,7 @@ namespace Media.DBContext
     public DbSet<Genres> Genres { get; set; } = null!;
     public DbSet<Albums> Albums { get; set; } = null!;
     public DbSet<Groups> Groups { get; set; } = null!;
+    public DbSet<Languages> Languages { get; set; } = null!;
     public DbSet<SeedRecords> SeedRecords { get; set; } = null!;
 
     public ApplicationDBContext(DbContextOptions<ApplicationDBContext> options) : base(options)

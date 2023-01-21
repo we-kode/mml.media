@@ -76,6 +76,12 @@ public class Records
   public Albums? Album { get; set; }
 
   /// <summary>
+  /// Foreign key to the <see cref="Languages"/> associated with this record or null if unknown.
+  /// </summary>
+  public Guid? LanguageId { get; set; }
+  public Languages? Language { get; set; }
+
+  /// <summary>
   /// The groups asssociated with this record.
   /// </summary>
   public ICollection<Groups> Groups { get; set; } = new List<Groups>();

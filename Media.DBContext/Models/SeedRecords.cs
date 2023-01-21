@@ -56,6 +56,11 @@ public class SeedRecords
   public Guid? AlbumId { get; set; }
 
   /// <summary>
+  /// Foreign key to the <see cref="Languages"/> associated with this record or null if unknown.
+  /// </summary>
+  public Guid? LanguageId { get; set; }
+
+  /// <summary>
   /// The id of the next record in order or null if last.
   /// </summary>
   public Guid? NextId { get; set; }

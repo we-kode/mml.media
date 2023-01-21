@@ -115,6 +115,11 @@ public class SqlRecordsRepository : IRecordsRepository
       query = query.Where(rec => (rec.AlbumId.HasValue && tagFilter.Albums.Contains(rec.AlbumId.Value)));
     }
 
+    if (tagFilter.Languages.Count > 0)
+    {
+      query = query.Where(rec => (rec.LanguageId.HasValue && tagFilter.Languages.Contains(rec.LanguageId.Value)));
+    }
+
     if (filterByDate)
     {
       query = query.Where(rec => tagFilter.StartDate!.Value.ToUniversalTime().Date <= rec.Date.ToUniversalTime().Date && rec.Date.ToUniversalTime().Date <= tagFilter.EndDate!.Value.ToUniversalTime().Date);
@@ -197,6 +202,7 @@ public class SqlRecordsRepository : IRecordsRepository
     var filterArtistsQuery = tagFilter.Artists.Count > 0 ? $"AND rec.artist_id IN ({string.Join(',', tagFilter.Artists.Select(id => string.Format("'{0}'", id)))})" : string.Empty;
     var filterGenreQuery = tagFilter.Genres.Count > 0 ? $"AND rec.genre_id IN ({string.Join(',', tagFilter.Genres.Select(id => string.Format("'{0}'", id)))})" : string.Empty;
     var filterAlbumQuery = tagFilter.Albums.Count > 0 ? $"AND rec.album_id IN ({string.Join(',', tagFilter.Albums.Select(id => string.Format("'{0}'", id)))})" : string.Empty;
+    var filterLanguageQuery = tagFilter.Languages.Count > 0 ? $"AND rec.language_id IN ({string.Join(',', tagFilter.Languages.Select(id => string.Format("'{0}'", id)))})" : string.Empty;
 
     var selectQuery = @"SELECT 
                   rec.*, a.name as artist_name, t.group_id,
@@ -218,6 +224,7 @@ public class SqlRecordsRepository : IRecordsRepository
     sb.AppendLine(filterArtistsQuery);
     sb.AppendLine(filterGenreQuery);
     sb.AppendLine(filterAlbumQuery);
+    sb.AppendLine(filterLanguageQuery);
     sb.AppendLine("ORDER BY Cast(rec.date as Date) desc, rec.Date asc");
     var query = context.SeedRecords.FromSqlRaw($"{sb}", filterQuery);
 
@@ -261,7 +268,7 @@ public class SqlRecordsRepository : IRecordsRepository
       Duration = metaData.Duration,
       MimeType = metaData.MimeType,
       TrackNumber = metaData.TrackNumber,
-      Title = metaData.Title ?? metaData.OriginalFileName
+      Title = metaData.Title ?? metaData.OriginalFileName,
     };
 
     // add groups
@@ -274,6 +281,7 @@ public class SqlRecordsRepository : IRecordsRepository
     record.Artist = TryGetArtist(context, metaData.Artist);
     record.Genre = TryGetGenre(context, metaData.Genre);
     record.Album = TryGetAlbum(context, metaData.Album);
+    record.Language = TryGetLanguage(context, metaData.Language);
 
     context.Records.Add(record);
     context.SaveChanges();
@@ -358,6 +366,32 @@ public class SqlRecordsRepository : IRecordsRepository
     };
   }
 
+  public Languages ListLanguages(string? filter, bool filterByGroups, IEnumerable<Guid> clientGroups, int skip = 0, int take = 100)
+  {
+    using var context = _contextFactory();
+    var query = context.Languages
+     .Where(al => string.IsNullOrEmpty(filter) || EF.Functions.ILike(al.Name, $"%{filter}%"));
+
+    if (filterByGroups)
+    {
+      query = query.Where(album => album.Records.Any(rec => rec.Groups.Any(g => clientGroups.Contains(g.GroupId))));
+    }
+
+    var count = query.Count();
+    var langs = query
+      .OrderBy(lang => lang.Name)
+      .Skip(skip)
+      .Take(take)
+      .Select(lang => mapper.Map<Language>(lang))
+      .ToList();
+
+    return new Languages
+    {
+      TotalCount = count,
+      Items = langs
+    };
+  }
+
   public async Task DeleteFolders(IEnumerable<RecordFolder> folders)
   {
     using var scope = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled);
@@ -388,6 +422,7 @@ public class SqlRecordsRepository : IRecordsRepository
       .Include(rec => rec.Artist)
       .Include(rec => rec.Album)
       .Include(rec => rec.Genre)
+      .Include(rec => rec.Language)
       .FirstOrDefault(record => record.RecordId == id);
     if (record == null)
     {
@@ -406,6 +441,9 @@ public class SqlRecordsRepository : IRecordsRepository
 
     // remove genre if no record connected
     TryRemoveGenre(context, record.Genre);
+
+    // remove language if no record connected
+    TryRemoveLanguage(context, record.Language);
 
     await context.SaveChangesAsync().ConfigureAwait(false);
 
@@ -436,6 +474,7 @@ public class SqlRecordsRepository : IRecordsRepository
       .Include(rec => rec.Genre)
       .Include(rec => rec.Artist)
       .Include(rec => rec.Groups)
+      .Include(rec => rec.Language)
       .First(rec => rec.RecordId == id);
 
     return MapModel(record);
@@ -452,6 +491,7 @@ public class SqlRecordsRepository : IRecordsRepository
       record.Groups.Select(g => new Group(g.GroupId, g.Name, g.IsDefault)).ToArray(),
       record.Album?.AlbumName ?? string.Empty,
       record.Genre?.Name ?? string.Empty,
+      record.Language?.Name ?? string.Empty,
       record.Checksum);
   }
 
@@ -465,6 +505,7 @@ public class SqlRecordsRepository : IRecordsRepository
       .Include(rec => rec.Album)
       .Include(rec => rec.Genre)
       .Include(rec => rec.Groups)
+      .Include(rec => rec.Language)
       .FirstOrDefault(rec => rec.RecordId == record.RecordId);
     if (recordToUpdated == null)
     {
@@ -499,6 +540,13 @@ public class SqlRecordsRepository : IRecordsRepository
       recordToUpdated.Genre = TryGetGenre(context, record.Genre);
     }
 
+    // update language
+    var oldLang = recordToUpdated.Language;
+    if (recordToUpdated.Language?.Name != record.Language)
+    {
+      recordToUpdated.Language = TryGetLanguage(context, record.Language);
+    }
+
     // update groups
     var addedGroups = record.Groups
        .Where(g => _groupRepository.GroupExists(g.Id).GetAwaiter().GetResult())
@@ -531,6 +579,7 @@ public class SqlRecordsRepository : IRecordsRepository
     TryRemoveArtist(context, oldArtist);
     TryRemoveGenre(context, oldGenre);
     TryRemoveAlbum(context, oldAlbum);
+    TryRemoveLanguage(context, oldLang);
 
     await context.SaveChangesAsync().ConfigureAwait(false);
     scope.Complete();
@@ -630,6 +679,38 @@ public class SqlRecordsRepository : IRecordsRepository
     }
 
     return genre;
+  }
+
+  private static void TryRemoveLanguage(ApplicationDBContext context, DBContext.Models.Languages? lang)
+  {
+    if (lang == null)
+    {
+      return;
+    }
+
+    if (!context.Records.Any(rec => rec.LanguageId == lang.LanguageId))
+    {
+      context.Languages.Remove(lang);
+    }
+  }
+
+  private static DBContext.Models.Languages? TryGetLanguage(ApplicationDBContext context, string? langName)
+  {
+    if (string.IsNullOrEmpty(langName))
+    {
+      return null;
+    }
+
+    var lang = context.Languages.FirstOrDefault(g => g.Name == langName);
+    if (lang == null)
+    {
+      lang = new DBContext.Models.Languages
+      {
+        Name = langName
+      };
+    }
+
+    return lang;
   }
 
   public RecordStream StreamRecord(Guid id)

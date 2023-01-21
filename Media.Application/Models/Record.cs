@@ -34,6 +34,11 @@ public class Record
   public string? Album { get; set; }
 
   /// <summary>
+  /// Language of the record or null if no one provided.
+  /// </summary>
+  public string? Language { get; set; }
+
+  /// <summary>
   /// Date when the record was last time modified.
   /// </summary>
   public DateTime Date { get; set; }
@@ -61,14 +66,16 @@ public class Record
   /// <param name="groups">List of groups the record is assigned to.</param>
   /// <param name="album">The album of the record.</param>
   /// <param name="genre">The genre of the record.</param>
+  /// <param name="language">The language of the record.</param>
   /// <param name="checksum">The checksum of record.</param>
-  public Record(Guid recordId, string title, string? artist, DateTime date, TimeSpan duration, ICollection<Group> groups, string album = "", string genre = "", string checksum = "")
+  public Record(Guid recordId, string title, string? artist, DateTime date, TimeSpan duration, ICollection<Group> groups, string album = "", string genre = "", string language = "", string checksum = "")
   {
     RecordId = recordId;
     Title = title;
     Artist = artist;
     Album = album;
     Genre = genre;
+    Language = language;
     Date = date;
     Duration = duration.TotalMilliseconds;
     Checksum = checksum;
