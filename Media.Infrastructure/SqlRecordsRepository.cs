@@ -289,9 +289,15 @@ public class SqlRecordsRepository : IRecordsRepository
       context.SaveChanges();
       scope.Complete();
     }
-    catch (DbUpdateException)
+    catch (InvalidOperationException e)
     {
-      SaveMetaData(metaData, groups);
+      if (e.InnerException is DbUpdateException)
+      {
+        SaveMetaData(metaData, groups);
+        return;
+      }
+
+      throw e;
     }
   }
 
