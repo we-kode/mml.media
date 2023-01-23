@@ -250,42 +250,49 @@ public class SqlRecordsRepository : IRecordsRepository
 
   public void SaveMetaData(RecordMetaData metaData, List<Guid> groups)
   {
-    using var scope = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled);
-    using var context = _contextFactory();
-
-    var record = context.Records.FirstOrDefault(record => record.Checksum == metaData.Checksum);
-    if (record != null)
+    try
     {
+      using var scope = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled);
+      using var context = _contextFactory();
+
+      var record = context.Records.FirstOrDefault(record => record.Checksum == metaData.Checksum);
+      if (record != null)
+      {
+        scope.Complete();
+        return;
+      }
+
+      record = new DBContext.Models.Records
+      {
+        Checksum = metaData.Checksum,
+        FilePath = metaData.PhysicalFilePath,
+        Date = metaData.Date,
+        Duration = metaData.Duration,
+        MimeType = metaData.MimeType,
+        TrackNumber = metaData.TrackNumber,
+        Title = metaData.Title ?? metaData.OriginalFileName,
+      };
+
+      // add groups
+      var availableGroups = context.Groups.Where(g => groups.Contains(g.GroupId));
+      foreach (var group in availableGroups)
+      {
+        record.Groups.Add(group);
+      }
+
+      record.Artist = TryGetArtist(context, metaData.Artist);
+      record.Genre = TryGetGenre(context, metaData.Genre);
+      record.Album = TryGetAlbum(context, metaData.Album);
+      record.Language = TryGetLanguage(context, metaData.Language);
+
+      context.Records.Add(record);
+      context.SaveChanges();
       scope.Complete();
-      return;
     }
-
-    record = new DBContext.Models.Records
+    catch (DbUpdateException)
     {
-      Checksum = metaData.Checksum,
-      FilePath = metaData.PhysicalFilePath,
-      Date = metaData.Date,
-      Duration = metaData.Duration,
-      MimeType = metaData.MimeType,
-      TrackNumber = metaData.TrackNumber,
-      Title = metaData.Title ?? metaData.OriginalFileName,
-    };
-
-    // add groups
-    var availableGroups = context.Groups.Where(g => groups.Contains(g.GroupId));
-    foreach (var group in availableGroups)
-    {
-      record.Groups.Add(group);
+      SaveMetaData(metaData, groups);
     }
-
-    record.Artist = TryGetArtist(context, metaData.Artist);
-    record.Genre = TryGetGenre(context, metaData.Genre);
-    record.Album = TryGetAlbum(context, metaData.Album);
-    record.Language = TryGetLanguage(context, metaData.Language);
-
-    context.Records.Add(record);
-    context.SaveChanges();
-    scope.Complete();
   }
 
   public Albums ListAlbums(string? filter, bool filterByGroups, IEnumerable<Guid> clientGroups, int skip = Application.Constants.List.Skip, int take = Application.Constants.List.Take)
@@ -319,7 +326,7 @@ public class SqlRecordsRepository : IRecordsRepository
     using var context = _contextFactory();
     var query = context.Artists
       .Where(ar => string.IsNullOrEmpty(filter) || EF.Functions.ILike(ar.Name, $"%{filter}%"));
-    
+
     if (filterByGroups)
     {
       query = query.Where(artist => artist.Records.Any(rec => rec.Groups.Any(g => clientGroups.Contains(g.GroupId))));
@@ -350,7 +357,7 @@ public class SqlRecordsRepository : IRecordsRepository
     {
       query = query.Where(genre => genre.Records.Any(rec => rec.Groups.Any(g => clientGroups.Contains(g.GroupId))));
     }
-     
+
     var count = query.Count();
     var genres = query
       .OrderBy(g => g.Name)
