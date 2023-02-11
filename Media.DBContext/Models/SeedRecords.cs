@@ -18,6 +18,12 @@ public class SeedRecords
   public string Title { get; set; } = null!;
 
   /// <summary>
+  /// Track number of the record.
+  /// </summary>
+  [Required]
+  public int TrackNumber { get; set; }
+
+  /// <summary>
   /// Date when the record was created.
   /// </summary>
   [Required]
@@ -51,14 +57,29 @@ public class SeedRecords
   public Guid? GenreId { get; set; }
 
   /// <summary>
+  /// The name of the genre.
+  /// </summary>
+  public string? GenreName { get; set; }
+
+  /// <summary>
   /// Foreign key to the <see cref="Albums"/> associated with this record or null if unknown.
   /// </summary>
   public Guid? AlbumId { get; set; }
 
   /// <summary>
+  /// The name of the album.
+  /// </summary>
+  public string? AlbumName { get; set; }
+
+  /// <summary>
   /// Foreign key to the <see cref="Languages"/> associated with this record or null if unknown.
   /// </summary>
   public Guid? LanguageId { get; set; }
+
+  /// <summary>
+  /// The name of the language.
+  /// </summary>
+  public string? LanguageName { get; set; }
 
   /// <summary>
   /// The id of the next record in order or null if last.
