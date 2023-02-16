@@ -43,7 +43,7 @@ public class RecordController : ControllerBase
   {
     var isAdmin = HttpContext.IsAdmin();
     var clientGroups = HttpContext.ClientGroups();
-    return recordRepository.List(filter, mapper.Map<Application.Contracts.TagFilter>(tagFilter),!isAdmin, clientGroups, skip, take);
+    return recordRepository.List(filter, mapper.Map<Application.Contracts.TagFilter>(tagFilter), !isAdmin, clientGroups, skip, take);
   }
 
   /// <summary>
@@ -184,6 +184,44 @@ public class RecordController : ControllerBase
     }
 
     await recordRepository.Update(mapper.Map<Record>(request)).ConfigureAwait(false);
+    return Ok();
+  }
+
+  /// <summary>
+  /// Returns available bitrates.
+  /// </summary>
+  [HttpGet("bitrates")]
+  [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme, Policy = Roles.Admin)]
+  public GenreBitrates Bitrates()
+  {
+    return recordRepository.Bitrates();
+  }
+
+  /// <summary>
+  /// Returns available bitrates.
+  /// </summary>
+  [HttpPost("bitrates")]
+  [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme, Policy = Roles.Admin)]
+  public IActionResult Bitrates([FromBody] List<GenreBitrate> bitrates)
+  {
+    recordRepository.UpdateBitrates(bitrates);
+    return Ok();
+  }
+
+  /// <summary>
+  /// Removes one bitrate.
+  /// </summary>
+  [HttpDelete("bitrates/{genreId:Guid}")]
+  [ProducesResponseType(StatusCodes.Status404NotFound)]
+  [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme, Policy = Roles.Admin)]
+  public IActionResult Bitrate(Guid genreId)
+  {
+    if (!recordRepository.GenreExists(genreId))
+    {
+      return NotFound();
+    }
+
+    recordRepository.DeleteBitrate(genreId);
     return Ok();
   }
 }

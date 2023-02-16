@@ -21,6 +21,11 @@ public class Genres
   public string Name { get; set; } = null!;
 
   /// <summary>
+  /// The set bitrate for compression for this genre.
+  /// </summary>
+  public int? Bitrate { get; set; }
+
+  /// <summary>
   /// List of records, which belong to the genre.
   /// </summary>
   public ICollection<Records> Records { get; set; } = new List<Records>();

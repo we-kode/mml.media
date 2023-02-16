@@ -669,7 +669,7 @@ public class SqlRecordsRepository : IRecordsRepository
       return;
     }
 
-    if (!context.Records.Any(rec => rec.GenreId == genre.GenreId))
+    if (!context.Records.Any(rec => rec.GenreId == genre.GenreId) && !genre.Bitrate.HasValue)
     {
       context.Genres.Remove(genre);
     }
@@ -683,13 +683,10 @@ public class SqlRecordsRepository : IRecordsRepository
     }
 
     var genre = context.Genres.FirstOrDefault(g => g.Name == genreName);
-    if (genre == null)
+    genre ??= new DBContext.Models.Genres
     {
-      genre = new DBContext.Models.Genres
-      {
-        Name = genreName
-      };
-    }
+      Name = genreName
+    };
 
     return genre;
   }
@@ -748,5 +745,71 @@ public class SqlRecordsRepository : IRecordsRepository
     using var context = _contextFactory();
     var record = context.Records.First(rec => rec.RecordId == id);
     return Path.Combine(record.FilePath, record.Checksum);
+  }
+
+  public GenreBitrates Bitrates()
+  {
+    using var context = _contextFactory();
+    var genres = context.Genres
+      .Where(genre => genre.Bitrate.HasValue)
+      .Select(genre => mapper.Map<GenreBitrate>(genre));
+    return new GenreBitrates
+    {
+      TotalCount = genres.Count(),
+      Items = genres.ToList()
+    };
+  }
+
+  public bool GenreExists(Guid genreId)
+  {
+    using var context = _contextFactory();
+    return context.Genres.Any(genre => genre.GenreId == genreId);
+  }
+
+  public void DeleteBitrate(Guid genreId)
+  {
+    using var context = _contextFactory();
+    var genre = context.Genres
+      .Include(g => g.Records)
+      .FirstOrDefault(g => g.GenreId == genreId);
+
+    if (genre == null)
+    {
+      return;
+    }
+
+    if (genre.Records.Count == 0)
+    {
+      context.Remove(genre);
+    }
+    else
+    {
+      genre.Bitrate = null;
+    }
+
+    context.SaveChanges();
+  }
+
+  public void UpdateBitrates(List<GenreBitrate> bitrates)
+  {
+    using var context = _contextFactory();
+    foreach (var bitrate in bitrates)
+    {
+      if (!bitrate.Bitrate.HasValue || string.IsNullOrEmpty(bitrate.Name))
+      {
+        continue;
+      }
+
+      var oldGenre = context.Genres.FirstOrDefault(g => g.GenreId == bitrate.GenreId);
+      var genre = TryGetGenre(context, bitrate.Name);
+      if (genre != null)
+      {
+        genre.Bitrate = bitrate.Bitrate;
+      }
+
+      TryRemoveGenre(context, oldGenre);
+    }
+
+    context.SaveChanges();
   }
 }
