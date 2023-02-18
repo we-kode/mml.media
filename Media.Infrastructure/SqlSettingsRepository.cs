@@ -1,4 +1,5 @@
-﻿using Media.Application.Contracts;
+﻿using AutoMapper;
+using Media.Application.Contracts;
 using Media.Application.Models;
 using Media.DBContext;
 using System;
@@ -11,7 +12,7 @@ namespace Media.Infrastructure
   {
     private readonly Func<ApplicationDBContext> _contextFactory;
 
-    public SqlSettingsRepository(Func<ApplicationDBContext> contextFactory)
+    public SqlSettingsRepository(Func<ApplicationDBContext> contextFactory, IMapper mapper)
     {
       _contextFactory = contextFactory;
     }

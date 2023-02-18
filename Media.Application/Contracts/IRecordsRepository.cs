@@ -168,4 +168,36 @@ public interface IRecordsRepository
   /// </summary>
   /// <param name="folders">Fodlers to delete.</param>
   Task DeleteFolders(IEnumerable<RecordFolder> folders);
+
+  /// <summary>
+  /// Load all saved bitrates for compressions.
+  /// </summary>
+  /// <returns><see cref="GenreBitrates"/></returns>
+  GenreBitrates Bitrates();
+
+  /// <summary>
+  /// Determines whether genre exists.
+  /// </summary>
+  /// <param name="genreId">Id of genre.</param>
+  /// <returns>True, if genre exists.</returns>
+  bool GenreExists(Guid genreId);
+
+  /// <summary>
+  /// Removes bitrate from genre.
+  /// </summary>
+  /// <param name="genreId">Id of genre, the bitrate should be deleted.</param>
+  void DeleteBitrate(Guid genreId);
+
+  /// <summary>
+  /// Updates or create bitrates for genres.
+  /// </summary>
+  /// <param name="bitrates">Bitrates to be updated.</param>
+  void UpdateBitrates(List<GenreBitrate> bitrates);
+
+  /// <summary>
+  /// Returns bitsrate by genre name or null if no bitrate exists.
+  /// </summary>
+  /// <param name="genreName">Name of genre.</param>
+  /// <returns><see cref="int?"/></returns>
+  int? Bitrate(string genreName);
 }
