@@ -14,6 +14,11 @@ public class Record
   public Guid RecordId { get; set; }
 
   /// <summary>
+  /// The track number of the record.
+  /// </summary>
+  public int TrackNumber { get; set; }
+
+  /// <summary>
   /// Title of the record or null if no one provided.
   /// </summary>
   public string Title { get; set; }
@@ -60,6 +65,7 @@ public class Record
   /// </summary>
   /// <param name="recordId">Id of the record entry.</param>
   /// <param name="title">Title of the record.</param>
+  /// <param name="tracknumber">The track number of the record.</param>
   /// <param name="artist">The artists or null if no one provided.</param>
   /// <param name="date">Date when the record was last time modified.</param>
   /// <param name="duration">The duration of the record in microseconds.</param>
@@ -68,10 +74,11 @@ public class Record
   /// <param name="genre">The genre of the record.</param>
   /// <param name="language">The language of the record.</param>
   /// <param name="checksum">The checksum of record.</param>
-  public Record(Guid recordId, string title, string? artist, DateTime date, TimeSpan duration, ICollection<Group> groups, string album = "", string genre = "", string language = "", string checksum = "")
+  public Record(Guid recordId, string title, int tracknumber, string? artist, DateTime date, TimeSpan duration, ICollection<Group> groups, string album = "", string genre = "", string language = "", string checksum = "")
   {
     RecordId = recordId;
     Title = title;
+    TrackNumber = tracknumber;
     Artist = artist;
     Album = album;
     Genre = genre;
