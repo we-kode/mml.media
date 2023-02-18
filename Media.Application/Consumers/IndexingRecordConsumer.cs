@@ -77,7 +77,14 @@ public class IndexingRecordConsumer : IConsumer<FileUploaded>
     taglibFile.Save();
     taglibFile.Dispose();
 
-    if (int.TryParse(settingsRepository.Get(Constants.Settings.CompressionRateKey, ""), out var compressionRate))
+    var compressionRate = recordsRepository.Bitrate(metadata.Genre);
+
+    if (!compressionRate.HasValue && int.TryParse(settingsRepository.Get(Constants.Settings.CompressionRateKey, ""), out var defaultCompressionRate))
+    {
+      compressionRate = defaultCompressionRate;
+    }
+
+    if (compressionRate.HasValue)
     {
       // compress and write file to output
       var conversionOptions = new ConversionOptions

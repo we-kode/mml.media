@@ -812,4 +812,10 @@ public class SqlRecordsRepository : IRecordsRepository
 
     context.SaveChanges();
   }
+
+  public int? Bitrate(string genreName)
+  {
+    using var context = _contextFactory();
+    return context.Genres.FirstOrDefault(genre => genre.Name == genreName)?.Bitrate;
+  }
 }

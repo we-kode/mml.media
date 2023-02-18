@@ -193,4 +193,11 @@ public interface IRecordsRepository
   /// </summary>
   /// <param name="bitrates">Bitrates to be updated.</param>
   void UpdateBitrates(List<GenreBitrate> bitrates);
+
+  /// <summary>
+  /// Returns bitsrate by genre name or null if no bitrate exists.
+  /// </summary>
+  /// <param name="genreName">Name of genre.</param>
+  /// <returns><see cref="int?"/></returns>
+  int? Bitrate(string genreName);
 }
