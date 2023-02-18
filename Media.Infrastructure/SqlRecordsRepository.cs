@@ -752,6 +752,7 @@ public class SqlRecordsRepository : IRecordsRepository
     using var context = _contextFactory();
     var genres = context.Genres
       .Where(genre => genre.Bitrate.HasValue)
+      .OrderBy(genre => genre.Name)
       .Select(genre => mapper.Map<GenreBitrate>(genre));
     return new GenreBitrates
     {
@@ -805,12 +806,16 @@ public class SqlRecordsRepository : IRecordsRepository
       if (genre != null)
       {
         genre.Bitrate = bitrate.Bitrate;
+
+        if (genre.GenreId == Guid.Empty)
+        {
+          context.Add(genre);
+        }
       }
 
       TryRemoveGenre(context, oldGenre);
+      context.SaveChanges();
     }
-
-    context.SaveChanges();
   }
 
   public int? Bitrate(string genreName)

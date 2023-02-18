@@ -211,7 +211,7 @@ public class RecordController : ControllerBase
   /// <summary>
   /// Removes one bitrate.
   /// </summary>
-  [HttpDelete("bitrates/{genreId:Guid}")]
+  [HttpDelete("bitrate/{genreId:Guid}")]
   [ProducesResponseType(StatusCodes.Status404NotFound)]
   [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme, Policy = Roles.Admin)]
   public IActionResult Bitrate(Guid genreId)
