@@ -92,6 +92,9 @@ public class SqlRecordsRepository : IRecordsRepository
   {
     var query = context.Records
      .Include(rec => rec.Artist)
+     .Include(rec => rec.Album)
+     .Include(rec => rec.Genre)
+     .Include(rec => rec.Language)
      .Include(rec => rec.Groups)
      .Where(rec => string.IsNullOrEmpty(filter) || EF.Functions.ILike(rec.Title, $"%{filter}%"));
 
@@ -205,11 +208,14 @@ public class SqlRecordsRepository : IRecordsRepository
     var filterLanguageQuery = tagFilter.Languages.Count > 0 ? $"AND rec.language_id IN ({string.Join(',', tagFilter.Languages.Select(id => string.Format("'{0}'", id)))})" : string.Empty;
 
     var selectQuery = @"SELECT 
-                  rec.*, a.name as artist_name, t.group_id,
+                  rec.*, a.name as artist_name, t.group_id, al.album_name as album_name, g.name as genre_name, l.name as language_name,
                   LEAD(rec.record_id, 1) OVER(ORDER BY Cast(rec.date as Date) DESC, rec.date) as next_id, 
                   LAG(rec.record_id, 1) OVER(ORDER BY Cast(rec.date as Date) DESC, rec.date) as previous_id
                   FROM public.records AS rec
                   LEFT JOIN public.artists AS a ON rec.artist_id = a.artist_id
+                  LEFT JOIN public.albums AS al ON rec.album_id = al.album_id
+                  LEFT JOIN public.genres AS g ON rec.genre_id = g.genre_id
+                  LEFT JOIN public.languages AS l ON rec.language_id = l.language_id
                   LEFT JOIN (SELECT g1.groups_group_id, g1.records_record_id, g2.group_id
 			                       FROM public.groups_records AS g1
 			                       INNER JOIN public.groups AS g2 ON g1.groups_group_id = g2.group_id
@@ -241,10 +247,14 @@ public class SqlRecordsRepository : IRecordsRepository
     return new Record(
       record.RecordId,
       record.Title,
+      record.TrackNumber,
       record.ArtistName,
       record.Date,
       record.Duration,
       null!,
+      record.AlbumName ?? "",
+      record.GenreName ?? "",
+      record.LanguageName ?? "",
       checksum: record.Checksum);
   }
 
@@ -498,6 +508,7 @@ public class SqlRecordsRepository : IRecordsRepository
     return new Record(
       record.RecordId,
       record.Title,
+      record.TrackNumber,
       record.Artist?.Name,
       record.Date,
       record.Duration,
@@ -669,7 +680,7 @@ public class SqlRecordsRepository : IRecordsRepository
       return;
     }
 
-    if (!context.Records.Any(rec => rec.GenreId == genre.GenreId))
+    if (!context.Records.Any(rec => rec.GenreId == genre.GenreId) && !genre.Bitrate.HasValue)
     {
       context.Genres.Remove(genre);
     }
@@ -683,13 +694,10 @@ public class SqlRecordsRepository : IRecordsRepository
     }
 
     var genre = context.Genres.FirstOrDefault(g => g.Name == genreName);
-    if (genre == null)
+    genre ??= new DBContext.Models.Genres
     {
-      genre = new DBContext.Models.Genres
-      {
-        Name = genreName
-      };
-    }
+      Name = genreName
+    };
 
     return genre;
   }
@@ -748,5 +756,82 @@ public class SqlRecordsRepository : IRecordsRepository
     using var context = _contextFactory();
     var record = context.Records.First(rec => rec.RecordId == id);
     return Path.Combine(record.FilePath, record.Checksum);
+  }
+
+  public GenreBitrates Bitrates()
+  {
+    using var context = _contextFactory();
+    var genres = context.Genres
+      .Where(genre => genre.Bitrate.HasValue)
+      .OrderBy(genre => genre.Name)
+      .Select(genre => mapper.Map<GenreBitrate>(genre));
+    return new GenreBitrates
+    {
+      TotalCount = genres.Count(),
+      Items = genres.ToList()
+    };
+  }
+
+  public bool GenreExists(Guid genreId)
+  {
+    using var context = _contextFactory();
+    return context.Genres.Any(genre => genre.GenreId == genreId);
+  }
+
+  public void DeleteBitrate(Guid genreId)
+  {
+    using var context = _contextFactory();
+    var genre = context.Genres
+      .Include(g => g.Records)
+      .FirstOrDefault(g => g.GenreId == genreId);
+
+    if (genre == null)
+    {
+      return;
+    }
+
+    if (genre.Records.Count == 0)
+    {
+      context.Remove(genre);
+    }
+    else
+    {
+      genre.Bitrate = null;
+    }
+
+    context.SaveChanges();
+  }
+
+  public void UpdateBitrates(List<GenreBitrate> bitrates)
+  {
+    using var context = _contextFactory();
+    foreach (var bitrate in bitrates)
+    {
+      if (!bitrate.Bitrate.HasValue || string.IsNullOrEmpty(bitrate.Name))
+      {
+        continue;
+      }
+
+      var oldGenre = context.Genres.FirstOrDefault(g => g.GenreId == bitrate.GenreId);
+      var genre = TryGetGenre(context, bitrate.Name);
+      if (genre != null)
+      {
+        genre.Bitrate = bitrate.Bitrate;
+
+        if (genre.GenreId == Guid.Empty)
+        {
+          context.Add(genre);
+        }
+      }
+
+      TryRemoveGenre(context, oldGenre);
+      context.SaveChanges();
+    }
+  }
+
+  public int? Bitrate(string genreName)
+  {
+    using var context = _contextFactory();
+    return context.Genres.FirstOrDefault(genre => genre.Name == genreName)?.Bitrate;
   }
 }

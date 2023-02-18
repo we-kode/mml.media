@@ -230,6 +230,7 @@ public class Startup
       cfg.CreateMap<TagFilter, Application.Contracts.TagFilter>();
       cfg.CreateMap<DBContext.Models.Albums, Album>();
       cfg.CreateMap<DBContext.Models.Genres, Genre>();
+      cfg.CreateMap<DBContext.Models.Genres, GenreBitrate>();
       cfg.CreateMap<DBContext.Models.Artists, Artist>();
       cfg.CreateMap<DBContext.Models.Languages, Language>();
       cfg.CreateMap<RecordChangeRequest, Record>();
