@@ -35,6 +35,11 @@ public class RecordChangeRequest
   public string? Album { get; set; }
 
   /// <summary>
+  /// Language of the record or null if no one provided.
+  /// </summary>
+  public string? Language { get; set; }
+
+  /// <summary>
   /// List of groups the record is assigned to.
   /// </summary>
   public ICollection<Group> Groups { get; set; }
