@@ -84,7 +84,8 @@ public class IndexingRecordConsumer : IConsumer<FileUploaded>
       compressionRate = defaultCompressionRate;
     }
 
-    if (compressionRate.HasValue)
+    var fileMetaData = await engine.GetMetaDataAsync(inputFile, default).ConfigureAwait(false);
+    if (compressionRate.HasValue && fileMetaData.AudioData.BitRateKbs > compressionRate.Value)
     {
       // compress and write file to output
       var conversionOptions = new ConversionOptions
