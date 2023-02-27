@@ -53,6 +53,39 @@ public class StreamController : ControllerBase
   }
 
   /// <summary>
+  /// Streams the given record.
+  /// </summary>
+  /// <param name="id">Record to be streamed.</param>
+  /// <returns>Stream of the given record.</returns>
+  /// <response code="404">If record does not exist.</response>
+  /// <response code="403">If record is not in group of client.</response>
+  [HttpGet("{id}")]
+  public IActionResult Get(string id)
+  {
+    if (string.IsNullOrEmpty(id) || !id.EndsWith(".mp3"))
+    {
+      return NotFound();
+    }
+
+    var recordId = new Guid(id.Split('.')[0]);
+
+    if (!repository.Exists(recordId))
+    {
+      return NotFound();
+    }
+
+    var isAdmin = HttpContext.IsAdmin();
+    var clientGroups = HttpContext.ClientGroups();
+    if (!isAdmin && !repository.IsInGroup(recordId, clientGroups))
+    {
+      return Forbid();
+    }
+
+    var stream = repository.StreamRecord(recordId);
+    return File(stream.Stream, stream.MimeType, true);
+  }
+
+  /// <summary>
   /// Returns the next record id in filtered list. 
   /// If repeat is not set, than no id will be returned when record is the last element in list.
   /// In other case the first element will be returned.
