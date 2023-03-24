@@ -5,8 +5,6 @@ using Media.Application.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using OpenIddict.Validation.AspNetCore;
-using System.Collections.Generic;
-
 namespace Media.API.Controllers;
 
 [ApiController]
