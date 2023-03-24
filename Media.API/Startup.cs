@@ -252,6 +252,7 @@ public class Startup
     cBuilder.RegisterType<SqlSettingsRepository>().AsImplementedInterfaces();
     cBuilder.RegisterType<SqlRecordsRepository>().AsImplementedInterfaces();
     cBuilder.RegisterType<SqlGroupRepository>().AsImplementedInterfaces();
+    cBuilder.RegisterType<FileInfoRepository>().AsImplementedInterfaces();
   }
 
   private void _MigrateDB(Func<ApplicationDBContext> factory)
