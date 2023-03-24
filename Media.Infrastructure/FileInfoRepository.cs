@@ -28,19 +28,27 @@ public class FileInfoRepository : IInfoRepository
     return File.Exists(fullPath);
   }
 
-  public Infos List(string? path)
+  public Infos List(string? path, int skip = Application.Constants.List.Skip, int take = Application.Constants.List.Take)
   {
     var fullPath = Path.Combine(rootPath,path ?? "").Replace("..", "");
-    var entries = Directory.GetFileSystemEntries(fullPath).Select(path => new Info
+    var entries = Directory.GetFileSystemEntries(fullPath);
+
+    var count = entries.Count();  
+
+    var infos = entries
+    .Skip(skip)
+    .Take(take)
+    .Select(path => new Info
     {
       Name = new FileInfo(path).Name,
       Path = Path.GetRelativePath(rootPath, path),
       IsFolder = new FileInfo(path).Attributes.HasFlag(FileAttributes.Directory)
     });
+
     return new Infos
     {
       TotalCount = entries.Count(),
-      Items = entries.ToList()
+      Items = infos.ToList()
     };
   }
 }

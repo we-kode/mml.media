@@ -31,5 +31,5 @@ public interface IInfoRepository
   /// </summary>
   /// <param name="path">Path to be listed.</param>
   /// <returns><see cref="Infos"></returns>
-  Infos List(string? path);
+  Infos List(string? path, int skip = Constants.List.Skip, int take = Constants.List.Take);
 }

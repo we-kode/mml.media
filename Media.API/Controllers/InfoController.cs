@@ -29,14 +29,14 @@ public class InfoController : ControllerBase
   /// <returns><see cref="Infos"/></returns>
   /// <response code="404">If path does not exists.</response>
   [HttpGet]
-  public ActionResult<Infos> Infos([FromQuery] string? path)
+  public ActionResult<Infos> Info([FromQuery] string? path, [FromQuery] int skip = Application.Constants.List.Skip, [FromQuery] int take = Application.Constants.List.Take)
   {
     if (!string.IsNullOrEmpty(path) && !repository.ExistsFolder(path))
     {
       return NotFound();
     }
 
-    return repository.List(path);
+    return repository.List(path, skip, take);
   }
 
   /// <summary>
@@ -46,7 +46,7 @@ public class InfoController : ControllerBase
   /// <returns>Conent of file.</returns>
   /// <response code="404">If path does not exists.</response>
   [HttpGet("content")]
-  public ActionResult<string> Content([FromQuery] string path)
+  public ActionResult<string> FileContent([FromQuery] string path)
   {
     if (string.IsNullOrEmpty(path) || !repository.ExistsFile(path))
     {
