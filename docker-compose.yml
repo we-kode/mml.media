@@ -14,6 +14,7 @@ services:
     volumes:
       - ${VOL_CERTS}:/etc/ssl/certs:ro
       - ${VOL_RECORDS}:/records
+      - ${VOL_INFO}:/info
       - ${APPSETTINGS}:/configs/appsettings.json:ro
       - /etc/localtime:/etc/localtime:ro
     networks:
