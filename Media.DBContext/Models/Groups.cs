@@ -29,4 +29,9 @@ public class Groups
   /// List of records, which belong to the group.
   /// </summary>
   public ICollection<Records> Records { get; set; } = new List<Records>();
+
+  /// <summary>
+  /// List of livestreams, which belong to the group.
+  /// </summary>
+  public ICollection<Livestreams> Livestreams { get; set; } = new List<Livestreams>();
 }
