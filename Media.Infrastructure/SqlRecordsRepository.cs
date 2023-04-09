@@ -103,6 +103,11 @@ public class SqlRecordsRepository : IRecordsRepository
       query = query.Where(rec => rec.Groups.Any(g => groups.Contains(g.GroupId)));
     }
 
+    if (tagFilter.Groups.Count > 0)
+    {
+      query = query.Where(rec => rec.Groups.Any(g => tagFilter.Groups.Contains(g.GroupId)));
+    }
+
     if (tagFilter.Artists.Count > 0)
     {
       query = query.Where(rec => (rec.ArtistId.HasValue && tagFilter.Artists.Contains(rec.ArtistId.Value)));
