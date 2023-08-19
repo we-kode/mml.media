@@ -29,7 +29,7 @@ public class SqlLivestreamRepository : ILivestreamRepository
     using var scope = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled);
     using var context = _contextFactory();
 
-    var item = context.Livestreams.FirstOrDefault(stream => stream.LivestreamId == id);
+    var item = context.Livestreams.FirstOrDefault(stream => stream.RecordId == id);
     if (item != null)
     {
       context.Remove(item);
@@ -41,7 +41,7 @@ public class SqlLivestreamRepository : ILivestreamRepository
   public bool Exists(Guid id)
   {
     using var context = _contextFactory();
-    var item = context.Livestreams.FirstOrDefault(stream => stream.LivestreamId == id);
+    var item = context.Livestreams.FirstOrDefault(stream => stream.RecordId == id);
     return item != null;
   }
 
@@ -50,7 +50,7 @@ public class SqlLivestreamRepository : ILivestreamRepository
     using var context = _contextFactory();
     var query = context.Livestreams
       .Include(stream => stream.Groups)
-      .Where(ar => string.IsNullOrEmpty(filter) || EF.Functions.ILike(ar.DisplayName, $"%{filter}%"));
+      .Where(ar => string.IsNullOrEmpty(filter) || EF.Functions.ILike(ar.Title, $"%{filter}%"));
 
     if (filterByGroups)
     {
@@ -59,7 +59,7 @@ public class SqlLivestreamRepository : ILivestreamRepository
 
     var count = query.Count();
     var items = query
-      .OrderBy(elem => elem.DisplayName)
+      .OrderBy(elem => elem.Title)
       .Skip(skip)
       .Take(take)
       .Select(elem => mapper.Map<Livestream>(elem))
@@ -75,7 +75,7 @@ public class SqlLivestreamRepository : ILivestreamRepository
   public LivestreamSettings Load(Guid id)
   {
     using var context = _contextFactory();
-    var item = context.Livestreams.Include(stream => stream.Groups).First(stream => stream.LivestreamId == id);
+    var item = context.Livestreams.Include(stream => stream.Groups).First(stream => stream.RecordId == id);
     return mapper.Map<LivestreamSettings>(item);
   }
 
@@ -85,14 +85,14 @@ public class SqlLivestreamRepository : ILivestreamRepository
     using var context = _contextFactory();
     var item = context.Livestreams
       .Include(rec => rec.Groups)
-      .FirstOrDefault(stream => stream.LivestreamId == value.LivestreamId);
+      .FirstOrDefault(stream => stream.RecordId == value.RecordId);
     if (item == null)
     {
       item = new DBContext.Models.Livestreams();
       context.Livestreams.Add(item);
     }
 
-    item.DisplayName = value.DisplayName;
+    item.Title = value.Title;
     item.Url = value.Url;
 
     await context.SaveChangesAsync().ConfigureAwait(false);
