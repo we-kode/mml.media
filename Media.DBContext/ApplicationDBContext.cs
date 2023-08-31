@@ -8,6 +8,7 @@ namespace Media.DBContext
   {
     public DbSet<Settings> Settings { get; set; } = null!;
     public DbSet<Records> Records { get; set; } = null!;
+    public DbSet<Livestreams> Livestreams { get; set; } = null!;
     public DbSet<Artists> Artists { get; set; } = null!;
     public DbSet<Genres> Genres { get; set; } = null!;
     public DbSet<Albums> Albums { get; set; } = null!;
