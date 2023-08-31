@@ -7,9 +7,14 @@ using Media.Application.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Net.Http.Headers;
 using OpenIddict.Validation.AspNetCore;
+using Polly;
 using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Net.Http;
+using System.Net.Mime;
 using System.Threading.Tasks;
 
 namespace Media.API.Controllers;
@@ -23,6 +28,7 @@ public class LivestreamController : ControllerBase
 
   private readonly ILivestreamRepository repository;
   private readonly IMapper mapper;
+  static Lazy<HttpClient> client = new Lazy<HttpClient>();
 
   public LivestreamController(ILivestreamRepository repository, IMapper mapper)
   {
@@ -90,13 +96,51 @@ public class LivestreamController : ControllerBase
   [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme, Policy = Roles.Admin)]
   public async Task<IActionResult> Post([FromBody] LivestreamChangeRequest request)
   {
-    if (request.LivestreamId.HasValue && !repository.Exists(request.LivestreamId.Value))
+    if (request.RecordId.HasValue && !repository.Exists(request.RecordId.Value))
     {
       return NotFound();
     }
 
     await repository.Update(mapper.Map<LivestreamSettings>(request)).ConfigureAwait(false);
     return Ok();
+  }
+
+  /// <summary>
+  /// Streams the given livestream.
+  /// </summary>
+  /// <param name="id">Livestream to be streamed.</param>
+  /// <returns>Stream of the given record.</returns>
+  /// <response code="404">If record does not exist.</response>
+  /// <response code="403">If record is not in group of client.</response>
+  [HttpGet("stream/{id:Guid}")]
+  public async Task<IActionResult> Stream(Guid id)
+  {
+    if (!repository.Exists(id))
+    {
+      return NotFound();
+    }
+
+    var isAdmin = HttpContext.IsAdmin();
+    var clientGroups = HttpContext.ClientGroups();
+    if (!isAdmin && !repository.IsInGroup(id, clientGroups))
+    {
+      return Forbid();
+    }
+
+    try
+    {
+      var streamUrl = repository.Stream(id);
+      Stream stream = await client.Value.GetStreamAsync(streamUrl);
+      var result = new FileStreamResult(stream, "audio/mpeg3")
+      {
+        EnableRangeProcessing = true
+      };
+      return result;
+    }
+    catch (Exception)
+    {
+      return NotFound();
+    }
   }
 
 }

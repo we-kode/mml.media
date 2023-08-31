@@ -1,6 +1,7 @@
 ﻿using Media.Application.Models;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Threading.Tasks;
 
 namespace Media.Application.Contracts;
@@ -21,6 +22,14 @@ public interface ILivestreamRepository
   bool Exists(Guid id);
 
   /// <summary>
+  /// Checks, if user is in group with the gievn stream.
+  /// </summary>
+  /// <param name="id">The id of the stream</param>
+  /// <param name="clientGroups">Groups of the user.</param>
+  /// <returns>True, if the user is in one group with the stream.</returns>
+  bool IsInGroup(Guid id, IList<Guid> clientGroups);
+
+  /// <summary>
   /// Loads list of livestreams.
   /// </summary>
   /// <param name="filter">Streams will be filtered by given filter.</param>
@@ -38,6 +47,13 @@ public interface ILivestreamRepository
   /// <returns><see cref="LivestreamSettings"/></returns>
   LivestreamSettings Load(Guid id);
   
+  /// <summary>
+  /// Loads the livestream and streams it.
+  /// </summary>
+  /// <param name="id">Id of the livestream to be loaded.</param>
+  /// <returns>Stream of the Livestream endpoint</returns>
+  string Stream(Guid id);
+
   /// <summary>
   /// Updates or creates a stream entry.
   /// </summary>

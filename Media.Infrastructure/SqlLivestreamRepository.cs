@@ -5,7 +5,9 @@ using Media.DBContext;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Net.Http;
 using System.Threading.Tasks;
 using System.Transactions;
 
@@ -45,6 +47,13 @@ public class SqlLivestreamRepository : ILivestreamRepository
     return item != null;
   }
 
+  public bool IsInGroup(Guid id, IList<Guid> clientGroups)
+  {
+    using var context = _contextFactory();
+    var item = context.Livestreams.Include(ls => ls.Groups).First(stream => stream.RecordId == id);
+    return item.Groups.Any(g => clientGroups.Contains(g.GroupId));
+  }
+
   public Livestreams List(string? filter, bool filterByGroups, IList<Guid> clientGroups, int skip, int take)
   {
     using var context = _contextFactory();
@@ -77,6 +86,12 @@ public class SqlLivestreamRepository : ILivestreamRepository
     using var context = _contextFactory();
     var item = context.Livestreams.Include(stream => stream.Groups).First(stream => stream.RecordId == id);
     return mapper.Map<LivestreamSettings>(item);
+  }
+
+  public string Stream(Guid id)
+  {
+    using var context = _contextFactory();
+    return context.Livestreams.First(stream => stream.RecordId == id).Url ?? string.Empty;
   }
 
   public async Task Update(LivestreamSettings value)
