@@ -3,6 +3,7 @@ using System;
 using Media.DBContext;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,10 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Media.DBContext.Migrations
 {
     [DbContext(typeof(ApplicationDBContext))]
-    partial class ApplicationDBContextModelSnapshot : ModelSnapshot
+    [Migration("20230325120813_Added_Livestreams")]
+    partial class Added_Livestreams
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -29,15 +31,15 @@ namespace Media.DBContext.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("groups_group_id");
 
-                    b.Property<Guid>("LivestreamsRecordId")
+                    b.Property<Guid>("LivestreamsLivestreamId")
                         .HasColumnType("uuid")
-                        .HasColumnName("livestreams_record_id");
+                        .HasColumnName("livestreams_livestream_id");
 
-                    b.HasKey("GroupsGroupId", "LivestreamsRecordId")
+                    b.HasKey("GroupsGroupId", "LivestreamsLivestreamId")
                         .HasName("pk_groups_livestreams");
 
-                    b.HasIndex("LivestreamsRecordId")
-                        .HasDatabaseName("ix_groups_livestreams_livestreams_record_id");
+                    b.HasIndex("LivestreamsLivestreamId")
+                        .HasDatabaseName("ix_groups_livestreams_livestreams_livestream_id");
 
                     b.ToTable("groups_livestreams", "public");
                 });
@@ -161,25 +163,25 @@ namespace Media.DBContext.Migrations
 
             modelBuilder.Entity("Media.DBContext.Models.Livestreams", b =>
                 {
-                    b.Property<Guid>("RecordId")
+                    b.Property<Guid>("LivestreamId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
-                        .HasColumnName("record_id");
+                        .HasColumnName("livestream_id");
+
+                    b.Property<string>("DisplayName")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("display_name");
 
                     b.Property<int>("ProviderType")
                         .HasColumnType("integer")
                         .HasColumnName("provider_type");
 
-                    b.Property<string>("Title")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("title");
-
                     b.Property<string>("Url")
                         .HasColumnType("text")
                         .HasColumnName("url");
 
-                    b.HasKey("RecordId")
+                    b.HasKey("LivestreamId")
                         .HasName("pk_livestreams");
 
                     b.ToTable("livestreams", "public");
@@ -367,10 +369,10 @@ namespace Media.DBContext.Migrations
 
                     b.HasOne("Media.DBContext.Models.Livestreams", null)
                         .WithMany()
-                        .HasForeignKey("LivestreamsRecordId")
+                        .HasForeignKey("LivestreamsLivestreamId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
-                        .HasConstraintName("fk_groups_livestreams_livestreams_livestreams_record_id");
+                        .HasConstraintName("fk_groups_livestreams_livestreams_livestreams_livestream_id");
                 });
 
             modelBuilder.Entity("GroupsRecords", b =>

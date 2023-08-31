@@ -234,6 +234,9 @@ public class Startup
       cfg.CreateMap<DBContext.Models.Artists, Artist>();
       cfg.CreateMap<DBContext.Models.Languages, Language>();
       cfg.CreateMap<RecordChangeRequest, Record>();
+      cfg.CreateMap<DBContext.Models.Livestreams, Livestream>();
+      cfg.CreateMap<DBContext.Models.Livestreams, LivestreamSettings>();
+      cfg.CreateMap<LivestreamChangeRequest, LivestreamSettings>();
       cfg.CreateMap<SettingsRequest, Settings>();
       cfg.CreateMap<Contracts.RecordFolder, Application.Models.RecordFolder>();
       cfg.CreateMap<DBContext.Models.Groups, Group>()
@@ -252,6 +255,7 @@ public class Startup
     cBuilder.RegisterType<SqlSettingsRepository>().AsImplementedInterfaces();
     cBuilder.RegisterType<SqlRecordsRepository>().AsImplementedInterfaces();
     cBuilder.RegisterType<SqlGroupRepository>().AsImplementedInterfaces();
+    cBuilder.RegisterType<SqlLivestreamRepository>().AsImplementedInterfaces();
   }
 
   private void _MigrateDB(Func<ApplicationDBContext> factory)
