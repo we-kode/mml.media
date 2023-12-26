@@ -64,5 +64,10 @@ namespace Media.Application.Models
     /// Sha1 hash value of the file content.
     /// </summary>
     public string Checksum { get; set; } = string.Empty;
+
+    /// <summary>
+    /// The compressed bitrate of the record.
+    /// </summary>
+    public int Bitrate {  get; set; }
   }
 }

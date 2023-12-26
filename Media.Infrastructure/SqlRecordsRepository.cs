@@ -256,6 +256,7 @@ public class SqlRecordsRepository : IRecordsRepository
       record.ArtistName,
       record.Date,
       record.Duration,
+      record.Bitrate ?? 0,
       null!,
       record.AlbumName ?? "",
       record.GenreName ?? "",
@@ -286,6 +287,7 @@ public class SqlRecordsRepository : IRecordsRepository
         MimeType = metaData.MimeType,
         TrackNumber = metaData.TrackNumber,
         Title = metaData.Title ?? metaData.OriginalFileName,
+        Bitrate = metaData.Bitrate,
       };
 
       // add groups
@@ -517,6 +519,7 @@ public class SqlRecordsRepository : IRecordsRepository
       record.Artist?.Name,
       record.Date,
       record.Duration,
+      record.Bitrate ?? 0,
       record.Groups.Select(g => new Group(g.GroupId, g.Name, g.IsDefault)).ToArray(),
       record.Album?.AlbumName ?? string.Empty,
       record.Genre?.Name ?? string.Empty,
