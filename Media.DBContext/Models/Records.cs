@@ -82,6 +82,11 @@ public class Records
   public Languages? Language { get; set; }
 
   /// <summary>
+  /// The compressed bitrate of the record. Null if no bitrate was indexed.
+  /// </summary>
+  public int? Bitrate { get; set; }
+
+  /// <summary>
   /// The groups asssociated with this record.
   /// </summary>
   public ICollection<Groups> Groups { get; set; } = new List<Groups>();

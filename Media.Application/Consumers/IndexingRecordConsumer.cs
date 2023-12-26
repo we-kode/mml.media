@@ -103,6 +103,7 @@ public class IndexingRecordConsumer : IConsumer<FileUploaded>
 
     // remove original file
     DeleteFile(inputPath);
+    metadata.Bitrate = compressionRate ?? fileMetaData.AudioData.BitRateKbs;
 
     // save indexed file
     recordsRepository.SaveMetaData(metadata, context.Message.Groups);
