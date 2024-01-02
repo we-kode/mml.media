@@ -33,6 +33,27 @@ public class SettingsController : ControllerBase
   }
 
   /// <summary>
+  /// Returns available settings.
+  /// </summary>
+  [HttpGet("{key}")]
+  public string Get([FromRoute] string key)
+  {
+    return settingsRepository.Get(key, string.Empty);
+  }
+
+  /// <summary>
+  /// Saves the settings.
+  /// </summary>
+  /// <param name="key">Key of setting to save.</param>
+  /// <param name="value">value to save.</param>
+  [HttpPost("{key}")]
+  public IActionResult Post([FromRoute] string key, [FromBody] ValueRequest value)
+  {
+    settingsRepository.Save(key, value.Value);
+    return Ok();
+  }
+
+  /// <summary>
   /// Saves the settings.
   /// </summary>
   /// <param name="settings">Settings map.</param>
