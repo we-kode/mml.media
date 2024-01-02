@@ -55,6 +55,7 @@ namespace Media.Infrastructure
           Key = key,
           Value = value
         };
+        context.Settings.Add(settings);
       }
 
       settings.Value = value;

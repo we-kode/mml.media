@@ -12,6 +12,8 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Media.Application.Extensions;
+using MassTransit.DependencyInjection;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace Media.Application.Consumers;
 
