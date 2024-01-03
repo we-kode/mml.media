@@ -87,6 +87,11 @@ public class Records
   public int? Bitrate { get; set; }
 
   /// <summary>
+  /// The front cover of record.
+  /// </summary>
+  public string? Cover { get; set; }
+
+  /// <summary>
   /// The groups asssociated with this record.
   /// </summary>
   public ICollection<Groups> Groups { get; set; } = new List<Groups>();

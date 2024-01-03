@@ -58,6 +58,11 @@ public class Record
   /// </summary>
   public int Bitrate { get; set; }
 
+  /// <summary>
+  /// The cover of this record.
+  /// </summary>
+  public byte[] Cover { get; set; } = Array.Empty<byte>();
+
   public string? Checksum { get; set; }
 
   /// <summary>
@@ -80,7 +85,8 @@ public class Record
   /// <param name="genre">The genre of the record.</param>
   /// <param name="language">The language of the record.</param>
   /// <param name="checksum">The checksum of record.</param>
-  public Record(Guid recordId, string title, int tracknumber, string? artist, DateTime date, TimeSpan duration, int bitrate, ICollection<Group> groups, string album = "", string genre = "", string language = "", string checksum = "")
+  /// <param name="cover">The cover as base64 string.</param>
+  public Record(Guid recordId, string title, int tracknumber, string? artist, DateTime date, TimeSpan duration, int bitrate, ICollection<Group> groups, string album = "", string genre = "", string language = "", string checksum = "", string cover = "")
   {
     RecordId = recordId;
     Title = title;
@@ -94,6 +100,7 @@ public class Record
     Checksum = checksum;
     Groups = groups ?? new List<Group>();
     Bitrate = bitrate;
+    Cover = string.IsNullOrEmpty(cover) ? Array.Empty<byte>() : Convert.FromBase64String(cover);
   }
 
   public Record(Guid recordId, string title)

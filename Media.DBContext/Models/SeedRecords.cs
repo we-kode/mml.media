@@ -41,6 +41,11 @@ public class SeedRecords
   public int? Bitrate { get; set; }
 
   /// <summary>
+  /// Cover of the record.
+  /// </summary>
+  public string? Cover { get; set; }
+
+  /// <summary>
   /// The file checksum
   /// </summary>
   [Required]
