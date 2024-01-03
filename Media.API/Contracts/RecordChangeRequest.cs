@@ -40,6 +40,11 @@ public class RecordChangeRequest
   public string? Language { get; set; }
 
   /// <summary>
+  /// The cover of tis record.
+  /// </summary>
+  public byte[] Cover { get; set; } = Array.Empty<byte>();
+
+  /// <summary>
   /// List of groups the record is assigned to.
   /// </summary>
   public ICollection<Group> Groups { get; set; }

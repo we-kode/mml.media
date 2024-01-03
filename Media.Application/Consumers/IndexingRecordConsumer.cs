@@ -61,6 +61,13 @@ public class IndexingRecordConsumer : IConsumer<FileUploaded>
     var originalFileName = Path.GetFileNameWithoutExtension(context.Message.FileName);
     var trackNumber = (int)taglibFile.Tag.Track;
     var isDateParsed = DateTime.TryParseExact(originalFileName.Split('-').FirstOrDefault(), "yyMMdd", CultureInfo.CurrentCulture, DateTimeStyles.None, out var parsedDate);
+    var cover = taglibFile.Tag.Pictures.FirstOrDefault();
+    string? coverBase64 = null;
+    if (cover != null)
+    {
+      coverBase64 = Convert.ToBase64String(cover.Data.Data);
+    }
+
     var metadata = new RecordMetaData
     {
       Title = taglibFile.Tag.Title,
@@ -73,7 +80,8 @@ public class IndexingRecordConsumer : IConsumer<FileUploaded>
       Duration = taglibFile.Properties.Duration,
       OriginalFileName = originalFileName,
       PhysicalFilePath = outputPath,
-      Checksum = outputFileName
+      Checksum = outputFileName,
+      Cover = coverBase64,
     };
     taglibFile.RemoveTags(TagLib.TagTypes.AllTags);
     taglibFile.Save();

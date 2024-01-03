@@ -261,7 +261,8 @@ public class SqlRecordsRepository : IRecordsRepository
       record.AlbumName ?? "",
       record.GenreName ?? "",
       record.LanguageName ?? "",
-      checksum: record.Checksum);
+      checksum: record.Checksum,
+      record.Cover ?? string.Empty);
   }
 
   public void SaveMetaData(RecordMetaData metaData, List<Guid> groups)
@@ -288,6 +289,7 @@ public class SqlRecordsRepository : IRecordsRepository
         TrackNumber = metaData.TrackNumber,
         Title = metaData.Title ?? metaData.OriginalFileName,
         Bitrate = metaData.Bitrate,
+        Cover = metaData.Cover,
       };
 
       // add groups
@@ -524,7 +526,8 @@ public class SqlRecordsRepository : IRecordsRepository
       record.Album?.AlbumName ?? string.Empty,
       record.Genre?.Name ?? string.Empty,
       record.Language?.Name ?? string.Empty,
-      record.Checksum);
+      record.Checksum,
+      record.Cover ?? string.Empty);
   }
 
   public async Task Update(Record record)
@@ -604,6 +607,8 @@ public class SqlRecordsRepository : IRecordsRepository
     {
       recordToUpdated.Groups.Remove(deletedGroup);
     }
+
+    recordToUpdated.Cover = record.Cover.Length > 0 ? Convert.ToBase64String(record.Cover) : null;
 
     await context.SaveChangesAsync().ConfigureAwait(false);
 
