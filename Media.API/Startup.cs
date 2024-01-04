@@ -22,6 +22,7 @@ using OpenIddict.Validation.AspNetCore;
 using System;
 using System.Net.Http;
 using OpenIddict.Validation.SystemNetHttp;
+using Media.API.HostedServices;
 
 namespace Media.API;
 public class Startup
@@ -42,6 +43,7 @@ public class Startup
     _ConfigureMBusServices(services);
     _ConfigureCorsServices(services);
     _ConfigureAuth(services);
+    services.AddHostedService<MigrateBitrates>();
   }
 
   private void _ConfigureLocaleServices(IServiceCollection services)

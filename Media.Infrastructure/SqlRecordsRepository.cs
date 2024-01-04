@@ -847,4 +847,17 @@ public class SqlRecordsRepository : IRecordsRepository
     using var context = _contextFactory();
     return context.Genres.FirstOrDefault(genre => genre.Name == genreName)?.Bitrate;
   }
+
+  public async Task UpdateBitrate(string checksum, int bitrate)
+  {
+    using var context = _contextFactory();
+    var record = context.Records.FirstOrDefault(r => r.Checksum == checksum);
+    if (record == null)
+    {
+      return;
+    }
+
+    record.Bitrate = bitrate;
+    await context.SaveChangesAsync();
+  }
 }

@@ -195,6 +195,13 @@ public interface IRecordsRepository
   void UpdateBitrates(List<GenreBitrate> bitrates);
 
   /// <summary>
+  /// Updates the bitrate index of one record.
+  /// </summary>
+  /// <param name="checksum">The checksum of record to be updated.</param>
+  /// <param name="bitrate">The new bitrate to be set.</param>
+  Task UpdateBitrate(string checksum, int bitrate);
+
+  /// <summary>
   /// Returns bitsrate by genre name or null if no bitrate exists.
   /// </summary>
   /// <param name="genreName">Name of genre.</param>
