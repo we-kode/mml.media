@@ -9,6 +9,13 @@ namespace Media.Application.Contracts;
 public interface ILivestreamRepository
 {
   /// <summary>
+  /// Assigns items to groups.
+  /// </summary>
+  /// <param name="items">Ids of items.</param>
+  /// <param name="groups">Ids of groups.</param>
+  void Assign(List<Guid> items, List<Guid> groups);
+
+  /// <summary>
   /// Deletes one livestream.
   /// </summary>
   /// <param name="id">id of stream to be deleted.</param>

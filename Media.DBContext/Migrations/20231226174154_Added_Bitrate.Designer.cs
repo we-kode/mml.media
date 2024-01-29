@@ -3,6 +3,7 @@ using System;
 using Media.DBContext;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,10 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Media.DBContext.Migrations
 {
     [DbContext(typeof(ApplicationDBContext))]
-    partial class ApplicationDBContextModelSnapshot : ModelSnapshot
+    [Migration("20231226174154_Added_Bitrate")]
+    partial class Added_Bitrate
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -209,10 +211,6 @@ namespace Media.DBContext.Migrations
                         .HasColumnType("text")
                         .HasColumnName("checksum");
 
-                    b.Property<string>("Cover")
-                        .HasColumnType("text")
-                        .HasColumnName("cover");
-
                     b.Property<DateTime>("Date")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("date");
@@ -284,18 +282,10 @@ namespace Media.DBContext.Migrations
                         .HasColumnType("text")
                         .HasColumnName("artist_name");
 
-                    b.Property<int?>("Bitrate")
-                        .HasColumnType("integer")
-                        .HasColumnName("bitrate");
-
                     b.Property<string>("Checksum")
                         .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("checksum");
-
-                    b.Property<string>("Cover")
-                        .HasColumnType("text")
-                        .HasColumnName("cover");
 
                     b.Property<DateTime>("Date")
                         .HasColumnType("timestamp with time zone")

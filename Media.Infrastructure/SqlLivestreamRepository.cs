@@ -5,9 +5,7 @@ using Media.DBContext;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Net.Http;
 using System.Threading.Tasks;
 using System.Transactions;
 
@@ -24,6 +22,23 @@ public class SqlLivestreamRepository : ILivestreamRepository
     _contextFactory = contextFactory;
     this.mapper = mapper;
     _groupRepository = groupRepository;
+  }
+
+  public void Assign(List<Guid> items, List<Guid> groups)
+  {
+    using var scope = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled);
+    using var context = _contextFactory();
+    var rAssing = context.Livestreams
+      .Include(app => app.Groups)
+      .Where(rec => items.Contains(rec.RecordId)).ToList();
+    var gAssign = context.Groups
+     .Where(g => groups.Contains(g.GroupId)).ToList();
+    foreach (var record in rAssing)
+    {
+      record.Groups = record.Groups.Where(cg => !gAssign.Any(ga => ga.GroupId == cg.GroupId)).Union(gAssign).ToArray();
+    }
+    context.SaveChanges();
+    scope.Complete();
   }
 
   public async Task Delete(Guid id)

@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 
 namespace Media.Application.Models
 {
@@ -29,6 +28,11 @@ namespace Media.Application.Models
     /// Language of the record or null if no one provided.
     /// </summary>
     public string? Language { get; set; }
+
+    /// <summary>
+    /// Front cover of record.
+    /// </summary>
+    public string? Cover { get; set; }
 
     /// <summary>
     /// The tracknumber of the record.
@@ -64,5 +68,10 @@ namespace Media.Application.Models
     /// Sha1 hash value of the file content.
     /// </summary>
     public string Checksum { get; set; } = string.Empty;
+
+    /// <summary>
+    /// The compressed bitrate of the record.
+    /// </summary>
+    public int Bitrate {  get; set; }
   }
 }

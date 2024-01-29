@@ -256,11 +256,13 @@ public class SqlRecordsRepository : IRecordsRepository
       record.ArtistName,
       record.Date,
       record.Duration,
+      record.Bitrate ?? 0,
       null!,
       record.AlbumName ?? "",
       record.GenreName ?? "",
       record.LanguageName ?? "",
-      checksum: record.Checksum);
+      checksum: record.Checksum,
+      record.Cover ?? string.Empty);
   }
 
   public void SaveMetaData(RecordMetaData metaData, List<Guid> groups)
@@ -286,6 +288,8 @@ public class SqlRecordsRepository : IRecordsRepository
         MimeType = metaData.MimeType,
         TrackNumber = metaData.TrackNumber,
         Title = metaData.Title ?? metaData.OriginalFileName,
+        Bitrate = metaData.Bitrate,
+        Cover = metaData.Cover,
       };
 
       // add groups
@@ -517,11 +521,13 @@ public class SqlRecordsRepository : IRecordsRepository
       record.Artist?.Name,
       record.Date,
       record.Duration,
+      record.Bitrate ?? 0,
       record.Groups.Select(g => new Group(g.GroupId, g.Name, g.IsDefault)).ToArray(),
       record.Album?.AlbumName ?? string.Empty,
       record.Genre?.Name ?? string.Empty,
       record.Language?.Name ?? string.Empty,
-      record.Checksum);
+      record.Checksum,
+      record.Cover ?? string.Empty);
   }
 
   public async Task Update(Record record)
@@ -601,6 +607,8 @@ public class SqlRecordsRepository : IRecordsRepository
     {
       recordToUpdated.Groups.Remove(deletedGroup);
     }
+
+    recordToUpdated.Cover = record.Cover.Length > 0 ? Convert.ToBase64String(record.Cover) : null;
 
     await context.SaveChangesAsync().ConfigureAwait(false);
 
@@ -838,5 +846,65 @@ public class SqlRecordsRepository : IRecordsRepository
   {
     using var context = _contextFactory();
     return context.Genres.FirstOrDefault(genre => genre.Name == genreName)?.Bitrate;
+  }
+
+  public async Task UpdateBitrate(string checksum, int bitrate)
+  {
+    using var context = _contextFactory();
+    var record = context.Records.FirstOrDefault(r => r.Checksum == checksum);
+    if (record == null)
+    {
+      return;
+    }
+
+    record.Bitrate = bitrate;
+    await context.SaveChangesAsync();
+  }
+
+  public List<Record> GetRecords(List<string> checksums, IList<Guid> clientGroups)
+  {
+    using var context = _contextFactory();
+    return context.Records
+      .Include(rec => rec.Groups)
+      .Where(rec => checksums.Contains(rec.Checksum))
+      .Where(rec => rec.Groups.Any(g => clientGroups.Contains(g.GroupId)))
+      .Select(rec => MapModel(rec))
+      .ToList();
+  }
+
+  public void Assign(List<Guid> items, List<Guid> groups)
+  {
+    using var scope = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled);
+    using var context = _contextFactory();
+    var rAssing = context.Records
+      .Include(app => app.Groups)
+      .Where(rec => items.Contains(rec.RecordId)).ToList();
+    var gAssign = context.Groups
+     .Where(g => groups.Contains(g.GroupId)).ToList();
+    foreach (var record in rAssing)
+    {
+      record.Groups = record.Groups.Where(cg => !gAssign.Any(ga => ga.GroupId == cg.GroupId)).Union(gAssign).ToArray();
+    }
+    context.SaveChanges();
+    scope.Complete();
+  }
+
+  public void AssignFolder(IEnumerable<RecordFolder> items, List<Guid> groups)
+  {
+    using var scope = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled);
+    using var context = _contextFactory();
+    var gAssign = context.Groups.Where(g => groups.Contains(g.GroupId)).ToList();
+    foreach (var folder in items)
+    {
+      var dateRange = folder.ToDateRange();
+      var records = context.Records.Include(app => app.Groups).Where(rec => rec.Date.Date >= dateRange.Item1 && rec.Date.Date <= dateRange.Item2).ToList();
+
+      foreach (var record in records)
+      {
+        record.Groups = record.Groups.Where(cg => !gAssign.Any(ga => ga.GroupId == cg.GroupId)).Union(gAssign).ToArray();
+      }
+    }
+    context.SaveChanges();
+    scope.Complete();
   }
 }

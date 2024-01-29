@@ -36,6 +36,16 @@ public class SeedRecords
   public TimeSpan Duration { get; set; }
 
   /// <summary>
+  /// The bitrate of the record.
+  /// </summary>
+  public int? Bitrate { get; set; }
+
+  /// <summary>
+  /// Cover of the record.
+  /// </summary>
+  public string? Cover { get; set; }
+
+  /// <summary>
   /// The file checksum
   /// </summary>
   [Required]

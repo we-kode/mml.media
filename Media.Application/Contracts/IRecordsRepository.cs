@@ -195,9 +195,38 @@ public interface IRecordsRepository
   void UpdateBitrates(List<GenreBitrate> bitrates);
 
   /// <summary>
+  /// Updates the bitrate index of one record.
+  /// </summary>
+  /// <param name="checksum">The checksum of record to be updated.</param>
+  /// <param name="bitrate">The new bitrate to be set.</param>
+  Task UpdateBitrate(string checksum, int bitrate);
+
+  /// <summary>
   /// Returns bitsrate by genre name or null if no bitrate exists.
   /// </summary>
   /// <param name="genreName">Name of genre.</param>
   /// <returns><see cref="int?"/></returns>
   int? Bitrate(string genreName);
+
+  /// <summary>
+  /// Loads records by checksums filtered by client groups.
+  /// </summary>
+  /// <param name="checksums">Checksums to be checked.</param>
+  /// <param name="clientGroups">Groups the client is in.</param>
+  /// <returns>List of Records.</returns>
+  List<Record> GetRecords(List<string> checksums, IList<Guid> clientGroups);
+
+  /// <summary>
+  /// Assigns items to groups.
+  /// </summary>
+  /// <param name="items">Ids of items.</param>
+  /// <param name="groups">Ids of groups.</param>
+  void Assign(List<Guid> items, List<Guid> groups);
+
+  /// <summary>
+  /// Assigns items to groups.
+  /// </summary>
+  /// <param name="items">Items to be assigned.</param>
+  /// <param name="groups">Ids of groups.</param>
+  void AssignFolder(IEnumerable<RecordFolder> items, List<Guid> groups);
 }
