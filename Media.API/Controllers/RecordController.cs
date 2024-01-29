@@ -142,9 +142,33 @@ public class RecordController : ControllerBase
   /// <param name="data"><see cref="RecordFolder"/> to be deleted.</param>
   [HttpPost("deleteFolders")]
   [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme, Policy = Roles.Admin)]
-  public async Task<IActionResult> DeleteFodlers([FromBody] IList<Contracts.RecordFolder> data)
+  public async Task<IActionResult> DeleteFolders([FromBody] IList<Contracts.RecordFolder> data)
   {
     await recordRepository.DeleteFolders(data.Select(f => mapper.Map<Application.Models.RecordFolder>(f))).ConfigureAwait(false);
+    return Ok();
+  }
+
+  /// <summary>
+  /// Assigns records to multiple groups.
+  /// </summary>
+  /// <param name="request">Records to be assigned.</param>
+  [HttpPost("assign")]
+  [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme, Policy = Roles.Admin)]
+  public IActionResult Assign([FromBody] AssignmentRequest request)
+  {
+    recordRepository.Assign(request.Items, request.Groups);
+    return Ok();
+  }
+
+  /// <summary>
+  /// Assigns folders to multiple groups.
+  /// </summary>
+  /// <param name="request">Folders to be assigned.</param>
+  [HttpPost("assignFolder")]
+  [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme, Policy = Roles.Admin)]
+  public IActionResult AssignFolder([FromBody] AssignFolderRequest request)
+  {
+    recordRepository.AssignFolder(request.Items.Select(f => mapper.Map<Application.Models.RecordFolder>(f)), request.Groups);
     return Ok();
   }
 

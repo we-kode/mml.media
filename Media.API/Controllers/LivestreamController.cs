@@ -68,6 +68,18 @@ public class LivestreamController : ControllerBase
   }
 
   /// <summary>
+  /// Assigns livestreams to multiple groups.
+  /// </summary>
+  /// <param name="request">Livestreams to be assigned.</param>
+  [HttpPost("assign")]
+  [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme, Policy = Roles.Admin)]
+  public IActionResult Assign([FromBody] AssignmentRequest request)
+  {
+    repository.Assign(request.Items, request.Groups);
+    return Ok();
+  }
+
+  /// <summary>
   /// Loads one existing livestream.
   /// </summary>
   /// <param name="id">id of the livestream to be loaded.</param>

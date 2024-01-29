@@ -860,4 +860,54 @@ public class SqlRecordsRepository : IRecordsRepository
     record.Bitrate = bitrate;
     await context.SaveChangesAsync();
   }
+<<<<<<< Updated upstream
+=======
+
+  public List<Record> GetRecords(List<string> checksums, IList<Guid> clientGroups)
+  {
+    using var context = _contextFactory();
+    return context.Records
+      .Include(rec => rec.Groups)
+      .Where(rec => checksums.Contains(rec.Checksum))
+      .Where(rec => rec.Groups.Any(g => clientGroups.Contains(g.GroupId)))
+      .Select(rec => MapModel(rec))
+      .ToList();
+  }
+
+  public void Assign(List<Guid> items, List<Guid> groups)
+  {
+    using var scope = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled);
+    using var context = _contextFactory();
+    var rAssing = context.Records
+      .Include(app => app.Groups)
+      .Where(rec => items.Contains(rec.RecordId)).ToList();
+    var gAssign = context.Groups
+     .Where(g => groups.Contains(g.GroupId)).ToList();
+    foreach (var record in rAssing)
+    {
+      record.Groups = record.Groups.Where(cg => !gAssign.Any(ga => ga.GroupId == cg.GroupId)).Union(gAssign).ToArray();
+    }
+    context.SaveChanges();
+    scope.Complete();
+  }
+
+  public void AssignFolder(IEnumerable<RecordFolder> items, List<Guid> groups)
+  {
+    using var scope = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled);
+    using var context = _contextFactory();
+    var gAssign = context.Groups.Where(g => groups.Contains(g.GroupId)).ToList();
+    foreach (var folder in items)
+    {
+      var dateRange = folder.ToDateRange();
+      var records = context.Records.Include(app => app.Groups).Where(rec => rec.Date.Date >= dateRange.Item1 && rec.Date.Date <= dateRange.Item2).ToList();
+
+      foreach (var record in records)
+      {
+        record.Groups = record.Groups.Where(cg => !gAssign.Any(ga => ga.GroupId == cg.GroupId)).Union(gAssign).ToArray();
+      }
+    }
+    context.SaveChanges();
+    scope.Complete();
+  }
+>>>>>>> Stashed changes
 }
