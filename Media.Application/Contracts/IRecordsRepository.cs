@@ -207,8 +207,6 @@ public interface IRecordsRepository
   /// <param name="genreName">Name of genre.</param>
   /// <returns><see cref="int?"/></returns>
   int? Bitrate(string genreName);
-<<<<<<< Updated upstream
-=======
 
   /// <summary>
   /// Loads records by checksums filtered by client groups.
@@ -231,5 +229,4 @@ public interface IRecordsRepository
   /// <param name="items">Items to be assigned.</param>
   /// <param name="groups">Ids of groups.</param>
   void AssignFolder(IEnumerable<RecordFolder> items, List<Guid> groups);
->>>>>>> Stashed changes
 }

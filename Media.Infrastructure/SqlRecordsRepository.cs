@@ -860,8 +860,6 @@ public class SqlRecordsRepository : IRecordsRepository
     record.Bitrate = bitrate;
     await context.SaveChangesAsync();
   }
-<<<<<<< Updated upstream
-=======
 
   public List<Record> GetRecords(List<string> checksums, IList<Guid> clientGroups)
   {
@@ -909,5 +907,4 @@ public class SqlRecordsRepository : IRecordsRepository
     context.SaveChanges();
     scope.Complete();
   }
->>>>>>> Stashed changes
 }
