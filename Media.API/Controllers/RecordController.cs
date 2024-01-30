@@ -247,4 +247,15 @@ public class RecordController : ControllerBase
     recordRepository.DeleteBitrate(genreId);
     return Ok();
   }
+
+  /// <summary>
+  /// Loads records of given checksums.
+  /// </summary>
+  /// <param name="checksums">Checksums of records to be loaded.</param>
+  [HttpPost("check")]
+  public ActionResult<List<Record>> Check([FromBody] List<string> checksums)
+  {
+    var clientGroups = HttpContext.ClientGroups();
+    return recordRepository.GetRecords(checksums, clientGroups);
+  }
 }
