@@ -92,6 +92,11 @@ public class Records
   public string? Cover { get; set; }
 
   /// <summary>
+  /// Indicates whether the record is locked.
+  /// </summary>
+  public bool Locked { get; set; }
+
+  /// <summary>
   /// The groups asssociated with this record.
   /// </summary>
   public ICollection<Groups> Groups { get; set; } = new List<Groups>();

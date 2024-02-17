@@ -229,4 +229,16 @@ public interface IRecordsRepository
   /// <param name="items">Items to be assigned.</param>
   /// <param name="groups">Ids of groups.</param>
   void AssignFolder(IEnumerable<RecordFolder> items, List<Guid> groups);
+
+  /// <summary>
+  /// Locks or unlocks records.
+  /// </summary>
+  /// <param name="items">Records to be locked or unlocked.</param>
+  void Lock(List<Guid> items);
+
+  /// <summary>
+  /// Locks or unlocks items in folders.
+  /// </summary>
+  /// <param name="items">Folders to be locked or unlocked.</param>
+  void LockFolder(IEnumerable<RecordFolder> items);
 }

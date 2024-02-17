@@ -63,7 +63,15 @@ public class Record
   /// </summary>
   public byte[] Cover { get; set; } = Array.Empty<byte>();
 
+  /// <summary>
+  ///  Checksum of the record.
+  /// </summary>
   public string? Checksum { get; set; }
+
+  /// <summary>
+  /// Indicates whether the record is locked.
+  /// </summary>
+  public bool Locked { get; set; }
 
   /// <summary>
   /// List of groups the record is assigned to.
@@ -86,7 +94,8 @@ public class Record
   /// <param name="language">The language of the record.</param>
   /// <param name="checksum">The checksum of record.</param>
   /// <param name="cover">The cover as base64 string.</param>
-  public Record(Guid recordId, string title, int tracknumber, string? artist, DateTime date, TimeSpan duration, int bitrate, ICollection<Group> groups, string album = "", string genre = "", string language = "", string checksum = "", string cover = "")
+  /// <param name="isLock">Indicates whether the record is locked.</param>
+  public Record(Guid recordId, string title, int tracknumber, string? artist, DateTime date, TimeSpan duration, int bitrate, ICollection<Group> groups, string album = "", string genre = "", string language = "", string checksum = "", string cover = "", bool isLocked = false)
   {
     RecordId = recordId;
     Title = title;
@@ -101,6 +110,7 @@ public class Record
     Groups = groups ?? new List<Group>();
     Bitrate = bitrate;
     Cover = string.IsNullOrEmpty(cover) ? Array.Empty<byte>() : Convert.FromBase64String(cover);
+    Locked = isLocked;
   }
 
   public Record(Guid recordId, string title)
