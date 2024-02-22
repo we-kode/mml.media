@@ -24,7 +24,7 @@ public class SqlLivestreamRepository : ILivestreamRepository
     _groupRepository = groupRepository;
   }
 
-  public void Assign(List<Guid> items, List<Guid> groups)
+  public void Assign(List<Guid> items, List<Guid> initGroups, List<Guid> groups)
   {
     using var scope = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled);
     using var context = _contextFactory();
@@ -32,10 +32,10 @@ public class SqlLivestreamRepository : ILivestreamRepository
       .Include(app => app.Groups)
       .Where(rec => items.Contains(rec.RecordId)).ToList();
     var gAssign = context.Groups
-     .Where(g => groups.Contains(g.GroupId)).ToList();
+     .Where(g => groups.Contains(g.GroupId) || initGroups.Contains(g.GroupId)).ToList();
     foreach (var record in rAssing)
     {
-      record.Groups = record.Groups.Where(cg => !gAssign.Any(ga => ga.GroupId == cg.GroupId)).Union(gAssign).ToArray();
+      record.Groups = gAssign;
     }
     context.SaveChanges();
     scope.Complete();
@@ -60,6 +60,21 @@ public class SqlLivestreamRepository : ILivestreamRepository
     using var context = _contextFactory();
     var item = context.Livestreams.FirstOrDefault(stream => stream.RecordId == id);
     return item != null;
+  }
+
+  public Groups GetAssignedGroups(List<Guid> items)
+  {
+    using var context = _contextFactory();
+    var groups = context.Groups
+      .Where(g => g.Livestreams.Any(c => items.Contains(c.RecordId)));
+
+    var count = groups.Count();
+
+    return new Groups
+    {
+      TotalCount = count,
+      Items = mapper.ProjectTo<Group>(groups).ToList(),
+    };
   }
 
   public bool IsInGroup(Guid id, IList<Guid> clientGroups)
