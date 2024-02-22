@@ -879,7 +879,7 @@ public class SqlRecordsRepository : IRecordsRepository
       .ToList();
   }
 
-  public void Assign(List<Guid> items, List<Guid> groups)
+  public void Assign(List<Guid> items, List<Guid> initGroups, List<Guid> groups)
   {
     using var scope = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled);
     using var context = _contextFactory();
@@ -887,20 +887,20 @@ public class SqlRecordsRepository : IRecordsRepository
       .Include(app => app.Groups)
       .Where(rec => items.Contains(rec.RecordId)).ToList();
     var gAssign = context.Groups
-     .Where(g => groups.Contains(g.GroupId)).ToList();
+     .Where(g => groups.Contains(g.GroupId) || initGroups.Contains(g.GroupId)).ToList();
     foreach (var record in rAssing)
     {
-      record.Groups = record.Groups.Where(cg => !gAssign.Any(ga => ga.GroupId == cg.GroupId)).Union(gAssign).ToArray();
+      record.Groups = gAssign;
     }
     context.SaveChanges();
     scope.Complete();
   }
 
-  public void AssignFolder(IEnumerable<RecordFolder> items, List<Guid> groups)
+  public void AssignFolder(IEnumerable<RecordFolder> items, List<Guid> initGroups, List<Guid> groups)
   {
     using var scope = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled);
     using var context = _contextFactory();
-    var gAssign = context.Groups.Where(g => groups.Contains(g.GroupId)).ToList();
+    var gAssign = context.Groups.Where(g => groups.Contains(g.GroupId) || initGroups.Contains(g.GroupId)).ToList();
     foreach (var folder in items)
     {
       var dateRange = folder.ToDateRange();
@@ -908,7 +908,7 @@ public class SqlRecordsRepository : IRecordsRepository
 
       foreach (var record in records)
       {
-        record.Groups = record.Groups.Where(cg => !gAssign.Any(ga => ga.GroupId == cg.GroupId)).Union(gAssign).ToArray();
+        record.Groups = gAssign;
       }
     }
     context.SaveChanges();
@@ -945,5 +945,42 @@ public class SqlRecordsRepository : IRecordsRepository
     }
     context.SaveChanges();
     scope.Complete();
+  }
+
+  public Groups GetAssignedGroups(List<Guid> items)
+  {
+    using var context = _contextFactory();
+    var groups = context.Groups
+      .Where(g => g.Records.Any(c => items.Contains(c.RecordId)));
+
+    var count = groups.Count();
+
+    return new Groups
+    {
+      TotalCount = count,
+      Items = mapper.ProjectTo<Group>(groups).ToList(),
+    };
+  }
+
+  public Groups GetAssignedFolderGroups(IEnumerable<RecordFolder> folders)
+  {
+    using var context = _contextFactory();
+    var recs = new List<Guid>();
+    foreach (var folder in folders)
+    {
+      var dateRange = folder.ToDateRange();
+      recs.AddRange(context.Records.Where(rec => rec.Date.Date >= dateRange.Item1 && rec.Date.Date <= dateRange.Item2).Select(r => r.RecordId));
+    }
+
+    var groups = context.Groups
+      .Where(g => g.Records.Any(c => recs.Contains(c.RecordId)));
+
+    var count = groups.Count();
+
+    return new Groups
+    {
+      TotalCount = count,
+      Items = mapper.ProjectTo<Group>(groups).ToList(),
+    };
   }
 }

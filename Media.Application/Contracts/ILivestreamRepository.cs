@@ -12,8 +12,9 @@ public interface ILivestreamRepository
   /// Assigns items to groups.
   /// </summary>
   /// <param name="items">Ids of items.</param>
+  /// <param name="initGroups">The ids of the init selected groups.</param>
   /// <param name="groups">Ids of groups.</param>
-  void Assign(List<Guid> items, List<Guid> groups);
+  void Assign(List<Guid> items, List<Guid> initGroups, List<Guid> groups);
 
   /// <summary>
   /// Deletes one livestream.
@@ -27,6 +28,13 @@ public interface ILivestreamRepository
   /// <param name="id">Id of stream to be checked.</param>
   /// <returns>True, if exists.</returns>
   bool Exists(Guid id);
+
+  /// <summary>
+  /// Loads assinged groups of given items.
+  /// </summary>
+  /// <param name="items">Groups should be laoded.</param>
+  /// <returns>Ids of assigned groups.</returns>
+  Groups GetAssignedGroups(List<Guid> items);
 
   /// <summary>
   /// Checks, if user is in group with the gievn stream.

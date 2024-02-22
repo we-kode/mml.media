@@ -156,7 +156,7 @@ public class RecordController : ControllerBase
   [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme, Policy = Roles.Admin)]
   public IActionResult Assign([FromBody] AssignmentRequest request)
   {
-    recordRepository.Assign(request.Items, request.Groups);
+    recordRepository.Assign(request.Items, request.InitGroups, request.Groups);
     return Ok();
   }
 
@@ -168,8 +168,30 @@ public class RecordController : ControllerBase
   [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme, Policy = Roles.Admin)]
   public IActionResult AssignFolder([FromBody] AssignFolderRequest request)
   {
-    recordRepository.AssignFolder(request.Items.Select(f => mapper.Map<Application.Models.RecordFolder>(f)), request.Groups);
+    recordRepository.AssignFolder(request.Items.Select(f => mapper.Map<Application.Models.RecordFolder>(f)), request.InitGroups, request.Groups);
     return Ok();
+  }
+
+  /// <summary>
+  /// Loads selected groups
+  /// </summary>
+  /// <param name="ids">ids of the items to load groups from.</param>
+  [HttpPost("assignedGroups")]
+  [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme, Policy = Roles.Admin)]
+  public Groups AssignedGroups([FromBody] List<Guid> items)
+  {
+    return recordRepository.GetAssignedGroups(items);
+  }
+
+  /// <summary>
+  /// Loads selected folder groups
+  /// </summary>
+  /// <param name="ids">ids of the items to load groups from.</param>
+  [HttpPost("assignedFolderGroups")]
+  [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme, Policy = Roles.Admin)]
+  public Groups AssignedFolderGroups([FromBody] List<Contracts.RecordFolder> items)
+  {
+    return recordRepository.GetAssignedFolderGroups(items.Select(f => mapper.Map<Application.Models.RecordFolder>(f)));
   }
 
   /// <summary>

@@ -220,15 +220,17 @@ public interface IRecordsRepository
   /// Assigns items to groups.
   /// </summary>
   /// <param name="items">Ids of items.</param>
+  /// <param name="initGroups">The ids of the init selected groups.</param>
   /// <param name="groups">Ids of groups.</param>
-  void Assign(List<Guid> items, List<Guid> groups);
+  void Assign(List<Guid> items, List<Guid> initGroups, List<Guid> groups);
 
   /// <summary>
   /// Assigns items to groups.
   /// </summary>
   /// <param name="items">Items to be assigned.</param>
+  /// <param name="initGroups">The ids of the init selected groups.</param>
   /// <param name="groups">Ids of groups.</param>
-  void AssignFolder(IEnumerable<RecordFolder> items, List<Guid> groups);
+  void AssignFolder(IEnumerable<RecordFolder> items, List<Guid> initGroups, List<Guid> groups);
 
   /// <summary>
   /// Locks or unlocks records.
@@ -241,4 +243,18 @@ public interface IRecordsRepository
   /// </summary>
   /// <param name="items">Folders to be locked or unlocked.</param>
   void LockFolder(IEnumerable<RecordFolder> items);
+
+  /// <summary>
+  /// Loads assinged groups of given items.
+  /// </summary>
+  /// <param name="items">Groups should be laoded.</param>
+  /// <returns>Ids of assigned groups.</returns>
+  Groups GetAssignedGroups(List<Guid> items);
+
+  /// <summary>
+  /// Loads assinged groups of given items.
+  /// </summary>
+  /// <param name="clients">Groups should be laoded.</param>
+  /// <returns>Ids of assigned groups.</returns>
+  Groups GetAssignedFolderGroups(IEnumerable<RecordFolder> folders);
 }

@@ -75,9 +75,21 @@ public class LivestreamController : ControllerBase
   [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme, Policy = Roles.Admin)]
   public IActionResult Assign([FromBody] AssignmentRequest request)
   {
-    repository.Assign(request.Items, request.Groups);
+    repository.Assign(request.Items, request.InitGroups, request.Groups);
     return Ok();
   }
+
+  /// <summary>
+  /// Loads selected groups
+  /// </summary>
+  /// <param name="ids">ids of the items to load groups from.</param>
+  [HttpPost("assignedGroups")]
+  [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme, Policy = Roles.Admin)]
+  public Groups AssignedGroups([FromBody] List<Guid> items)
+  {
+    return repository.GetAssignedGroups(items);
+  }
+
 
   /// <summary>
   /// Loads one existing livestream.
