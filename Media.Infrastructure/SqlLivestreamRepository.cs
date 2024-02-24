@@ -32,10 +32,10 @@ public class SqlLivestreamRepository : ILivestreamRepository
       .Include(app => app.Groups)
       .Where(rec => items.Contains(rec.RecordId)).ToList();
     var gAssign = context.Groups
-     .Where(g => groups.Contains(g.GroupId) || initGroups.Contains(g.GroupId)).ToList();
+     .Where(g => groups.Contains(g.GroupId));
     foreach (var record in rAssing)
     {
-      record.Groups = gAssign;
+      record.Groups = record.Groups.Where(rg => initGroups.Contains(rg.GroupId) && !groups.Contains(rg.GroupId)).Union(gAssign).ToList();
     }
     context.SaveChanges();
     scope.Complete();

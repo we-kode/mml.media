@@ -887,10 +887,10 @@ public class SqlRecordsRepository : IRecordsRepository
       .Include(app => app.Groups)
       .Where(rec => items.Contains(rec.RecordId)).ToList();
     var gAssign = context.Groups
-     .Where(g => groups.Contains(g.GroupId) || initGroups.Contains(g.GroupId)).ToList();
+     .Where(g => groups.Contains(g.GroupId));
     foreach (var record in rAssing)
     {
-      record.Groups = gAssign;
+      record.Groups = record.Groups = record.Groups.Where(rg => initGroups.Contains(rg.GroupId) && !groups.Contains(rg.GroupId)).Union(gAssign).ToList();
     }
     context.SaveChanges();
     scope.Complete();
@@ -900,7 +900,7 @@ public class SqlRecordsRepository : IRecordsRepository
   {
     using var scope = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled);
     using var context = _contextFactory();
-    var gAssign = context.Groups.Where(g => groups.Contains(g.GroupId) || initGroups.Contains(g.GroupId)).ToList();
+    var gAssign = context.Groups.Where(g => groups.Contains(g.GroupId));
     foreach (var folder in items)
     {
       var dateRange = folder.ToDateRange();
@@ -908,7 +908,7 @@ public class SqlRecordsRepository : IRecordsRepository
 
       foreach (var record in records)
       {
-        record.Groups = gAssign;
+        record.Groups = record.Groups = record.Groups.Where(rg => initGroups.Contains(rg.GroupId) && !groups.Contains(rg.GroupId)).Union(gAssign).ToList();
       }
     }
     context.SaveChanges();
