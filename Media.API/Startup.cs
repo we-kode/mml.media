@@ -11,7 +11,6 @@ using Media.Middleware;
 using Messages;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -23,6 +22,7 @@ using System;
 using System.Net.Http;
 using OpenIddict.Validation.SystemNetHttp;
 using Media.API.HostedServices;
+using Asp.Versioning;
 
 namespace Media.API;
 public class Startup

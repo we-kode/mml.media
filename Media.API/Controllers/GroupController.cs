@@ -1,15 +1,10 @@
 using Media.Application.Contracts;
 using Media.Application.Constants;
 using Media.Application.Models;
-using Media.Filters;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Localization;
 using OpenIddict.Validation.AspNetCore;
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
+using Asp.Versioning;
 
 namespace Media.Controllers
 {

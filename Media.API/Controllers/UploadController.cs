@@ -1,5 +1,5 @@
-﻿using MassTransit;
-using Media.Application.Constants;
+﻿using Asp.Versioning;
+using MassTransit;
 using Media.Messages;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;

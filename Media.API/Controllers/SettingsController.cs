@@ -1,4 +1,5 @@
-﻿using AutoMapper;
+﻿using Asp.Versioning;
+using AutoMapper;
 using Media.API.Contracts;
 using Media.Application.Contracts;
 using Media.Application.Models;
