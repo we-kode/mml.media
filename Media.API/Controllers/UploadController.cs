@@ -17,19 +17,13 @@ namespace Media.API.Controllers;
 [ApiVersion("1.0")]
 [Route("api/v{version:apiVersion}/media/[controller]")]
 [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme, Policy = Application.Constants.Roles.Admin)]
-public class UploadController : ControllerBase
+public class UploadController(IPublishEndpoint publishEndpoint) : ControllerBase
 {
-  private readonly IPublishEndpoint _publishEndpoint;
   private readonly ContentInspector inspector = new ContentInspectorBuilder()
   {
     Definitions = MimeDetective.Definitions.Default.FileTypes.Audio.MP3(),
     Parallel = true
   }.Build();
-
-  public UploadController(IPublishEndpoint publishEndpoint)
-  {
-    _publishEndpoint = publishEndpoint;
-  }
 
   /// <summary>
   /// Uploads one file to the tmp folder.
@@ -62,7 +56,7 @@ public class UploadController : ControllerBase
         var fileName = file.FileName;
         var fullPath = Path.Combine(pathToSave, file.FileName);
         using (var stream = new FileStream(fullPath, FileMode.Create))
-        { 
+        {
           file.CopyTo(stream);
         }
 
@@ -72,16 +66,19 @@ public class UploadController : ControllerBase
         {
           foreach (var group in Request.Form["Groups"])
           {
-            groups.Add(Guid.Parse(group));
+            if (group != null)
+            {
+              groups.Add(Guid.Parse(group));
+            }
           }
         }
 
         // publish message to start compressing file and indexing.
-        await _publishEndpoint.Publish<FileUploaded>(new
+        await publishEndpoint.Publish<FileUploaded>(new
         {
           FileName = fileName,
-          Date = DateTime.Parse(Request.Form["LastModifiedDate"]),
-          Groups =  groups
+          Date = DateTime.Parse(Request.Form["LastModifiedDate"]!),
+          Groups = groups
         }).ConfigureAwait(false);
 
         return Ok();
