@@ -1,18 +1,18 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>false</ImplicitUsings>
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="AutoMapper" Version="12.0.0" />
+    <PackageReference Include="AutoMapper" Version="13.0.1" />
     <PackageReference Include="ByteDev.Crypto" Version="8.0.0" />
-    <PackageReference Include="MassTransit" Version="8.0.7" />
+    <PackageReference Include="MassTransit" Version="8.2.3" />
     <PackageReference Include="TagLibSharp" Version="2.3.0" />
     <PackageReference Include="WeKoDe.MML.Messages" Version="1.0.0" />
-    <PackageReference Include="xFFmpeg.NET" Version="7.1.3" />
+    <PackageReference Include="xFFmpeg.NET" Version="7.2.0" />
   </ItemGroup>
 
   <ItemGroup>

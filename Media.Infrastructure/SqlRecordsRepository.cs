@@ -13,28 +13,17 @@ using System.Transactions;
 
 namespace Media.Infrastructure;
 
-public class SqlRecordsRepository : IRecordsRepository
+public class SqlRecordsRepository(Func<ApplicationDBContext> contextFactory, IMapper mapper, IGroupRepository groupRepository) : IRecordsRepository
 {
-  private readonly Func<ApplicationDBContext> _contextFactory;
-  private readonly IMapper mapper;
-  private readonly IGroupRepository _groupRepository;
-
-  public SqlRecordsRepository(Func<ApplicationDBContext> contextFactory, IMapper mapper, IGroupRepository groupRepository)
-  {
-    _contextFactory = contextFactory;
-    this.mapper = mapper;
-    _groupRepository = groupRepository;
-  }
-
   public bool IsIndexed(string checksum)
   {
-    using var context = _contextFactory();
+    using var context = contextFactory();
     return context.Records.Any(record => record.Checksum == checksum);
   }
 
   public Records List(string? filter, TagFilter tagFilter, bool filterByGroups, IList<Guid> groups, int skip = Application.Constants.List.Skip, int take = Application.Constants.List.Take)
   {
-    using var context = _contextFactory();
+    using var context = contextFactory();
     var query = CreateFilterQuery(context, filter, tagFilter, filterByGroups, tagFilter.StartDate.HasValue && tagFilter.EndDate.HasValue && tagFilter.EndDate >= tagFilter.StartDate, groups);
 
     query = query
@@ -57,7 +46,7 @@ public class SqlRecordsRepository : IRecordsRepository
 
   public RecordFolders ListFolder(string? filter, TagFilter tagFilter, bool filterByGroups, IList<Guid> groups, int skip, int take)
   {
-    using var context = _contextFactory();
+    using var context = contextFactory();
     var dateFilterSet = tagFilter.StartDate.HasValue && tagFilter.EndDate.HasValue && tagFilter.EndDate >= tagFilter.StartDate;
     var query = CreateFilterQuery(context, filter, tagFilter, filterByGroups, dateFilterSet, groups);
 
@@ -138,19 +127,19 @@ public class SqlRecordsRepository : IRecordsRepository
 
   public Record? Next(Guid id, string? filter, TagFilter tagFilter, bool filterByGroups, IEnumerable<Guid> clientGroups, bool repeat, bool shuffle)
   {
-    using var context = _contextFactory();
+    using var context = contextFactory();
     var query = Filter(context, filter, tagFilter, filterByGroups, clientGroups.ToList());
     return DetermineRecord(query, id, repeat, shuffle);
   }
 
   public Record? Previous(Guid id, string? filter, TagFilter tagFilter, bool filterByGroups, IEnumerable<Guid> clientGroups, bool repeat)
   {
-    using var context = _contextFactory();
+    using var context = contextFactory();
     var query = Filter(context, filter, tagFilter, filterByGroups, clientGroups.ToList());
     return DetermineRecord(query, id, repeat, reverse: true);
   }
 
-  private Record? DetermineRecord(IQueryable<DBContext.Models.SeedRecords> query, Guid actualId, bool repeat, bool shuffle = false, bool reverse = false)
+  private static Record? DetermineRecord(IQueryable<DBContext.Models.SeedRecords> query, Guid actualId, bool repeat, bool shuffle = false, bool reverse = false)
   {
     // If no element in result return null.
     var count = query.Count();
@@ -202,7 +191,7 @@ public class SqlRecordsRepository : IRecordsRepository
     return MapModel(query.FirstOrDefault(rec => rec.RecordId == previousId));
   }
 
-  private IQueryable<DBContext.Models.SeedRecords> Filter(ApplicationDBContext context, string? filter, TagFilter tagFilter, bool filterByGroups, IList<Guid> groups)
+  private static IQueryable<DBContext.Models.SeedRecords> Filter(ApplicationDBContext context, string? filter, TagFilter tagFilter, bool filterByGroups, IList<Guid> groups)
   {
     var filterQuery = string.IsNullOrEmpty(filter) ? "%%" : $"%{filter}%";
     var filterGroupsQuery = filterByGroups ? $"AND t.group_id IN ({string.Join(',', groups.Select(id => string.Format("'{0}'", id)))})" : string.Empty;
@@ -270,7 +259,7 @@ public class SqlRecordsRepository : IRecordsRepository
     try
     {
       using var scope = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled);
-      using var context = _contextFactory();
+      using var context = contextFactory();
 
       var record = context.Records.FirstOrDefault(record => record.Checksum == metaData.Checksum);
       if (record != null)
@@ -315,14 +304,12 @@ public class SqlRecordsRepository : IRecordsRepository
         SaveMetaData(metaData, groups);
         return;
       }
-
-      throw e;
     }
   }
 
   public Albums ListAlbums(string? filter, bool filterByGroups, IEnumerable<Guid> clientGroups, int skip = Application.Constants.List.Skip, int take = Application.Constants.List.Take)
   {
-    using var context = _contextFactory();
+    using var context = contextFactory();
     var query = context.Albums
      .Where(al => string.IsNullOrEmpty(filter) || EF.Functions.ILike(al.AlbumName, $"%{filter}%"));
 
@@ -348,7 +335,7 @@ public class SqlRecordsRepository : IRecordsRepository
 
   public Artists ListArtists(string? filter, bool filterByGroups, IEnumerable<Guid> clientGroups, int skip = Application.Constants.List.Skip, int take = Application.Constants.List.Take)
   {
-    using var context = _contextFactory();
+    using var context = contextFactory();
     var query = context.Artists
       .Where(ar => string.IsNullOrEmpty(filter) || EF.Functions.ILike(ar.Name, $"%{filter}%"));
 
@@ -374,7 +361,7 @@ public class SqlRecordsRepository : IRecordsRepository
 
   public Genres ListGenres(string? filter, bool filterByGroups, IEnumerable<Guid> clientGroups, int skip = Application.Constants.List.Skip, int take = Application.Constants.List.Take)
   {
-    using var context = _contextFactory();
+    using var context = contextFactory();
     var query = context.Genres
      .Where(g => string.IsNullOrEmpty(filter) || EF.Functions.ILike(g.Name, $"%{filter}%"));
 
@@ -400,7 +387,7 @@ public class SqlRecordsRepository : IRecordsRepository
 
   public Languages ListLanguages(string? filter, bool filterByGroups, IEnumerable<Guid> clientGroups, int skip = 0, int take = 100)
   {
-    using var context = _contextFactory();
+    using var context = contextFactory();
     var query = context.Languages
      .Where(al => string.IsNullOrEmpty(filter) || EF.Functions.ILike(al.Name, $"%{filter}%"));
 
@@ -427,7 +414,7 @@ public class SqlRecordsRepository : IRecordsRepository
   public async Task DeleteFolders(IEnumerable<RecordFolder> folders)
   {
     using var scope = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled);
-    using var context = _contextFactory();
+    using var context = contextFactory();
     foreach (var folder in folders)
     {
       var dateRange = folder.ToDateRange();
@@ -443,12 +430,12 @@ public class SqlRecordsRepository : IRecordsRepository
   public async Task DeleteRecord(Guid id)
   {
     using var scope = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled);
-    using var context = _contextFactory();
+    using var context = contextFactory();
     await RemoveRecord(context, id).ConfigureAwait(false);
     scope.Complete();
   }
 
-  private async Task RemoveRecord(ApplicationDBContext context, Guid id, bool removeLocked = true)
+  private static async Task RemoveRecord(ApplicationDBContext context, Guid id, bool removeLocked = true)
   {
     var record = context.Records
       .Include(rec => rec.Artist)
@@ -494,7 +481,7 @@ public class SqlRecordsRepository : IRecordsRepository
 
   public bool Exists(Guid id)
   {
-    using var context = _contextFactory();
+    using var context = contextFactory();
     var record = context.Records.FirstOrDefault(rec => rec.RecordId == id);
     if (record == null)
     {
@@ -505,7 +492,7 @@ public class SqlRecordsRepository : IRecordsRepository
 
   public Record GetRecord(Guid id)
   {
-    using var context = _contextFactory();
+    using var context = contextFactory();
     var record = context.Records
       .Include(rec => rec.Album)
       .Include(rec => rec.Genre)
@@ -539,7 +526,7 @@ public class SqlRecordsRepository : IRecordsRepository
   public async Task Update(Record record)
   {
     using var scope = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled);
-    using var context = _contextFactory();
+    using var context = contextFactory();
 
     var recordToUpdated = context.Records
       .Include(rec => rec.Artist)
@@ -590,7 +577,7 @@ public class SqlRecordsRepository : IRecordsRepository
 
     // update groups
     var addedGroups = record.Groups
-       .Where(g => _groupRepository.GroupExists(g.Id).GetAwaiter().GetResult())
+       .Where(g => groupRepository.GroupExists(g.Id).GetAwaiter().GetResult())
        .Where(g => !recordToUpdated.Groups.Any(rg => rg.GroupId == g.Id))
        .Select(g => new DBContext.Models.Groups
        {
@@ -650,13 +637,10 @@ public class SqlRecordsRepository : IRecordsRepository
     }
 
     var artist = context.Artists.FirstOrDefault(art => art.Name == artistName);
-    if (artist == null)
+    artist ??= new DBContext.Models.Artists
     {
-      artist = new DBContext.Models.Artists
-      {
-        Name = artistName
-      };
-    }
+      Name = artistName
+    };
 
     return artist;
   }
@@ -682,13 +666,10 @@ public class SqlRecordsRepository : IRecordsRepository
     }
 
     var album = context.Albums.FirstOrDefault(a => a.AlbumName == albumName);
-    if (album == null)
+    album ??= new DBContext.Models.Albums
     {
-      album = new DBContext.Models.Albums
-      {
-        AlbumName = albumName
-      };
-    }
+      AlbumName = albumName
+    };
 
     return album;
   }
@@ -743,20 +724,17 @@ public class SqlRecordsRepository : IRecordsRepository
     }
 
     var lang = context.Languages.FirstOrDefault(g => g.Name == langName);
-    if (lang == null)
+    lang ??= new DBContext.Models.Languages
     {
-      lang = new DBContext.Models.Languages
-      {
-        Name = langName
-      };
-    }
+      Name = langName
+    };
 
     return lang;
   }
 
   public RecordStream StreamRecord(Guid id)
   {
-    using var context = _contextFactory();
+    using var context = contextFactory();
     var record = context.Records.First(rec => rec.RecordId == id);
     var stream = File.OpenRead(Path.Combine(record.FilePath, record.Checksum));
     return new RecordStream(record.MimeType, stream);
@@ -764,7 +742,7 @@ public class SqlRecordsRepository : IRecordsRepository
 
   public bool IsInGroup(Guid id, IEnumerable<Guid> clientGroups)
   {
-    using var context = _contextFactory();
+    using var context = contextFactory();
     var record = context.Records
       .Include(r => r.Groups)
       .First(rec => rec.RecordId == id);
@@ -773,14 +751,14 @@ public class SqlRecordsRepository : IRecordsRepository
 
   public string GetFilePath(Guid id)
   {
-    using var context = _contextFactory();
+    using var context = contextFactory();
     var record = context.Records.First(rec => rec.RecordId == id);
     return Path.Combine(record.FilePath, record.Checksum);
   }
 
   public GenreBitrates Bitrates()
   {
-    using var context = _contextFactory();
+    using var context = contextFactory();
     var genres = context.Genres
       .Where(genre => genre.Bitrate.HasValue)
       .OrderBy(genre => genre.Name)
@@ -788,19 +766,19 @@ public class SqlRecordsRepository : IRecordsRepository
     return new GenreBitrates
     {
       TotalCount = genres.Count(),
-      Items = genres.ToList()
+      Items = [.. genres]
     };
   }
 
   public bool GenreExists(Guid genreId)
   {
-    using var context = _contextFactory();
+    using var context = contextFactory();
     return context.Genres.Any(genre => genre.GenreId == genreId);
   }
 
   public void DeleteBitrate(Guid genreId)
   {
-    using var context = _contextFactory();
+    using var context = contextFactory();
     var genre = context.Genres
       .Include(g => g.Records)
       .FirstOrDefault(g => g.GenreId == genreId);
@@ -824,7 +802,7 @@ public class SqlRecordsRepository : IRecordsRepository
 
   public void UpdateBitrates(List<GenreBitrate> bitrates)
   {
-    using var context = _contextFactory();
+    using var context = contextFactory();
     foreach (var bitrate in bitrates)
     {
       if (!bitrate.Bitrate.HasValue || string.IsNullOrEmpty(bitrate.Name))
@@ -851,13 +829,13 @@ public class SqlRecordsRepository : IRecordsRepository
 
   public int? Bitrate(string genreName)
   {
-    using var context = _contextFactory();
+    using var context = contextFactory();
     return context.Genres.FirstOrDefault(genre => genre.Name == genreName)?.Bitrate;
   }
 
   public async Task UpdateBitrate(string checksum, int bitrate)
   {
-    using var context = _contextFactory();
+    using var context = contextFactory();
     var record = context.Records.FirstOrDefault(r => r.Checksum == checksum);
     if (record == null)
     {
@@ -870,19 +848,18 @@ public class SqlRecordsRepository : IRecordsRepository
 
   public List<Record> GetRecords(List<string> checksums, IList<Guid> clientGroups)
   {
-    using var context = _contextFactory();
-    return context.Records
+    using var context = contextFactory();
+    return [.. context.Records
       .Include(rec => rec.Groups)
       .Where(rec => checksums.Contains(rec.Checksum))
       .Where(rec => rec.Groups.Any(g => clientGroups.Contains(g.GroupId)))
-      .Select(rec => MapModel(rec))
-      .ToList();
+      .Select(rec => MapModel(rec))];
   }
 
   public void Assign(List<Guid> items, List<Guid> initGroups, List<Guid> groups)
   {
     using var scope = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled);
-    using var context = _contextFactory();
+    using var context = contextFactory();
     var rAssing = context.Records
       .Include(app => app.Groups)
       .Where(rec => items.Contains(rec.RecordId)).ToList();
@@ -899,7 +876,7 @@ public class SqlRecordsRepository : IRecordsRepository
   public void AssignFolder(IEnumerable<RecordFolder> items, List<Guid> initGroups, List<Guid> groups)
   {
     using var scope = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled);
-    using var context = _contextFactory();
+    using var context = contextFactory();
     var gAssign = context.Groups.Where(g => groups.Contains(g.GroupId));
     foreach (var folder in items)
     {
@@ -918,7 +895,7 @@ public class SqlRecordsRepository : IRecordsRepository
   public void Lock(List<Guid> items)
   {
     using var scope = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled);
-    using var context = _contextFactory();
+    using var context = contextFactory();
     var rAssing = context.Records
       .Where(rec => items.Contains(rec.RecordId)).ToList();
     foreach (var record in rAssing)
@@ -932,7 +909,7 @@ public class SqlRecordsRepository : IRecordsRepository
   public void LockFolder(IEnumerable<RecordFolder> items)
   {
     using var scope = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled);
-    using var context = _contextFactory();
+    using var context = contextFactory();
     foreach (var folder in items)
     {
       var dateRange = folder.ToDateRange();
@@ -949,7 +926,7 @@ public class SqlRecordsRepository : IRecordsRepository
 
   public Groups GetAssignedGroups(List<Guid> items)
   {
-    using var context = _contextFactory();
+    using var context = contextFactory();
     var groups = context.Groups
       .Where(g => g.Records.Any(c => items.Contains(c.RecordId)));
 
@@ -958,13 +935,13 @@ public class SqlRecordsRepository : IRecordsRepository
     return new Groups
     {
       TotalCount = count,
-      Items = mapper.ProjectTo<Group>(groups).ToList(),
+      Items = [.. mapper.ProjectTo<Group>(groups)],
     };
   }
 
   public Groups GetAssignedFolderGroups(IEnumerable<RecordFolder> folders)
   {
-    using var context = _contextFactory();
+    using var context = contextFactory();
     var recs = new List<Guid>();
     foreach (var folder in folders)
     {
@@ -980,7 +957,7 @@ public class SqlRecordsRepository : IRecordsRepository
     return new Groups
     {
       TotalCount = count,
-      Items = mapper.ProjectTo<Group>(groups).ToList(),
+      Items = [.. mapper.ProjectTo<Group>(groups)],
     };
   }
 }

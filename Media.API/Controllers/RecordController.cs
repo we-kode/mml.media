@@ -1,4 +1,5 @@
-﻿using AutoMapper;
+﻿using Asp.Versioning;
+using AutoMapper;
 using Media.API.Contracts;
 using Media.API.Extensions;
 using Media.Application.Constants;
@@ -19,16 +20,8 @@ namespace Media.API.Controllers;
 [ApiVersion("1.0")]
 [Route("api/v{version:apiVersion}/media/[controller]")]
 [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
-public class RecordController : ControllerBase
+public class RecordController(IRecordsRepository recordRepository, IMapper mapper) : ControllerBase
 {
-  private readonly IRecordsRepository recordRepository;
-  private readonly IMapper mapper;
-
-  public RecordController(IRecordsRepository recordRepository, IMapper mapper)
-  {
-    this.recordRepository = recordRepository;
-    this.mapper = mapper;
-  }
 
   /// <summary>
   /// Loads a list of existing records.
