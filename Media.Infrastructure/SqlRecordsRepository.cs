@@ -204,9 +204,9 @@ public class SqlRecordsRepository : IRecordsRepository
 
   private IQueryable<DBContext.Models.SeedRecords> Filter(ApplicationDBContext context, string? filter, TagFilter tagFilter, bool filterByGroups, IList<Guid> groups)
   {
+    var filterGroupsQuery = filterByGroups ? $"WHERE rec.record_id IN (SELECT g1.records_record_id FROM public.groups_records AS g1 WHERE g1.groups_group_id IN ({string.Join(',', groups.Select(id => string.Format("'{0}'", id)))}))" : string.Empty;
     var ilikeFilter = string.IsNullOrEmpty(filter) ? "'%%'" : $"'%{filter}%'";
-    var filterQuery = $"WHERE rec.title ILIKE {ilikeFilter}";
-    var filterGroupsQuery = filterByGroups ? $"WHERE g1.groups_group_id IN ({string.Join(',', groups.Select(id => string.Format("'{0}'", id)))})" : string.Empty;
+    var filterQuery = $"AND rec.title ILIKE {ilikeFilter}";
     var filterDateQuery = tagFilter.StartDate.HasValue && tagFilter.EndDate.HasValue && tagFilter.EndDate >= tagFilter.StartDate ? $"AND (('{tagFilter.StartDate.Value.ToUniversalTime().Date:O}' <= date_trunc('day', rec.date::timestamptz, 'UTC')) AND date_trunc('day', rec.date::timestamptz, 'UTC') <= '{tagFilter.EndDate.Value.ToUniversalTime().Date:O}')" : string.Empty;
     var filterArtistsQuery = tagFilter.Artists.Count > 0 ? $"AND rec.artist_id IN ({string.Join(',', tagFilter.Artists.Select(id => string.Format("'{0}'", id)))})" : string.Empty;
     var filterGenreQuery = tagFilter.Genres.Count > 0 ? $"AND rec.genre_id IN ({string.Join(',', tagFilter.Genres.Select(id => string.Format("'{0}'", id)))})" : string.Empty;
@@ -222,15 +222,11 @@ public class SqlRecordsRepository : IRecordsRepository
                   LEFT JOIN public.albums AS al ON rec.album_id = al.album_id
                   LEFT JOIN public.genres AS g ON rec.genre_id = g.genre_id
                   LEFT JOIN public.languages AS l ON rec.language_id = l.language_id
-                  INNER JOIN (SELECT g1.groups_group_id, g1.records_record_id
-			                       FROM public.groups_records AS g1
                  ";
 
     var sb = new StringBuilder();
     sb.AppendLine(selectQuery);
     sb.AppendLine(filterGroupsQuery);
-    sb.AppendLine(@") AS t 
-               ON rec.record_id = t.records_record_id");
     sb.AppendLine(filterQuery);
     sb.AppendLine(filterDateQuery);
     sb.AppendLine(filterArtistsQuery);
