@@ -233,7 +233,6 @@ public class SqlRecordsRepository : IRecordsRepository
     sb.AppendLine(filterGenreQuery);
     sb.AppendLine(filterAlbumQuery);
     sb.AppendLine(filterLanguageQuery);
-    sb.AppendLine("GROUP BY rec.record_id, a.name, al.album_name, g.name, l.name");
     sb.AppendLine("ORDER BY Cast(rec.date as Date) desc, rec.Date asc");
     var query = context.SeedRecords.FromSqlRaw($"{sb}");
 
