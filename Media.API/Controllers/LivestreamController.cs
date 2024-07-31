@@ -3,7 +3,7 @@ using AutoMapper;
 using Media.API.Contracts;
 using Media.API.Extensions;
 using Media.Application.Constants;
-using Media.Application.Contracts;
+using Media.Application.Contracts.Repositories;
 using Media.Application.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -18,7 +18,8 @@ using System.Threading.Tasks;
 namespace Media.API.Controllers;
 
 [ApiController]
-[ApiVersion("1.0")]
+[ApiVersion(1.0)]
+[ApiVersion(2.0)]
 [Route("api/v{version:apiVersion}/media/[controller]")]
 [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
 public class LivestreamController : ControllerBase

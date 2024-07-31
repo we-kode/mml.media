@@ -14,7 +14,8 @@ using System.Threading.Tasks;
 namespace Media.API.Controllers;
 
 [ApiController]
-[ApiVersion("1.0")]
+[ApiVersion(1.0)]
+[ApiVersion(2.0)]
 [Route("api/v{version:apiVersion}/media/[controller]")]
 [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme, Policy = Application.Constants.Roles.Admin)]
 public class UploadController(IPublishEndpoint publishEndpoint) : ControllerBase

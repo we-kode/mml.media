@@ -29,7 +29,12 @@ public class Livestreams
   public int ProviderType { get; set; }
 
   /// <summary>
-  /// The groups asssociated with this stream.
+  /// The front cover of livestream.
+  /// </summary>
+  public string? Cover { get; set; }
+
+  /// <summary>
+  /// The groups associated with this stream.
   /// </summary>
   public ICollection<Groups> Groups { get; set; } = new List<Groups>();
 

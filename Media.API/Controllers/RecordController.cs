@@ -3,7 +3,7 @@ using AutoMapper;
 using Media.API.Contracts;
 using Media.API.Extensions;
 using Media.Application.Constants;
-using Media.Application.Contracts;
+using Media.Application.Contracts.Repositories;
 using Media.Application.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -17,10 +17,16 @@ using System.Threading.Tasks;
 namespace Media.API.Controllers;
 
 [ApiController]
-[ApiVersion("1.0")]
+[ApiVersion(1.0)]
+[ApiVersion(2.0)]
 [Route("api/v{version:apiVersion}/media/[controller]")]
 [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
-public class RecordController(IRecordsRepository recordRepository, IMapper mapper) : ControllerBase
+public class RecordController(
+  IRecordsRepository recordRepository,
+  IArtistsRepository artistsRepository,
+  IGenresRepository genresRepository,
+  IAlbumsRepository albumsRepository,
+  IMapper mapper) : ControllerBase
 {
 
   /// <summary>
@@ -35,7 +41,7 @@ public class RecordController(IRecordsRepository recordRepository, IMapper mappe
   {
     var isAdmin = HttpContext.IsAdmin();
     var clientGroups = HttpContext.ClientGroups();
-    return recordRepository.List(filter, mapper.Map<Application.Contracts.TagFilter>(tagFilter), !isAdmin, clientGroups, skip, take);
+    return recordRepository.List(filter, mapper.Map<Application.Contracts.Repositories.TagFilter>(tagFilter), !isAdmin, clientGroups, skip, take);
   }
 
   /// <summary>
@@ -50,7 +56,7 @@ public class RecordController(IRecordsRepository recordRepository, IMapper mappe
   {
     var isAdmin = HttpContext.IsAdmin();
     var clientGroups = HttpContext.ClientGroups();
-    return recordRepository.ListFolder(filter, mapper.Map<Application.Contracts.TagFilter>(tagFilter), !isAdmin, clientGroups, skip, take);
+    return recordRepository.ListFolder(filter, mapper.Map<Application.Contracts.Repositories.TagFilter>(tagFilter), !isAdmin, clientGroups, skip, take);
   }
 
   /// <summary>
@@ -61,11 +67,13 @@ public class RecordController(IRecordsRepository recordRepository, IMapper mappe
   /// <param name="take">Size of chunk to be loaded</param>
   /// <returns><see cref="Artists"/></returns>
   [HttpGet("artists")]
+  [MapToApiVersion(1.0)]
+  [Obsolete]
   public Artists GetArtists([FromQuery] string? filter, [FromQuery] int skip = Application.Constants.List.Skip, [FromQuery] int take = Application.Constants.List.Take)
   {
     var isAdmin = HttpContext.IsAdmin();
     var clientGroups = HttpContext.ClientGroups();
-    return recordRepository.ListArtists(filter, !isAdmin, clientGroups, skip, take);
+    return artistsRepository.ListArtists(filter, !isAdmin, clientGroups, skip, take);
   }
 
   /// <summary>
@@ -76,11 +84,13 @@ public class RecordController(IRecordsRepository recordRepository, IMapper mappe
   /// <param name="take">Size of chunk to be loaded</param>
   /// <returns><see cref="Artists"/></returns>
   [HttpGet("genres")]
+  [MapToApiVersion(1.0)]
+  [Obsolete]
   public Genres GetGenres([FromQuery] string? filter, [FromQuery] int skip = Application.Constants.List.Skip, [FromQuery] int take = Application.Constants.List.Take)
   {
     var isAdmin = HttpContext.IsAdmin();
     var clientGroups = HttpContext.ClientGroups();
-    return recordRepository.ListGenres(filter, !isAdmin, clientGroups, skip, take);
+    return genresRepository.ListGenres(filter, !isAdmin, clientGroups, skip, take);
   }
 
   /// <summary>
@@ -91,11 +101,13 @@ public class RecordController(IRecordsRepository recordRepository, IMapper mappe
   /// <param name="take">Size of chunk to be loaded</param>
   /// <returns><see cref="Albums"/></returns>
   [HttpGet("albums")]
+  [MapToApiVersion(1.0)]
+  [Obsolete]
   public Albums GetAlbums([FromQuery] string? filter, [FromQuery] int skip = Application.Constants.List.Skip, [FromQuery] int take = Application.Constants.List.Take)
   {
     var isAdmin = HttpContext.IsAdmin();
     var clientGroups = HttpContext.ClientGroups();
-    return recordRepository.ListAlbums(filter, !isAdmin, clientGroups, skip, take);
+    return albumsRepository.ListAlbums(filter, !isAdmin, clientGroups, skip, take);
   }
 
   /// <summary>
@@ -254,9 +266,11 @@ public class RecordController(IRecordsRepository recordRepository, IMapper mappe
   /// </summary>
   [HttpGet("bitrates")]
   [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme, Policy = Roles.Admin)]
+  [MapToApiVersion(1.0)]
+  [Obsolete]
   public GenreBitrates Bitrates()
   {
-    return recordRepository.Bitrates();
+    return genresRepository.Bitrates();
   }
 
   /// <summary>
@@ -264,9 +278,11 @@ public class RecordController(IRecordsRepository recordRepository, IMapper mappe
   /// </summary>
   [HttpPost("bitrates")]
   [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme, Policy = Roles.Admin)]
+  [MapToApiVersion(1.0)]
+  [Obsolete]
   public IActionResult Bitrates([FromBody] List<GenreBitrate> bitrates)
   {
-    recordRepository.UpdateBitrates(bitrates);
+    genresRepository.UpdateBitrates(bitrates);
     return Ok();
   }
 
@@ -276,14 +292,16 @@ public class RecordController(IRecordsRepository recordRepository, IMapper mappe
   [HttpDelete("bitrate/{genreId:Guid}")]
   [ProducesResponseType(StatusCodes.Status404NotFound)]
   [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme, Policy = Roles.Admin)]
+  [MapToApiVersion(1.0)]
+  [Obsolete]
   public IActionResult Bitrate(Guid genreId)
   {
-    if (!recordRepository.GenreExists(genreId))
+    if (!genresRepository.GenreExists(genreId))
     {
       return NotFound();
     }
 
-    recordRepository.DeleteBitrate(genreId);
+    genresRepository.DeleteBitrate(genreId);
     return Ok();
   }
 

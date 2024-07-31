@@ -26,6 +26,11 @@ public class Genres
   public int? Bitrate { get; set; }
 
   /// <summary>
+  /// The front cover of genre.
+  /// </summary>
+  public string? Cover { get; set; }
+
+  /// <summary>
   /// List of records, which belong to the genre.
   /// </summary>
   public ICollection<Records> Records { get; set; } = new List<Records>();

@@ -21,6 +21,11 @@ public class Artists
   public string Name { get; set; } = null!;
 
   /// <summary>
+  /// The front cover of artist.
+  /// </summary>
+  public string? Cover { get; set; }
+
+  /// <summary>
   /// List of records, which belong to the artist.
   /// </summary>
   public ICollection<Records> Records { get; set; } = new List<Records>();

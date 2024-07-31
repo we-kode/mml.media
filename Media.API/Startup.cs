@@ -6,7 +6,6 @@ using Media.Application.Consumers;
 using Media.Application.Models;
 using Media.DBContext;
 using Media.Filters;
-using Media.Infrastructure;
 using Media.Middleware;
 using Messages;
 using Microsoft.AspNetCore.Builder;
@@ -23,6 +22,8 @@ using System.Net.Http;
 using OpenIddict.Validation.SystemNetHttp;
 using Media.API.HostedServices;
 using Asp.Versioning;
+using Media.Infrastructure.Repositories;
+using Media.Application.Contracts.Repositories;
 
 namespace Media.API;
 
@@ -56,7 +57,7 @@ public class Startup(IConfiguration configuration)
   {
     services.AddApiVersioning(config =>
     {
-      config.DefaultApiVersion = new ApiVersion(1, 0);
+      config.DefaultApiVersion = new ApiVersion(2.0);
       config.AssumeDefaultVersionWhenUnspecified = true;
     });
     services.AddEndpointsApiExplorer();
@@ -65,7 +66,7 @@ public class Startup(IConfiguration configuration)
       // configuring Swagger/OpenAPI. More at https://aka.ms/aspnetcore/swashbuckle
       services.AddSwaggerGen(config =>
      {
-       config.SwaggerDoc("v1.0", new OpenApiInfo { Title = "Media Api", Version = "v1.0" });
+       config.SwaggerDoc("v2.0", new OpenApiInfo { Title = "Media Api", Version = "v2.0" });
        config.OperationFilter<RemoveVersionParameterFilter>();
        config.DocumentFilter<ReplaceVersionWithExactValueInPathFilter>();
        config.EnableAnnotations();
@@ -224,7 +225,7 @@ public class Startup(IConfiguration configuration)
       // configure automapping classes here
       cfg.CreateMap<GroupCreated, Group>();
       cfg.CreateMap<GroupUpdated, Group>();
-      cfg.CreateMap<TagFilter, Application.Contracts.TagFilter>();
+      cfg.CreateMap<Application.Contracts.Repositories.TagFilter, Application.Contracts.Repositories.TagFilter>();
       cfg.CreateMap<DBContext.Models.Albums, Album>();
       cfg.CreateMap<DBContext.Models.Genres, Genre>();
       cfg.CreateMap<DBContext.Models.Genres, GenreBitrate>();

@@ -21,6 +21,11 @@ public class Albums
   public string AlbumName { get; set; } = null!;
 
   /// <summary>
+  /// The front cover of album.
+  /// </summary>
+  public string? Cover { get; set; }
+
+  /// <summary>
   /// List of records, which belong to the album.
   /// </summary>
   public ICollection<Records> Records { get; set; } = new List<Records>();

@@ -3,7 +3,6 @@ using ByteDev.Crypto.Hashing;
 using ByteDev.Crypto.Hashing.Algorithms;
 using FFmpeg.NET;
 using MassTransit;
-using Media.Application.Contracts;
 using Media.Application.Models;
 using Media.Messages;
 using System;
@@ -12,26 +11,20 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Media.Application.Extensions;
-using MassTransit.DependencyInjection;
-using static System.Net.Mime.MediaTypeNames;
+using Media.Application.Contracts.Repositories;
 
 namespace Media.Application.Consumers;
 
 /// <summary>
 /// Indexes one uploaded file.
 /// </summary>
-public class IndexingRecordConsumer : IConsumer<FileUploaded>
+public class IndexingRecordConsumer(
+  ISettingsRepository settingsRepository,
+  IRecordsRepository recordsRepository,
+  IGenresRepository genresRepository) : IConsumer<FileUploaded>
 {
   private readonly Engine engine = new Engine($"/usr/bin/ffmpeg");
   private readonly IFileChecksumService checksumService = new FileChecksumService(new Sha1Algorithm(), EncodingType.Hex);
-  private readonly ISettingsRepository settingsRepository;
-  private readonly IRecordsRepository recordsRepository;
-
-  public IndexingRecordConsumer(ISettingsRepository settingsRepository, IRecordsRepository recordsRepository)
-  {
-    this.settingsRepository = settingsRepository;
-    this.recordsRepository = recordsRepository;
-  }
 
   public async Task Consume(ConsumeContext<FileUploaded> context)
   {
@@ -87,7 +80,7 @@ public class IndexingRecordConsumer : IConsumer<FileUploaded>
     taglibFile.Save();
     taglibFile.Dispose();
 
-    var compressionRate = recordsRepository.Bitrate(metadata.Genre);
+    var compressionRate = genresRepository.Bitrate(metadata.Genre);
 
     if (!compressionRate.HasValue && int.TryParse(settingsRepository.Get(Constants.Settings.CompressionRateKey, ""), out var defaultCompressionRate))
     {
