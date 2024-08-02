@@ -2,7 +2,7 @@
 
 namespace Media.Application.Contracts.Repositories;
 
-public interface ISettingsRepository
+public interface ISettingRepository
 {
 
   /// <summary>

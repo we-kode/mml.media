@@ -34,6 +34,6 @@ public class GroupController : ControllerBase
   [HttpGet()]
   public ActionResult<Groups> List([FromQuery] string? filter, [FromQuery] int skip = Application.Constants.List.Skip, [FromQuery] int take = Application.Constants.List.Take)
   {
-    return _repository.ListGroups(filter, skip, take);
+    return _repository.List(filter, skip, take);
   }
 }

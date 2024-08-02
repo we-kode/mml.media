@@ -12,20 +12,20 @@ namespace Media.API.Controllers;
 [ApiVersion(2.0)]
 [Route("api/v{version:apiVersion}/media/[controller]")]
 [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
-public class ArtistController(IArtistRepository artistsRepository) : ControllerBase
+public class LanguageController(ILanguageRepository languageRepository) : ControllerBase
 {
   /// <summary>
-  /// Loads a list of artists.
+  /// Loads a list of languages.
   /// </summary>
-  /// <param name="filter">Filter request to filter the list of artists.</param>
+  /// <param name="filter">Filter request to filter the list of albums.</param>
   /// <param name="skip">Offset of the list</param>
   /// <param name="take">Size of chunk to be loaded</param>
-  /// <returns><see cref="Artists"/></returns>
-  [HttpGet("artists")]
-  public Artists GetArtists([FromQuery] string? filter, [FromQuery] int skip = Application.Constants.List.Skip, [FromQuery] int take = Application.Constants.List.Take)
+  /// <returns><see cref="Languages"/></returns>
+  [HttpGet("languages")]
+  public Languages GetLanguages([FromQuery] string? filter, [FromQuery] int skip = Application.Constants.List.Skip, [FromQuery] int take = Application.Constants.List.Take)
   {
     var isAdmin = HttpContext.IsAdmin();
     var clientGroups = HttpContext.ClientGroups();
-    return artistsRepository.List(filter, !isAdmin, clientGroups, skip, take);
+    return languageRepository.ListLanguages(filter, !isAdmin, clientGroups, skip, take);
   }
 }

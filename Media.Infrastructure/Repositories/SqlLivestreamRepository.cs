@@ -11,18 +11,11 @@ using System.Transactions;
 
 namespace Media.Infrastructure.Repositories;
 
-public class SqlLivestreamRepository : ILivestreamRepository
+public class SqlLivestreamRepository(Func<ApplicationDBContext> contextFactory, IMapper mapper, IGroupRepository groupRepository) : ILivestreamRepository
 {
-  private readonly Func<ApplicationDBContext> _contextFactory;
-  private readonly IMapper mapper;
-  private readonly IGroupRepository _groupRepository;
-
-  public SqlLivestreamRepository(Func<ApplicationDBContext> contextFactory, IMapper mapper, IGroupRepository groupRepository)
-  {
-    _contextFactory = contextFactory;
-    this.mapper = mapper;
-    _groupRepository = groupRepository;
-  }
+  private readonly Func<ApplicationDBContext> _contextFactory = contextFactory;
+  private readonly IMapper mapper = mapper;
+  private readonly IGroupRepository _groupRepository = groupRepository;
 
   public void Assign(List<Guid> items, List<Guid> initGroups, List<Guid> groups)
   {
@@ -133,7 +126,7 @@ public class SqlLivestreamRepository : ILivestreamRepository
       .FirstOrDefault(stream => stream.RecordId == value.RecordId);
     if (item == null)
     {
-      item = new DBContext.Models.Livestreams();
+      item = new DBContext.Models.Livestream();
       context.Livestreams.Add(item);
     }
 
@@ -146,7 +139,7 @@ public class SqlLivestreamRepository : ILivestreamRepository
     var addedGroups = value.Groups
        .Where(g => _groupRepository.GroupExists(g.Id).GetAwaiter().GetResult())
        .Where(g => !item.Groups.Any(rg => rg.GroupId == g.Id))
-       .Select(g => new DBContext.Models.Groups
+       .Select(g => new DBContext.Models.Group
        {
          GroupId = g.Id,
          Name = g.Name,

@@ -16,10 +16,10 @@ namespace Media.API.Controllers;
 public class SettingsController : ControllerBase
 {
 
-  private readonly ISettingsRepository settingsRepository;
+  private readonly ISettingRepository settingsRepository;
   private readonly IMapper mapper;
 
-  public SettingsController(ISettingsRepository settingsRepository, IMapper mapper)
+  public SettingsController(ISettingRepository settingsRepository, IMapper mapper)
   {
     this.settingsRepository = settingsRepository;
     this.mapper = mapper;

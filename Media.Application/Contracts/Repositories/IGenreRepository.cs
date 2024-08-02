@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace Media.Application.Contracts.Repositories;
 
-public interface IGenresRepository
+public interface IGenreRepository
 {
   /// <summary>
   /// Loads list of genres.
@@ -16,14 +16,14 @@ public interface IGenresRepository
   /// <param name="skip">Elements to be skipped. default <see cref="List.Skip"/></param>
   /// <param name="take">Elements to be loaded in one chunk. Default <see cref="List.Take"/></param>
   /// <returns><see cref="Genres"/></returns>
-  Genres ListGenres(string? filter, bool filterByGroups, IEnumerable<Guid> clientGroups, int skip = Constants.List.Skip, int take = Constants.List.Take);
+  Genres List(string? filter, bool filterByGroups, IEnumerable<Guid> clientGroups, int skip = Constants.List.Skip, int take = Constants.List.Take);
 
   /// <summary>
   /// Determines whether genre exists.
   /// </summary>
   /// <param name="genreId">Id of genre.</param>
   /// <returns>True, if genre exists.</returns>
-  bool GenreExists(Guid genreId);
+  bool Exists(Guid genreId);
 
   /// <summary>
   /// Load all saved bitrates for compressions.
@@ -41,7 +41,7 @@ public interface IGenresRepository
   /// Updates or create bitrates for genres.
   /// </summary>
   /// <param name="bitrates">Bitrates to be updated.</param>
-  void UpdateBitrates(List<GenreBitrate> bitrates);
+  Task UpdateBitrates(List<GenreBitrate> bitrates);
 
   /// <summary>
   /// Updates the bitrate index of one record.
@@ -56,4 +56,17 @@ public interface IGenresRepository
   /// <param name="genreName">Name of genre.</param>
   /// <returns><see cref="int?"/></returns>
   int? Bitrate(string genreName);
+
+  /// <summary>
+  /// Tries to remove the given genre if there is no referenced record.
+  /// </summary>
+  /// <param name="genreName">Name of the genre to be removed.</param>
+  Task TryRemove(string? genreName);
+
+  /// <summary>
+  /// Tries to load a genre or create a new one with the given name.
+  /// </summary>
+  /// <param name="genreName">Name of the genre to load or create.</param>
+  /// <returns><see cref="Genre"/></returns>
+  Task<Genre?> TryGetOrCreate(string? genreName);
 }

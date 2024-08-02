@@ -19,10 +19,10 @@ namespace Media.API.Controllers;
 public class StreamController : ControllerBase
 {
 
-  private readonly IRecordsRepository repository;
+  private readonly IRecordRepository repository;
   private readonly IMapper mapper;
 
-  public StreamController(IRecordsRepository repository, IMapper mapper)
+  public StreamController(IRecordRepository repository, IMapper mapper)
   {
     this.repository = repository;
     this.mapper = mapper;

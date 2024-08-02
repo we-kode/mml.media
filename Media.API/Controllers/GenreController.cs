@@ -1,5 +1,4 @@
 using Asp.Versioning;
-using AutoMapper;
 using Media.API.Extensions;
 using Media.Application.Constants;
 using Media.Application.Contracts.Repositories;
@@ -10,6 +9,7 @@ using Microsoft.AspNetCore.Mvc;
 using OpenIddict.Validation.AspNetCore;
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace Media.API.Controllers;
 
@@ -17,7 +17,7 @@ namespace Media.API.Controllers;
 [ApiVersion(2.0)]
 [Route("api/v{version:apiVersion}/media/[controller]")]
 [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
-public class GenreController(IGenresRepository genresRepository, IMapper mapper) : ControllerBase
+public class GenreController(IGenreRepository genresRepository) : ControllerBase
 {
   /// <summary>
   /// Loads a list of genres.
@@ -31,7 +31,7 @@ public class GenreController(IGenresRepository genresRepository, IMapper mapper)
   {
     var isAdmin = HttpContext.IsAdmin();
     var clientGroups = HttpContext.ClientGroups();
-    return genresRepository.ListGenres(filter, !isAdmin, clientGroups, skip, take);
+    return genresRepository.List(filter, !isAdmin, clientGroups, skip, take);
   }
 
   /// <summary>
@@ -49,9 +49,9 @@ public class GenreController(IGenresRepository genresRepository, IMapper mapper)
   /// </summary>
   [HttpPost("bitrates")]
   [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme, Policy = Roles.Admin)]
-  public IActionResult Bitrates([FromBody] List<GenreBitrate> bitrates)
+  public async Task<IActionResult> Bitrates([FromBody] List<GenreBitrate> bitrates)
   {
-    genresRepository.UpdateBitrates(bitrates);
+    await genresRepository.UpdateBitrates(bitrates);
     return Ok();
   }
 
@@ -63,7 +63,7 @@ public class GenreController(IGenresRepository genresRepository, IMapper mapper)
   [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme, Policy = Roles.Admin)]
   public IActionResult Bitrate(Guid genreId)
   {
-    if (!genresRepository.GenreExists(genreId))
+    if (!genresRepository.Exists(genreId))
     {
       return NotFound();
     }

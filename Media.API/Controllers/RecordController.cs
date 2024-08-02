@@ -4,6 +4,7 @@ using Media.API.Contracts;
 using Media.API.Extensions;
 using Media.Application.Constants;
 using Media.Application.Contracts.Repositories;
+using Media.Application.Contracts.Services;
 using Media.Application.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -22,10 +23,12 @@ namespace Media.API.Controllers;
 [Route("api/v{version:apiVersion}/media/[controller]")]
 [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
 public class RecordController(
-  IRecordsRepository recordRepository,
-  IArtistsRepository artistsRepository,
-  IGenresRepository genresRepository,
-  IAlbumsRepository albumsRepository,
+  IRecordRepository recordRepository,
+  IArtistRepository artistsRepository,
+  IGenreRepository genresRepository,
+  IAlbumRepository albumsRepository,
+  IRecordsService recordsService,
+  ILanguageRepository languageRepository,
   IMapper mapper) : ControllerBase
 {
 
@@ -50,7 +53,7 @@ public class RecordController(
   /// <param name="filter">Filter request to filter the list of records</param>
   /// <param name="skip">Offset of the list</param>
   /// <param name="take">Size of chunk to be loaded</param>
-  /// <returns><see cref="RecordFodlers"/></returns>
+  /// <returns><see cref="RecordFolders"/></returns>
   [HttpPost("listFolder")]
   public RecordFolders ListFolder([FromBody] Contracts.TagFilter tagFilter, [FromQuery] string? filter, [FromQuery] int skip = Application.Constants.List.Skip, [FromQuery] int take = Application.Constants.List.Take)
   {
@@ -73,7 +76,7 @@ public class RecordController(
   {
     var isAdmin = HttpContext.IsAdmin();
     var clientGroups = HttpContext.ClientGroups();
-    return artistsRepository.ListArtists(filter, !isAdmin, clientGroups, skip, take);
+    return artistsRepository.List(filter, !isAdmin, clientGroups, skip, take);
   }
 
   /// <summary>
@@ -90,7 +93,7 @@ public class RecordController(
   {
     var isAdmin = HttpContext.IsAdmin();
     var clientGroups = HttpContext.ClientGroups();
-    return genresRepository.ListGenres(filter, !isAdmin, clientGroups, skip, take);
+    return genresRepository.List(filter, !isAdmin, clientGroups, skip, take);
   }
 
   /// <summary>
@@ -107,7 +110,7 @@ public class RecordController(
   {
     var isAdmin = HttpContext.IsAdmin();
     var clientGroups = HttpContext.ClientGroups();
-    return albumsRepository.ListAlbums(filter, !isAdmin, clientGroups, skip, take);
+    return albumsRepository.List(filter, !isAdmin, clientGroups, skip, take);
   }
 
   /// <summary>
@@ -118,11 +121,13 @@ public class RecordController(
   /// <param name="take">Size of chunk to be loaded</param>
   /// <returns><see cref="Languages"/></returns>
   [HttpGet("languages")]
+  [MapToApiVersion(1.0)]
+  [Obsolete]
   public Languages GetLanguages([FromQuery] string? filter, [FromQuery] int skip = Application.Constants.List.Skip, [FromQuery] int take = Application.Constants.List.Take)
   {
     var isAdmin = HttpContext.IsAdmin();
     var clientGroups = HttpContext.ClientGroups();
-    return recordRepository.ListLanguages(filter, !isAdmin, clientGroups, skip, take);
+    return languageRepository.ListLanguages(filter, !isAdmin, clientGroups, skip, take);
   }
 
   /// <summary>
@@ -135,7 +140,7 @@ public class RecordController(
   {
     foreach (var id in ids)
     {
-      await recordRepository.DeleteRecord(id).ConfigureAwait(false);
+      await recordsService.DeleteRecord(id).ConfigureAwait(false);
     }
 
     return Ok();
@@ -149,7 +154,7 @@ public class RecordController(
   [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme, Policy = Roles.Admin)]
   public async Task<IActionResult> DeleteFolders([FromBody] IList<Contracts.RecordFolder> data)
   {
-    await recordRepository.DeleteFolders(data.Select(f => mapper.Map<Application.Models.RecordFolder>(f))).ConfigureAwait(false);
+    await recordsService.DeleteFolders(data.Select(f => mapper.Map<Application.Models.RecordFolder>(f))).ConfigureAwait(false);
     return Ok();
   }
 
@@ -257,7 +262,7 @@ public class RecordController(
       return NotFound();
     }
 
-    await recordRepository.Update(mapper.Map<Record>(request)).ConfigureAwait(false);
+    await recordsService.Update(mapper.Map<Record>(request)).ConfigureAwait(false);
     return Ok();
   }
 
@@ -296,7 +301,7 @@ public class RecordController(
   [Obsolete]
   public IActionResult Bitrate(Guid genreId)
   {
-    if (!genresRepository.GenreExists(genreId))
+    if (!genresRepository.Exists(genreId))
     {
       return NotFound();
     }

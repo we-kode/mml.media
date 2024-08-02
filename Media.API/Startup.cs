@@ -226,18 +226,18 @@ public class Startup(IConfiguration configuration)
       cfg.CreateMap<GroupCreated, Group>();
       cfg.CreateMap<GroupUpdated, Group>();
       cfg.CreateMap<Application.Contracts.Repositories.TagFilter, Application.Contracts.Repositories.TagFilter>();
-      cfg.CreateMap<DBContext.Models.Albums, Album>();
-      cfg.CreateMap<DBContext.Models.Genres, Genre>();
-      cfg.CreateMap<DBContext.Models.Genres, GenreBitrate>();
-      cfg.CreateMap<DBContext.Models.Artists, Artist>();
-      cfg.CreateMap<DBContext.Models.Languages, Language>();
+      cfg.CreateMap<DBContext.Models.Album, Album>();
+      cfg.CreateMap<DBContext.Models.Genre, Genre>();
+      cfg.CreateMap<DBContext.Models.Genre, GenreBitrate>();
+      cfg.CreateMap<DBContext.Models.Artist, Artist>();
+      cfg.CreateMap<DBContext.Models.Language, Language>();
       cfg.CreateMap<RecordChangeRequest, Record>();
-      cfg.CreateMap<DBContext.Models.Livestreams, Livestream>();
-      cfg.CreateMap<DBContext.Models.Livestreams, LivestreamSettings>();
+      cfg.CreateMap<DBContext.Models.Livestream, Livestream>();
+      cfg.CreateMap<DBContext.Models.Livestream, LivestreamSettings>();
       cfg.CreateMap<LivestreamChangeRequest, LivestreamSettings>();
       cfg.CreateMap<SettingsRequest, Settings>();
       cfg.CreateMap<Contracts.RecordFolder, Application.Models.RecordFolder>();
-      cfg.CreateMap<DBContext.Models.Groups, Group>()
+      cfg.CreateMap<DBContext.Models.Group, Group>()
         .ConstructUsing(g => new Group(g.GroupId, g.Name, g.IsDefault));
     })).AsSelf().SingleInstance();
     cBuilder.Register(c =>

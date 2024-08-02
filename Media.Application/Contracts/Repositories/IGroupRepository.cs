@@ -1,5 +1,4 @@
 ﻿using Media.Application.Models;
-using Media.Application.Constants;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -15,7 +14,7 @@ public interface IGroupRepository
   /// <param name="skip">Offset of the list.</param>
   /// <param name="take">Size of chunk to be loaded.</param>
   /// <returns><see cref="Groups"/></returns>
-  Groups ListGroups(string? filter, int skip = List.Skip, int take = List.Take);
+  Groups List(string? filter, int skip = Constants.List.Skip, int take = Constants.List.Take);
 
   /// <summary>
   /// Returns the groups which are set as default.

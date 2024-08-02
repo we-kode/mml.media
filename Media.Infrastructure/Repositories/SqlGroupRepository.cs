@@ -10,18 +10,12 @@ using System.Threading.Tasks;
 
 namespace Media.Infrastructure.Repositories;
 
-public class SqlGroupRepository : IGroupRepository
+public class SqlGroupRepository(Func<ApplicationDBContext> contextFactory, IMapper mapper) : IGroupRepository
 {
-  private readonly Func<ApplicationDBContext> _contextFactory;
-  private readonly IMapper _mapper;
+  private readonly Func<ApplicationDBContext> _contextFactory = contextFactory;
+  private readonly IMapper _mapper = mapper;
 
-  public SqlGroupRepository(Func<ApplicationDBContext> contextFactory, IMapper mapper)
-  {
-    _contextFactory = contextFactory;
-    _mapper = mapper;
-  }
-
-  public Groups ListGroups(
+  public Groups List(
     string? filter,
     int skip = Application.Constants.List.Skip,
     int take = Application.Constants.List.Take
@@ -55,7 +49,7 @@ public class SqlGroupRepository : IGroupRepository
       return;
     }
 
-    groups = new DBContext.Models.Groups
+    groups = new DBContext.Models.Group
     {
       GroupId = group.Id,
       IsDefault = group.IsDefault,

@@ -8,14 +8,9 @@ using System.Linq;
 
 namespace Media.Infrastructure.Repositories;
 
-public class SqlSettingsRepository : ISettingsRepository
+public class SqlSettingsRepository(Func<ApplicationDBContext> contextFactory, IMapper mapper) : ISettingRepository
 {
-  private readonly Func<ApplicationDBContext> _contextFactory;
-
-  public SqlSettingsRepository(Func<ApplicationDBContext> contextFactory, IMapper mapper)
-  {
-    _contextFactory = contextFactory;
-  }
+  private readonly Func<ApplicationDBContext> _contextFactory = contextFactory;
 
   public string Get(string key, string defaultValue)
   {
@@ -50,7 +45,7 @@ public class SqlSettingsRepository : ISettingsRepository
     var settings = context.Settings.FirstOrDefault(s => s.Key == key);
     if (settings == null)
     {
-      settings = new DBContext.Models.Settings
+      settings = new DBContext.Models.Setting
       {
         Key = key,
         Value = value
@@ -71,7 +66,7 @@ public class SqlSettingsRepository : ISettingsRepository
       var dbSettings = context.Settings.FirstOrDefault(s => s.Key == key);
       if (dbSettings == null)
       {
-        dbSettings = new DBContext.Models.Settings
+        dbSettings = new DBContext.Models.Setting
         {
           Key = key
         };

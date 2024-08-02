@@ -13,7 +13,7 @@ using System.Transactions;
 
 namespace Media.Infrastructure.Repositories;
 
-public class SqlRecordsRepository(Func<ApplicationDBContext> contextFactory, IMapper mapper, IGroupRepository groupRepository) : IRecordsRepository
+public class SqlRecordsRepository(Func<ApplicationDBContext> contextFactory, IMapper mapper, IGroupRepository groupRepository) : IRecordRepository
 {
   public bool IsIndexed(string checksum)
   {
@@ -77,7 +77,7 @@ public class SqlRecordsRepository(Func<ApplicationDBContext> contextFactory, IMa
     };
   }
 
-  private static IQueryable<DBContext.Models.Records> CreateFilterQuery(ApplicationDBContext context, string? filter, TagFilter tagFilter, bool filterByGroups, bool filterByDate, IList<Guid> groups)
+  private static IQueryable<DBContext.Models.Record> CreateFilterQuery(ApplicationDBContext context, string? filter, TagFilter tagFilter, bool filterByGroups, bool filterByDate, IList<Guid> groups)
   {
     var query = context.Records
      .Include(rec => rec.Artist)
@@ -139,7 +139,7 @@ public class SqlRecordsRepository(Func<ApplicationDBContext> contextFactory, IMa
     return DetermineRecord(query, id, repeat, reverse: true);
   }
 
-  private static Record? DetermineRecord(IQueryable<DBContext.Models.SeedRecords> query, Guid actualId, bool repeat, bool shuffle = false, bool reverse = false)
+  private static Record? DetermineRecord(IQueryable<DBContext.Models.SeedRecord> query, Guid actualId, bool repeat, bool shuffle = false, bool reverse = false)
   {
     // If no element in result return null.
     var count = query.Count();
@@ -191,7 +191,7 @@ public class SqlRecordsRepository(Func<ApplicationDBContext> contextFactory, IMa
     return MapModel(query.FirstOrDefault(rec => rec.RecordId == previousId));
   }
 
-  private static IQueryable<DBContext.Models.SeedRecords> Filter(ApplicationDBContext context, string? filter, TagFilter tagFilter, bool filterByGroups, IList<Guid> groups)
+  private static IQueryable<DBContext.Models.SeedRecord> Filter(ApplicationDBContext context, string? filter, TagFilter tagFilter, bool filterByGroups, IList<Guid> groups)
   {
     var filterQuery = string.IsNullOrEmpty(filter) ? "%%" : $"%{filter}%";
     var filterGroupsQuery = filterByGroups ? $"AND t.group_id IN ({string.Join(',', groups.Select(id => string.Format("'{0}'", id)))})" : string.Empty;
@@ -231,7 +231,7 @@ public class SqlRecordsRepository(Func<ApplicationDBContext> contextFactory, IMa
     return query;
   }
 
-  private static Record? MapModel(DBContext.Models.SeedRecords? record)
+  private static Record? MapModel(DBContext.Models.SeedRecord? record)
   {
     if (record == null)
     {
@@ -256,193 +256,52 @@ public class SqlRecordsRepository(Func<ApplicationDBContext> contextFactory, IMa
 
   public void SaveMetaData(RecordMetaData metaData, List<Guid> groups)
   {
-    try
-    {
-      using var scope = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled);
-      using var context = contextFactory();
-
-      var record = context.Records.FirstOrDefault(record => record.Checksum == metaData.Checksum);
-      if (record != null)
-      {
-        scope.Complete();
-        return;
-      }
-
-      record = new DBContext.Models.Records
-      {
-        Checksum = metaData.Checksum,
-        FilePath = metaData.PhysicalFilePath,
-        Date = metaData.Date,
-        Duration = metaData.Duration,
-        MimeType = metaData.MimeType,
-        TrackNumber = metaData.TrackNumber,
-        Title = metaData.Title ?? metaData.OriginalFileName,
-        Bitrate = metaData.Bitrate,
-        Cover = metaData.Cover,
-      };
-
-      // add groups
-      var availableGroups = context.Groups.Where(g => groups.Contains(g.GroupId));
-      foreach (var group in availableGroups)
-      {
-        record.Groups.Add(group);
-      }
-
-      record.Artist = TryGetArtist(context, metaData.Artist);
-      record.Genre = TryGetGenre(context, metaData.Genre);
-      record.Album = TryGetAlbum(context, metaData.Album);
-      record.Language = TryGetLanguage(context, metaData.Language);
-
-      context.Records.Add(record);
-      context.SaveChanges();
-      scope.Complete();
-    }
-    catch (InvalidOperationException e)
-    {
-      if (e.InnerException is DbUpdateException)
-      {
-        SaveMetaData(metaData, groups);
-        return;
-      }
-    }
-  }
-
-  public Artists ListArtists(string? filter, bool filterByGroups, IEnumerable<Guid> clientGroups, int skip = Application.Constants.List.Skip, int take = Application.Constants.List.Take)
-  {
     using var context = contextFactory();
-    var query = context.Artists
-      .Where(ar => string.IsNullOrEmpty(filter) || EF.Functions.ILike(ar.Name, $"%{filter}%"));
 
-    if (filterByGroups)
+    var record = context.Records.FirstOrDefault(record => record.Checksum == metaData.Checksum);
+    if (record != null)
     {
-      query = query.Where(artist => artist.Records.Any(rec => rec.Groups.Any(g => clientGroups.Contains(g.GroupId))));
+      return;
     }
 
-    var count = query.Count();
-    var artists = query
-      .OrderBy(artist => artist.Name)
-      .Skip(skip)
-      .Take(take)
-      .Select(artist => mapper.Map<Artist>(artist))
-      .ToList();
-
-    return new Artists
+    record = new DBContext.Models.Record
     {
-      TotalCount = count,
-      Items = artists
+      Checksum = metaData.Checksum,
+      FilePath = metaData.PhysicalFilePath,
+      Date = metaData.Date,
+      Duration = metaData.Duration,
+      MimeType = metaData.MimeType,
+      TrackNumber = metaData.TrackNumber,
+      Title = metaData.Title ?? metaData.OriginalFileName,
+      Bitrate = metaData.Bitrate,
+      Cover = metaData.Cover,
     };
-  }
 
-  public Genres ListGenres(string? filter, bool filterByGroups, IEnumerable<Guid> clientGroups, int skip = Application.Constants.List.Skip, int take = Application.Constants.List.Take)
-  {
-    using var context = contextFactory();
-    var query = context.Genres
-     .Where(g => string.IsNullOrEmpty(filter) || EF.Functions.ILike(g.Name, $"%{filter}%"));
-
-    if (filterByGroups)
+    // add groups
+    var availableGroups = context.Groups.Where(g => groups.Contains(g.GroupId));
+    foreach (var group in availableGroups)
     {
-      query = query.Where(genre => genre.Records.Any(rec => rec.Groups.Any(g => clientGroups.Contains(g.GroupId))));
+      record.Groups.Add(group);
     }
 
-    var count = query.Count();
-    var genres = query
-      .OrderBy(g => g.Name)
-      .Skip(skip)
-      .Take(take)
-      .Select(g => mapper.Map<Genre>(g))
-      .ToList();
+    record.ArtistId = metaData.ArtistId;
+    record.GenreId = metaData.GenreId;
+    record.AlbumId = metaData.AlbumId;
+    record.LanguageId = metaData.LanguageId;
 
-    return new Genres
-    {
-      TotalCount = count,
-      Items = genres
-    };
+    context.Records.Add(record);
+    context.SaveChanges();
   }
 
-  public Languages ListLanguages(string? filter, bool filterByGroups, IEnumerable<Guid> clientGroups, int skip = 0, int take = 100)
-  {
+  public async Task RemoveRecord(Guid recordId) {
     using var context = contextFactory();
-    var query = context.Languages
-     .Where(al => string.IsNullOrEmpty(filter) || EF.Functions.ILike(al.Name, $"%{filter}%"));
-
-    if (filterByGroups)
-    {
-      query = query.Where(album => album.Records.Any(rec => rec.Groups.Any(g => clientGroups.Contains(g.GroupId))));
-    }
-
-    var count = query.Count();
-    var langs = query
-      .OrderBy(lang => lang.Name)
-      .Skip(skip)
-      .Take(take)
-      .Select(lang => mapper.Map<Language>(lang))
-      .ToList();
-
-    return new Languages
-    {
-      TotalCount = count,
-      Items = langs
-    };
-  }
-
-  public async Task DeleteFolders(IEnumerable<RecordFolder> folders)
-  {
-    using var scope = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled);
-    using var context = contextFactory();
-    foreach (var folder in folders)
-    {
-      var dateRange = folder.ToDateRange();
-      var recordIds = context.Records.Where(rec => rec.Date.Date >= dateRange.Item1 && rec.Date.Date <= dateRange.Item2).Select(rec => rec.RecordId).ToList();
-      foreach (var recordId in recordIds)
-      {
-        await RemoveRecord(context, recordId, false).ConfigureAwait(false);
-      }
-    }
-    scope.Complete();
-  }
-
-  public async Task DeleteRecord(Guid id)
-  {
-    using var scope = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled);
-    using var context = contextFactory();
-    await RemoveRecord(context, id).ConfigureAwait(false);
-    scope.Complete();
-  }
-
-  private static async Task RemoveRecord(ApplicationDBContext context, Guid id, bool removeLocked = true)
-  {
-    var record = context.Records
-      .Include(rec => rec.Artist)
-      .Include(rec => rec.Album)
-      .Include(rec => rec.Genre)
-      .Include(rec => rec.Language)
-      .FirstOrDefault(record => record.RecordId == id);
+    var record = context.Records.FirstOrDefault(rec => rec.RecordId == recordId);
     if (record == null)
     {
       return;
     }
 
-    if (!removeLocked && record.Locked)
-    {
-      return;
-    }
-
-    // Delete entry from db
     context.Records.Remove(record);
-    await context.SaveChangesAsync().ConfigureAwait(false);
-
-    // Remove artist if no record connected
-    TryRemoveArtist(context, record.Artist);
-
-    // remove album if nor record connected
-    TryRemoveAlbum(context, record.Album);
-
-    // remove genre if no record connected
-    TryRemoveGenre(context, record.Genre);
-
-    // remove language if no record connected
-    TryRemoveLanguage(context, record.Language);
-
     await context.SaveChangesAsync().ConfigureAwait(false);
 
     // delete file from folder
@@ -478,7 +337,21 @@ public class SqlRecordsRepository(Func<ApplicationDBContext> contextFactory, IMa
     return MapModel(record);
   }
 
-  private static Record MapModel(DBContext.Models.Records record)
+  public Record? TryGetRecord(Guid id)
+  {
+    using var context = contextFactory();
+    var record = context.Records
+      .Include(rec => rec.Album)
+      .Include(rec => rec.Genre)
+      .Include(rec => rec.Artist)
+      .Include(rec => rec.Groups)
+      .Include(rec => rec.Language)
+      .FirstOrDefault(rec => rec.RecordId == id);
+
+    return record == null ? null : MapModel(record);
+  }
+
+  private static Record MapModel(DBContext.Models.Record record)
   {
     return new Record(
       record.RecordId,
@@ -497,9 +370,8 @@ public class SqlRecordsRepository(Func<ApplicationDBContext> contextFactory, IMa
       record.Locked);
   }
 
-  public async Task Update(Record record)
+  public async Task Update(Record record, (Guid? artistId, Guid? albumId, Guid? genreId, Guid? languageId) references)
   {
-    using var scope = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled);
     using var context = contextFactory();
 
     var recordToUpdated = context.Records
@@ -511,49 +383,22 @@ public class SqlRecordsRepository(Func<ApplicationDBContext> contextFactory, IMa
       .FirstOrDefault(rec => rec.RecordId == record.RecordId);
     if (recordToUpdated == null)
     {
-      scope.Complete();
       return;
     }
 
     // Update title
     recordToUpdated.Title = record.Title;
 
-    // update artist
-    var oldArtist = recordToUpdated.Artist;
-    if (recordToUpdated.Artist?.Name != record.Artist)
-    {
-      recordToUpdated.Artist = TryGetArtist(context, record.Artist);
-    }
-
-    // if to != null && new null remove
-    // if new != null try remove old try get new and assign it
-
-    // update album
-    var oldAlbum = recordToUpdated.Album;
-    if (recordToUpdated.Album?.AlbumName != record.Album)
-    {
-      recordToUpdated.Album = TryGetAlbum(context, record.Album);
-    }
-
-    // update genre
-    var oldGenre = recordToUpdated.Genre;
-    if (recordToUpdated.Genre?.Name != record.Genre)
-    {
-      recordToUpdated.Genre = TryGetGenre(context, record.Genre);
-    }
-
-    // update language
-    var oldLang = recordToUpdated.Language;
-    if (recordToUpdated.Language?.Name != record.Language)
-    {
-      recordToUpdated.Language = TryGetLanguage(context, record.Language);
-    }
+    recordToUpdated.ArtistId = references.artistId;
+    recordToUpdated.AlbumId = references.albumId;
+    recordToUpdated.GenreId = references.genreId;
+    recordToUpdated.LanguageId = references.languageId;
 
     // update groups
     var addedGroups = record.Groups
        .Where(g => groupRepository.GroupExists(g.Id).GetAwaiter().GetResult())
        .Where(g => !recordToUpdated.Groups.Any(rg => rg.GroupId == g.Id))
-       .Select(g => new DBContext.Models.Groups
+       .Select(g => new DBContext.Models.Group
        {
          GroupId = g.Id,
          Name = g.Name,
@@ -579,132 +424,8 @@ public class SqlRecordsRepository(Func<ApplicationDBContext> contextFactory, IMa
     recordToUpdated.Locked = record.Locked;
 
     await context.SaveChangesAsync().ConfigureAwait(false);
-
-    // try remove old data
-    TryRemoveArtist(context, oldArtist);
-    TryRemoveGenre(context, oldGenre);
-    TryRemoveAlbum(context, oldAlbum);
-    TryRemoveLanguage(context, oldLang);
-
-    await context.SaveChangesAsync().ConfigureAwait(false);
-    scope.Complete();
   }
 
-  private static void TryRemoveArtist(ApplicationDBContext context, DBContext.Models.Artists? artist)
-  {
-    if (artist == null)
-    {
-      return;
-    }
-
-    if (!context.Records.Any(rec => rec.ArtistId == artist.ArtistId))
-    {
-      context.Artists.Remove(artist);
-    }
-  }
-
-  private static DBContext.Models.Artists? TryGetArtist(ApplicationDBContext context, string? artistName)
-  {
-    if (string.IsNullOrEmpty(artistName))
-    {
-      return null;
-    }
-
-    var artist = context.Artists.FirstOrDefault(art => art.Name == artistName);
-    artist ??= new DBContext.Models.Artists
-    {
-      Name = artistName
-    };
-
-    return artist;
-  }
-
-  private static void TryRemoveAlbum(ApplicationDBContext context, DBContext.Models.Albums? album)
-  {
-    if (album == null)
-    {
-      return;
-    }
-
-    if (!context.Records.Any(rec => rec.AlbumId == album.AlbumId))
-    {
-      context.Albums.Remove(album);
-    }
-  }
-
-  private static DBContext.Models.Albums? TryGetAlbum(ApplicationDBContext context, string? albumName)
-  {
-    if (string.IsNullOrEmpty(albumName))
-    {
-      return null;
-    }
-
-    var album = context.Albums.FirstOrDefault(a => a.AlbumName == albumName);
-    album ??= new DBContext.Models.Albums
-    {
-      AlbumName = albumName
-    };
-
-    return album;
-  }
-
-  private static void TryRemoveGenre(ApplicationDBContext context, DBContext.Models.Genres? genre)
-  {
-    if (genre == null)
-    {
-      return;
-    }
-
-    if (!context.Records.Any(rec => rec.GenreId == genre.GenreId) && !genre.Bitrate.HasValue)
-    {
-      context.Genres.Remove(genre);
-    }
-  }
-
-  private static DBContext.Models.Genres? TryGetGenre(ApplicationDBContext context, string? genreName)
-  {
-    if (string.IsNullOrEmpty(genreName))
-    {
-      return null;
-    }
-
-    var genre = context.Genres.FirstOrDefault(g => g.Name == genreName);
-    genre ??= new DBContext.Models.Genres
-    {
-      Name = genreName
-    };
-
-    return genre;
-  }
-
-  private static void TryRemoveLanguage(ApplicationDBContext context, DBContext.Models.Languages? lang)
-  {
-    if (lang == null)
-    {
-      return;
-    }
-
-    if (!context.Records.Any(rec => rec.LanguageId == lang.LanguageId))
-    {
-      context.Languages.Remove(lang);
-    }
-  }
-
-  private static DBContext.Models.Languages? TryGetLanguage(ApplicationDBContext context, string? langName)
-  {
-    if (string.IsNullOrEmpty(langName))
-    {
-      return null;
-    }
-
-    var lang = context.Languages.FirstOrDefault(g => g.Name == langName);
-    lang ??= new DBContext.Models.Languages
-    {
-      Name = langName
-    };
-
-    return lang;
-  }
 
   public RecordStream StreamRecord(Guid id)
   {
@@ -728,96 +449,6 @@ public class SqlRecordsRepository(Func<ApplicationDBContext> contextFactory, IMa
     using var context = contextFactory();
     var record = context.Records.First(rec => rec.RecordId == id);
     return Path.Combine(record.FilePath, record.Checksum);
-  }
-
-  public GenreBitrates Bitrates()
-  {
-    using var context = contextFactory();
-    var genres = context.Genres
-      .Where(genre => genre.Bitrate.HasValue)
-      .OrderBy(genre => genre.Name)
-      .Select(genre => mapper.Map<GenreBitrate>(genre));
-    return new GenreBitrates
-    {
-      TotalCount = genres.Count(),
-      Items = [.. genres]
-    };
-  }
-
-  public bool GenreExists(Guid genreId)
-  {
-    using var context = contextFactory();
-    return context.Genres.Any(genre => genre.GenreId == genreId);
-  }
-
-  public void DeleteBitrate(Guid genreId)
-  {
-    using var context = contextFactory();
-    var genre = context.Genres
-      .Include(g => g.Records)
-      .FirstOrDefault(g => g.GenreId == genreId);
-
-    if (genre == null)
-    {
-      return;
-    }
-
-    if (genre.Records.Count == 0)
-    {
-      context.Remove(genre);
-    }
-    else
-    {
-      genre.Bitrate = null;
-    }
-
-    context.SaveChanges();
-  }
-
-  public void UpdateBitrates(List<GenreBitrate> bitrates)
-  {
-    using var context = contextFactory();
-    foreach (var bitrate in bitrates)
-    {
-      if (!bitrate.Bitrate.HasValue || string.IsNullOrEmpty(bitrate.Name))
-      {
-        continue;
-      }
-
-      var oldGenre = context.Genres.FirstOrDefault(g => g.GenreId == bitrate.GenreId);
-      var genre = TryGetGenre(context, bitrate.Name);
-      if (genre != null)
-      {
-        genre.Bitrate = bitrate.Bitrate;
-
-        if (genre.GenreId == Guid.Empty)
-        {
-          context.Add(genre);
-        }
-      }
-
-      TryRemoveGenre(context, oldGenre);
-      context.SaveChanges();
-    }
-  }
-
-  public int? Bitrate(string genreName)
-  {
-    using var context = contextFactory();
-    return context.Genres.FirstOrDefault(genre => genre.Name == genreName)?.Bitrate;
-  }
-
-  public async Task UpdateBitrate(string checksum, int bitrate)
-  {
-    using var context = contextFactory();
-    var record = context.Records.FirstOrDefault(r => r.Checksum == checksum);
-    if (record == null)
-    {
-      return;
-    }
-
-    record.Bitrate = bitrate;
-    await context.SaveChangesAsync();
   }
 
   public List<Record> GetRecords(List<string> checksums, IList<Guid> clientGroups)
@@ -909,7 +540,7 @@ public class SqlRecordsRepository(Func<ApplicationDBContext> contextFactory, IMa
     return new Groups
     {
       TotalCount = count,
-      Items = [.. mapper.ProjectTo<Group>(groups)],
+      Items = [..mapper.ProjectTo<Group>(groups)],
     };
   }
 
@@ -931,7 +562,14 @@ public class SqlRecordsRepository(Func<ApplicationDBContext> contextFactory, IMa
     return new Groups
     {
       TotalCount = count,
-      Items = [.. mapper.ProjectTo<Group>(groups)],
+      Items = [..mapper.ProjectTo<Group>(groups)],
     };
+  }
+
+  public List<Guid> GetRecords(RecordFolder folder)
+  {
+    using var context = contextFactory();
+    var dateRange = folder.ToDateRange();
+    return context.Records.Where(rec => rec.Date.Date >= dateRange.Item1 && rec.Date.Date <= dateRange.Item2).Select(rec => rec.RecordId).ToList();
   }
 }

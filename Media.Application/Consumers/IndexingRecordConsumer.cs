@@ -12,6 +12,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Media.Application.Extensions;
 using Media.Application.Contracts.Repositories;
+using Media.Application.Contracts.Services;
 
 namespace Media.Application.Consumers;
 
@@ -19,9 +20,10 @@ namespace Media.Application.Consumers;
 /// Indexes one uploaded file.
 /// </summary>
 public class IndexingRecordConsumer(
-  ISettingsRepository settingsRepository,
-  IRecordsRepository recordsRepository,
-  IGenresRepository genresRepository) : IConsumer<FileUploaded>
+  ISettingRepository settingsRepository,
+  IRecordRepository recordRepository,
+  IRecordsService recordsService,
+  IGenreRepository genresRepository) : IConsumer<FileUploaded>
 {
   private readonly Engine engine = new Engine($"/usr/bin/ffmpeg");
   private readonly IFileChecksumService checksumService = new FileChecksumService(new Sha1Algorithm(), EncodingType.Hex);
@@ -43,7 +45,7 @@ public class IndexingRecordConsumer(
     var outputFile = new OutputFile(outputFilePath);
 
     // if file is indexed already skip
-    if (File.Exists($"{outputPath}{outputFileName}") && recordsRepository.IsIndexed(outputFileName))
+    if (File.Exists($"{outputPath}{outputFileName}") && recordRepository.IsIndexed(outputFileName))
     {
       DeleteFile(inputPath);
       return;
@@ -109,7 +111,7 @@ public class IndexingRecordConsumer(
     metadata.Bitrate = compressionRate ?? fileMetaData.AudioData.BitRateKbs;
 
     // save indexed file
-    recordsRepository.SaveMetaData(metadata, context.Message.Groups);
+    await recordsService.SaveMetaData(metadata, context.Message.Groups);
   }
 
   /// <summary>

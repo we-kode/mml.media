@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Media.Application.Contracts.Repositories;
 
-public interface IRecordsRepository
+public interface IRecordRepository
 {
   /// <summary>
   /// Stores the given metadata in index store.
@@ -75,23 +75,6 @@ public interface IRecordsRepository
   Record? Next(Guid id, string? filter, TagFilter tagFilter, bool filterByGroups, IEnumerable<Guid> clientGroups, bool repeat, bool shuffle);
 
   /// <summary>
-  /// Loads list of languages.
-  /// </summary>
-  /// <param name="filter">Languages will be filtered by given filter</param>
-  /// <param name="filterByGroups">True if records will be filtered by groups.</param>
-  /// <param name="clientGroups">List of groups for which the records will be loaded.</param>
-  /// <param name="skip">Elements to be skipped. default <see cref="List.Skip"/></param>
-  /// <param name="take">Elements to be loaded in one chunk. Default <see cref="List.Take"/></param>
-  /// <returns><see cref="Languages"/></returns>
-  Languages ListLanguages(string? filter, bool filterByGroups, IEnumerable<Guid> clientGroups, int skip = Constants.List.Skip, int take = Constants.List.Take);
-
-  /// <summary>
-  /// Removes one record.
-  /// </summary>
-  /// <param name="id">Id of record to be deleted.</param>
-  Task DeleteRecord(Guid id);
-
-  /// <summary>
   /// Checks if on record exists.
   /// </summary>
   /// <param name="id">Id of record to be checked.</param>
@@ -118,10 +101,25 @@ public interface IRecordsRepository
   Record GetRecord(Guid id);
 
   /// <summary>
+  /// Tries to load record.
+  /// </summary>
+  /// <param name="id">Id of record to be loaded.</param>
+  /// <returns><see cref="Record"/></returns>
+  Record? TryGetRecord(Guid id);
+
+  /// <summary>
   /// Updates one record.
   /// </summary>
   /// <param name="record"><see cref="Record"/> to be updated.</param>
-  Task Update(Record record);
+  /// <param name="references">Reference guids to be set.</param>
+  Task Update(Record record, (Guid? artistId, Guid? albumId, Guid? genreId, Guid? languageId) references);
+
+  /// <summary>
+  /// Remove the given record.
+  /// </summary>
+  /// <param name="recordId">Record that should be removed.</param>
+  /// <returns></returns>
+  Task RemoveRecord(Guid recordId);
 
   /// <summary>
   /// Returns physical file path of one record
@@ -131,18 +129,19 @@ public interface IRecordsRepository
   string GetFilePath(Guid id);
 
   /// <summary>
-  /// Removes all records, which are in given folders.
-  /// </summary>
-  /// <param name="folders">Folders to delete.</param>
-  Task DeleteFolders(IEnumerable<RecordFolder> folders);
-
-  /// <summary>
   /// Loads records by checksums filtered by client groups.
   /// </summary>
   /// <param name="checksums">Checksums to be checked.</param>
   /// <param name="clientGroups">Groups the client is in.</param>
   /// <returns>List of Records.</returns>
   List<Record> GetRecords(List<string> checksums, IList<Guid> clientGroups);
+
+  /// <summary>
+  /// Loads records ids by folder.
+  /// </summary>
+  /// <param name="folder">Folder to load record ids for.</param>
+  /// <returns>List of Records ids.</returns>
+  List<Guid> GetRecords(RecordFolder folder);
 
   /// <summary>
   /// Assigns items to groups.

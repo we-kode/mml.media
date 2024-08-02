@@ -1,5 +1,4 @@
 using Asp.Versioning;
-using AutoMapper;
 using Media.API.Extensions;
 using Media.Application.Contracts.Repositories;
 using Media.Application.Models;
@@ -13,7 +12,7 @@ namespace Media.API.Controllers;
 [ApiVersion(2.0)]
 [Route("api/v{version:apiVersion}/media/[controller]")]
 [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
-public class AlbumController(IAlbumsRepository albumsRepository, IMapper mapper) : ControllerBase
+public class AlbumController(IAlbumRepository albumsRepository) : ControllerBase
 {
   /// <summary>
   /// Loads a list of albums.
@@ -27,6 +26,6 @@ public class AlbumController(IAlbumsRepository albumsRepository, IMapper mapper)
   {
     var isAdmin = HttpContext.IsAdmin();
     var clientGroups = HttpContext.ClientGroups();
-    return albumsRepository.ListAlbums(filter, !isAdmin, clientGroups, skip, take);
+    return albumsRepository.List(filter, !isAdmin, clientGroups, skip, take);
   }
 }
