@@ -28,4 +28,26 @@ public class ArtistController(IArtistRepository artistsRepository) : ControllerB
     var clientGroups = HttpContext.ClientGroups();
     return artistsRepository.List(filter, !isAdmin, clientGroups, skip, take);
   }
+
+  /// <summary>
+  /// Loads a list of newest artists.
+  /// </summary>
+  /// <returns><see cref="Artists"/></returns>
+  [HttpGet("newestArtists")]
+  public Artists GetNewestArtists()
+  {
+    var clientGroups = HttpContext.ClientGroups();
+    return artistsRepository.ListNewest(clientGroups);
+  }
+
+  /// <summary>
+  /// Loads a list of common artists.
+  /// </summary>
+  /// <returns><see cref="Artists"/></returns>
+  [HttpGet("commonArtists")]
+  public Artists GetCommonArtists()
+  {
+    var clientGroups = HttpContext.ClientGroups();
+    return artistsRepository.ListCommon(clientGroups);
+  }
 }

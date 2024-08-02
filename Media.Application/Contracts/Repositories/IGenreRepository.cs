@@ -19,6 +19,13 @@ public interface IGenreRepository
   Genres List(string? filter, bool filterByGroups, IEnumerable<Guid> clientGroups, int skip = Constants.List.Skip, int take = Constants.List.Take);
 
   /// <summary>
+  /// Loads a list of most common genres.
+  /// </summary>
+  /// <param name="clientGroups">List of groups for which the records will be loaded.</param>
+  /// <returns><see cref="Genres"/></returns>
+  Genres ListCommon(IEnumerable<Guid> clientGroups);
+
+  /// <summary>
   /// Determines whether genre exists.
   /// </summary>
   /// <param name="genreId">Id of genre.</param>

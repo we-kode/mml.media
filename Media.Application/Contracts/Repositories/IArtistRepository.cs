@@ -19,6 +19,20 @@ public interface IArtistRepository
   Artists List(string? filter, bool filterByGroups, IEnumerable<Guid> clientGroups, int skip = Constants.List.Skip, int take = Constants.List.Take);
 
   /// <summary>
+  /// Loads a list of newest artists.
+  /// </summary>
+  /// <param name="clientGroups">List of groups for which the records will be loaded.</param>
+  /// <returns><see cref="Artists"/></returns>
+  Artists ListNewest(IEnumerable<Guid> clientGroups);
+
+  /// <summary>
+  /// Loads a list of most common artists.
+  /// </summary>
+  /// <param name="clientGroups">List of groups for which the records will be loaded.</param>
+  /// <returns><see cref="Artists"/></returns>
+  Artists ListCommon(IEnumerable<Guid> clientGroups);
+
+  /// <summary>
   /// Tries to remove the given artist if there is no referenced record.
   /// </summary>
   /// <param name="artistName">Name of the artist to be removed.</param>

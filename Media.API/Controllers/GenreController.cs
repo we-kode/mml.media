@@ -25,13 +25,24 @@ public class GenreController(IGenreRepository genresRepository) : ControllerBase
   /// <param name="filter">Filter request to filter the list of genres</param>
   /// <param name="skip">Offset of the list</param>
   /// <param name="take">Size of chunk to be loaded</param>
-  /// <returns><see cref="Artists"/></returns>
+  /// <returns><see cref="Genres"/></returns>
   [HttpGet("genres")]
   public Genres GetGenres([FromQuery] string? filter, [FromQuery] int skip = Application.Constants.List.Skip, [FromQuery] int take = Application.Constants.List.Take)
   {
     var isAdmin = HttpContext.IsAdmin();
     var clientGroups = HttpContext.ClientGroups();
     return genresRepository.List(filter, !isAdmin, clientGroups, skip, take);
+  }
+
+  /// <summary>
+  /// Loads a list of common artists.
+  /// </summary>
+  /// <returns><see cref="Genres"/></returns>
+  [HttpGet("commonGenres")]
+  public Genres GetCommonGenres()
+  {
+    var clientGroups = HttpContext.ClientGroups();
+    return genresRepository.ListCommon(clientGroups);
   }
 
   /// <summary>

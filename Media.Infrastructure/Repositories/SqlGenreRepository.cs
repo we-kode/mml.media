@@ -126,6 +126,28 @@ public class SqlGenreRepository(Func<ApplicationDBContext> contextFactory, IMapp
     };
   }
 
+  public Genres ListCommon(IEnumerable<Guid> clientGroups)
+  {
+    using var context = contextFactory();
+    var query = context.Genres
+      .Where(genre => genre.Records.Any(rec => rec.Groups.Any(g => clientGroups.Contains(g.GroupId))))
+      .OrderByDescending(genre => genre.Records.LongCount());
+
+    var count = query.Count();
+    var genres = query
+      .OrderBy(g => g.Name)
+      .Skip(0)
+      .Take(15)
+      .Select(g => mapper.Map<Genre>(g))
+      .ToList();
+
+    return new Genres
+    {
+      TotalCount = count,
+      Items = genres
+    };
+  }
+
   public async Task TryRemove(string? genreName)
   {
     using var context = contextFactory();

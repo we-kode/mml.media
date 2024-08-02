@@ -38,6 +38,50 @@ public class SqlArtistRepository(Func<ApplicationDBContext> contextFactory, IMap
     };
   }
 
+  public Artists ListNewest(IEnumerable<Guid> clientGroups)
+  {
+    using var context = contextFactory();
+  
+    var query = context.Artists
+      .Where(artist => artist.Records.Any(rec => rec.Groups.Any(g => clientGroups.Contains(g.GroupId))))
+      .OrderByDescending(ar => ar.ArtistId);
+
+    var count = query.Count();
+    var artists = query
+      .Skip(0)
+      .Take(15)
+      .Select(artist => mapper.Map<Artist>(artist))
+      .ToList();
+
+    return new Artists
+    {
+      TotalCount = count,
+      Items = artists
+    };
+  }
+
+  public Artists ListCommon(IEnumerable<Guid> clientGroups)
+  {
+    using var context = contextFactory();
+
+    var query = context.Artists
+      .Where(artist => artist.Records.Any(rec => rec.Groups.Any(g => clientGroups.Contains(g.GroupId))))
+      .OrderByDescending(artist => artist.Records.LongCount());
+
+    var count = query.Count();
+    var artists = query
+      .Skip(0)
+      .Take(15)
+      .Select(artist => mapper.Map<Artist>(artist))
+      .ToList();
+
+    return new Artists
+    {
+      TotalCount = count,
+      Items = artists
+    };
+  }
+
   public async Task TryRemove(string? artistName)
   {
     using var context = contextFactory();
