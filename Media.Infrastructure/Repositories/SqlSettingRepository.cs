@@ -8,7 +8,7 @@ using System.Linq;
 
 namespace Media.Infrastructure.Repositories;
 
-public class SqlSettingsRepository(Func<ApplicationDBContext> contextFactory, IMapper mapper) : ISettingRepository
+public class SqlSettingsRepository(Func<ApplicationDBContext> contextFactory) : ISettingRepository
 {
   private readonly Func<ApplicationDBContext> _contextFactory = contextFactory;
 

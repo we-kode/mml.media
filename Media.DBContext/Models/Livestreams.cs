@@ -1,9 +1,11 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Media.DBContext.Models;
 
+[Table("livestreams")]
 public class Livestream
 {
   /// <summary>

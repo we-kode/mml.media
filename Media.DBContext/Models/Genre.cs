@@ -1,12 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Media.DBContext.Models;
 
 /// <summary>
 /// Represents the available genres in records.
 /// </summary>
+[Table("genres")]
 public class Genre
 {
   /// <summary>

@@ -250,6 +250,10 @@ public class Startup(IConfiguration configuration)
     .As<IMapper>()
     .InstancePerLifetimeScope();
 
+    cBuilder.RegisterType<SqlAlbumRepository>().AsImplementedInterfaces();
+    cBuilder.RegisterType<SqlArtistRepository>().AsImplementedInterfaces();
+    cBuilder.RegisterType<SqlGenreRepository>().AsImplementedInterfaces();
+    cBuilder.RegisterType<SqlLanguageRepository>().AsImplementedInterfaces();
     cBuilder.RegisterType<SqlSettingsRepository>().AsImplementedInterfaces();
     cBuilder.RegisterType<SqlRecordsRepository>().AsImplementedInterfaces();
     cBuilder.RegisterType<SqlGroupRepository>().AsImplementedInterfaces();

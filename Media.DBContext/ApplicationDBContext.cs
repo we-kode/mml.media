@@ -37,12 +37,15 @@ namespace Media.DBContext
         modelBuilder.Entity(entity.Name).ToTable(currentTableName.ToUnderscoreCase());
       }
 
-      modelBuilder.Entity<Setting>()
+      modelBuilder
+       .Entity<Setting>()
+       .ToTable("settings")
        .HasIndex(s => s.Key)
        .IsUnique();
 
       modelBuilder
        .Entity<SeedRecord>()
+       .ToTable("seed_records")
        .HasNoKey();
     }
   }
