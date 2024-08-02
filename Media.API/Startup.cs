@@ -24,6 +24,7 @@ using Media.API.HostedServices;
 using Asp.Versioning;
 using Media.Infrastructure.Repositories;
 using Media.Application.Contracts.Repositories;
+using Media.Infrastructure.Services;
 
 namespace Media.API;
 
@@ -225,7 +226,7 @@ public class Startup(IConfiguration configuration)
       // configure automapping classes here
       cfg.CreateMap<GroupCreated, Group>();
       cfg.CreateMap<GroupUpdated, Group>();
-      cfg.CreateMap<Application.Contracts.Repositories.TagFilter, Application.Contracts.Repositories.TagFilter>();
+      cfg.CreateMap<Contracts.TagFilter, Application.Contracts.Repositories.TagFilter>();
       cfg.CreateMap<DBContext.Models.Album, Album>();
       cfg.CreateMap<DBContext.Models.Genre, Genre>();
       cfg.CreateMap<DBContext.Models.Genre, GenreBitrate>();
@@ -258,6 +259,7 @@ public class Startup(IConfiguration configuration)
     cBuilder.RegisterType<SqlRecordsRepository>().AsImplementedInterfaces();
     cBuilder.RegisterType<SqlGroupRepository>().AsImplementedInterfaces();
     cBuilder.RegisterType<SqlLivestreamRepository>().AsImplementedInterfaces();
+    cBuilder.RegisterType<RecordService>().AsImplementedInterfaces();
   }
 
   private static void MigrateDB(Func<ApplicationDBContext> factory)

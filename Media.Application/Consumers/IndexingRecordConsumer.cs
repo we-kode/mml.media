@@ -22,7 +22,7 @@ namespace Media.Application.Consumers;
 public class IndexingRecordConsumer(
   ISettingRepository settingsRepository,
   IRecordRepository recordRepository,
-  IRecordsService recordsService,
+  IRecordService recordsService,
   IGenreRepository genresRepository) : IConsumer<FileUploaded>
 {
   private readonly Engine engine = new Engine($"/usr/bin/ffmpeg");

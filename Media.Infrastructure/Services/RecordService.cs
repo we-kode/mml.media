@@ -14,7 +14,7 @@ public class RecordService(
   IArtistRepository artistRepository,
   IAlbumRepository albumRepository,
   IGenreRepository genreRepository,
-  ILanguageRepository languageRepository) : IRecordsService
+  ILanguageRepository languageRepository) : IRecordService
 {
   public async Task DeleteRecord(Guid guid)
   {

@@ -27,7 +27,7 @@ public class RecordController(
   IArtistRepository artistsRepository,
   IGenreRepository genresRepository,
   IAlbumRepository albumsRepository,
-  IRecordsService recordsService,
+  IRecordService recordsService,
   ILanguageRepository languageRepository,
   IMapper mapper) : ControllerBase
 {

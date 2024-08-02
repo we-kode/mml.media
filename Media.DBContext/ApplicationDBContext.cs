@@ -29,7 +29,7 @@ namespace Media.DBContext
 
       foreach (var entity in modelBuilder.Model.GetEntityTypes())
       {
-        var currentTableName = modelBuilder.Entity(entity.Name).Metadata.GetDefaultTableName();
+        var currentTableName = modelBuilder.Entity(entity.Name).Metadata.GetTableName();
         if (currentTableName!.Contains('<'))
         {
           currentTableName = currentTableName.Split('<')[0];
@@ -38,14 +38,24 @@ namespace Media.DBContext
       }
 
       modelBuilder
+       .Entity<Group>()
+       .HasMany(g => g.Records)
+       .WithMany(rec => rec.Groups)
+       .UsingEntity(e => e.ToTable("groups_records"));
+
+      modelBuilder
+       .Entity<Group>()
+       .HasMany(g => g.Livestreams)
+       .WithMany(l => l.Groups)
+       .UsingEntity(e => e.ToTable("groups_livestreams"));
+
+      modelBuilder
        .Entity<Setting>()
-       .ToTable("settings")
        .HasIndex(s => s.Key)
        .IsUnique();
 
       modelBuilder
        .Entity<SeedRecord>()
-       .ToTable("seed_records")
        .HasNoKey();
     }
   }

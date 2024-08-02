@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace Media.Application.Contracts.Services;
 
-public interface IRecordsService {
+public interface IRecordService {
   /// <summary>
   /// Deletes a <see cref="Models.Record"/> and if applicable the related
   /// Album, Artist and Genre.
