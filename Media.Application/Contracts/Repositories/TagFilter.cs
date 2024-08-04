@@ -14,14 +14,29 @@ public class TagFilter
   public IList<Guid> Artists { get; set; }
 
   /// <summary>
+  /// List of artist names.
+  /// </summary>
+  public IList<string> ArtistNames { get; set; }
+
+  /// <summary>
   /// List of genre ids.
   /// </summary>
   public IList<Guid> Genres { get; set; }
 
   /// <summary>
+  /// List of genre names.
+  /// </summary>
+  public IList<string> GenreNames { get; set; }
+
+  /// <summary>
   /// List of album ids.
   /// </summary>
   public IList<Guid> Albums { get; set; }
+
+  /// <summary>
+  /// List of album names.
+  /// </summary>
+  public IList<string> AlbumNames { get; set; }
 
   /// <summary>
   /// List of language ids.
@@ -46,8 +61,11 @@ public class TagFilter
   public TagFilter()
   {
     Artists = [];
+    ArtistNames = [];
     Genres = [];
+    GenreNames = [];
     Albums = [];
+    AlbumNames = [];
     Languages = [];
     Groups = [];
   }

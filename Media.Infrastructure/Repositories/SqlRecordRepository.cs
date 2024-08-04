@@ -3,6 +3,7 @@ using Media.Application.Contracts.Repositories;
 using Media.Application.Models;
 using Media.DBContext;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -102,14 +103,29 @@ public class SqlRecordsRepository(Func<ApplicationDBContext> contextFactory, IMa
       query = query.Where(rec => rec.ArtistId.HasValue && tagFilter.Artists.Contains(rec.ArtistId.Value));
     }
 
+    if (tagFilter.ArtistNames.Count > 0)
+    {
+      query = query.Where(rec => rec.Artist != null && tagFilter.ArtistNames.Any(a => EF.Functions.ILike(rec.Artist.Name, $"%{a}%")));
+    }
+
     if (tagFilter.Genres.Count > 0)
     {
       query = query.Where(rec => rec.GenreId.HasValue && tagFilter.Genres.Contains(rec.GenreId.Value));
     }
 
+    if (tagFilter.GenreNames.Count > 0)
+    {
+      query = query.Where(rec => rec.Genre != null && tagFilter.GenreNames.Any(g => EF.Functions.ILike(rec.Genre.Name, $"%{g}%")));
+    }
+
     if (tagFilter.Albums.Count > 0)
     {
       query = query.Where(rec => rec.AlbumId.HasValue && tagFilter.Albums.Contains(rec.AlbumId.Value));
+    }
+
+    if (tagFilter.AlbumNames.Count > 0)
+    {
+      query = query.Where(rec => rec.Album != null && tagFilter.AlbumNames.Any(a => EF.Functions.ILike(rec.Album.AlbumName, $"%{a}%")));
     }
 
     if (tagFilter.Languages.Count > 0)
@@ -191,16 +207,8 @@ public class SqlRecordsRepository(Func<ApplicationDBContext> contextFactory, IMa
     return MapModel(query.FirstOrDefault(rec => rec.RecordId == previousId));
   }
 
-  private static IQueryable<DBContext.Models.SeedRecord> Filter(ApplicationDBContext context, string? filter, TagFilter tagFilter, bool filterByGroups, IList<Guid> groups)
+  private IQueryable<DBContext.Models.SeedRecord> Filter(ApplicationDBContext context, string? filter, TagFilter tagFilter, bool filterByGroups, IList<Guid> groups)
   {
-    var filterQuery = string.IsNullOrEmpty(filter) ? "%%" : $"%{filter}%";
-    var filterGroupsQuery = filterByGroups ? $"AND t.group_id IN ({string.Join(',', groups.Select(id => string.Format("'{0}'", id)))})" : string.Empty;
-    var filterDateQuery = tagFilter.StartDate.HasValue && tagFilter.EndDate.HasValue && tagFilter.EndDate >= tagFilter.StartDate ? $"AND (('{tagFilter.StartDate.Value.ToUniversalTime().Date:O}' <= date_trunc('day', rec.date::timestamptz, 'UTC')) AND date_trunc('day', rec.date::timestamptz, 'UTC') <= '{tagFilter.EndDate.Value.ToUniversalTime().Date:O}')" : string.Empty;
-    var filterArtistsQuery = tagFilter.Artists.Count > 0 ? $"AND rec.artist_id IN ({string.Join(',', tagFilter.Artists.Select(id => string.Format("'{0}'", id)))})" : string.Empty;
-    var filterGenreQuery = tagFilter.Genres.Count > 0 ? $"AND rec.genre_id IN ({string.Join(',', tagFilter.Genres.Select(id => string.Format("'{0}'", id)))})" : string.Empty;
-    var filterAlbumQuery = tagFilter.Albums.Count > 0 ? $"AND rec.album_id IN ({string.Join(',', tagFilter.Albums.Select(id => string.Format("'{0}'", id)))})" : string.Empty;
-    var filterLanguageQuery = tagFilter.Languages.Count > 0 ? $"AND rec.language_id IN ({string.Join(',', tagFilter.Languages.Select(id => string.Format("'{0}'", id)))})" : string.Empty;
-
     var selectQuery = @"SELECT 
                   rec.*, a.name as artist_name, t.group_id, al.album_name as album_name, g.name as genre_name, l.name as language_name,
                   LEAD(rec.record_id, 1) OVER(ORDER BY Cast(rec.date as Date) DESC, rec.date) as next_id, 
@@ -219,14 +227,45 @@ public class SqlRecordsRepository(Func<ApplicationDBContext> contextFactory, IMa
 
     var sb = new StringBuilder();
     sb.AppendLine(selectQuery);
+
+    var filterQuery = string.IsNullOrEmpty(filter) ? "%%" : $"%{filter}%";
+
+    var paramCount = 1;
+
+    var filterGroupsQuery = filterByGroups ? $"AND t.group_id IN ({string.Join(',', groups.Select(id => $"{{{paramCount++}}}"))})" : string.Empty;
+    var filterDateQuery = tagFilter.StartDate.HasValue && tagFilter.EndDate.HasValue && tagFilter.EndDate >= tagFilter.StartDate ? $"AND (('{tagFilter.StartDate.Value.ToUniversalTime().Date:O}' <= date_trunc('day', rec.date::timestamptz, 'UTC')) AND date_trunc('day', rec.date::timestamptz, 'UTC') <= '{tagFilter.EndDate.Value.ToUniversalTime().Date:O}')" : string.Empty;
+    var filterArtistsQuery = tagFilter.Artists.Count > 0 ? $"AND rec.artist_id IN ({string.Join(',', tagFilter.Artists.Select(id => $"{{{paramCount++}}}"))})" : string.Empty;
+    var filterArtistNamesQuery = tagFilter.ArtistNames.Count > 0 ? $"AND ({string.Join(" OR ", tagFilter.ArtistNames.Select(name => $"a.name ILIKE {{{paramCount++}}}"))})" : string.Empty;
+    var filterGenreQuery = tagFilter.Genres.Count > 0 ? $"AND rec.genre_id IN ({string.Join(',', tagFilter.Genres.Select(id => $"{{{paramCount++}}}"))})" : string.Empty;
+    var filterGenreNamesQuery = tagFilter.GenreNames.Count > 0 ? $"AND ({string.Join(" OR ", tagFilter.GenreNames.Select(name => $"g.name ILIKE {{{paramCount++}}}"))})" : string.Empty;
+    var filterAlbumQuery = tagFilter.Albums.Count > 0 ? $"AND rec.album_id IN ({string.Join(',', tagFilter.Albums.Select(id => $"{{{paramCount++}}}"))})" : string.Empty;
+    var filterAlbumNamesQuery = tagFilter.AlbumNames.Count > 0 ? $"AND ({string.Join(" OR ", tagFilter.AlbumNames.Select(name => $"al.album_name ILIKE {{{paramCount++}}}"))})" : string.Empty;
+    var filterLanguageQuery = tagFilter.Languages.Count > 0 ? $"AND rec.language_id IN ({string.Join(',', tagFilter.Languages.Select(id => $"{{{paramCount++}}}"))})" : string.Empty;
+
     sb.AppendLine(filterGroupsQuery);
     sb.AppendLine(filterDateQuery);
     sb.AppendLine(filterArtistsQuery);
+    sb.AppendLine(filterArtistNamesQuery);
     sb.AppendLine(filterGenreQuery);
+    sb.AppendLine(filterGenreNamesQuery);
     sb.AppendLine(filterAlbumQuery);
+    sb.AppendLine(filterAlbumNamesQuery);
     sb.AppendLine(filterLanguageQuery);
     sb.AppendLine("ORDER BY Cast(rec.date as Date) desc, rec.Date asc");
-    var query = context.SeedRecords.FromSqlRaw($"{sb}", filterQuery);
+
+    var args = (object[]) [
+      filterQuery,
+      ..groups,
+      ..tagFilter.Artists,
+      ..tagFilter.ArtistNames.Select(x => $"%{x}%"),
+      ..tagFilter.Genres,
+      ..tagFilter.GenreNames.Select(x => $"%{x}%"),
+      ..tagFilter.Albums,
+      ..tagFilter.AlbumNames.Select(x => $"%{x}%"),
+      ..tagFilter.Languages
+    ];
+
+    var query = context.SeedRecords.FromSqlRaw(sb.ToString(), args);
 
     return query;
   }

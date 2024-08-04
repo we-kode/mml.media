@@ -41,10 +41,10 @@ public class SqlArtistRepository(Func<ApplicationDBContext> contextFactory, IMap
   public Artists ListNewest(IEnumerable<Guid> clientGroups)
   {
     using var context = contextFactory();
-  
+
     var query = context.Artists
       .Where(artist => artist.Records.Any(rec => rec.Groups.Any(g => clientGroups.Contains(g.GroupId))))
-      .OrderByDescending(ar => ar.ArtistId);
+      .OrderByDescending(ar => ar.CreatedAt);
 
     var count = query.Count();
     var artists = query
