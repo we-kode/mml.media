@@ -98,7 +98,6 @@ public class LivestreamController : ControllerBase
   /// <response code="404">If livestream does not exist.</response>
   [HttpGet("{id:Guid}")]
   [ProducesResponseType(StatusCodes.Status404NotFound)]
-  [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme, Policy = Roles.Admin)]
   public ActionResult<LivestreamSettings> Get(Guid id)
   {
     if (!repository.Exists(id))

@@ -236,7 +236,6 @@ public class RecordController(
   /// <response code="404">If record does not exist.</response>
   [HttpGet("{id:Guid}")]
   [ProducesResponseType(StatusCodes.Status404NotFound)]
-  [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme, Policy = Roles.Admin)]
   public ActionResult<Record> Get(Guid id)
   {
     if (!recordRepository.Exists(id))
