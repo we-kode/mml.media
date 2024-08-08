@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace Media.API.Contracts;
+namespace Media.Application.Contracts.Repositories;
 
 /// <summary>
 /// Includes ids of tags for which the list should be filtered.
@@ -44,7 +44,7 @@ public class TagFilter
   public IList<Guid> Languages { get; set; }
 
   /// <summary>
-  /// List of group ids.
+  /// List of groups ids.
   /// </summary>
   public IList<Guid> Groups { get; set; }
 

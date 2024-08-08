@@ -6,7 +6,6 @@ using Media.Application.Consumers;
 using Media.Application.Models;
 using Media.DBContext;
 using Media.Filters;
-using Media.Infrastructure;
 using Media.Middleware;
 using Messages;
 using Microsoft.AspNetCore.Builder;
@@ -23,6 +22,9 @@ using System.Net.Http;
 using OpenIddict.Validation.SystemNetHttp;
 using Media.API.HostedServices;
 using Asp.Versioning;
+using Media.Infrastructure.Repositories;
+using Media.Application.Contracts.Repositories;
+using Media.Infrastructure.Services;
 
 namespace Media.API;
 
@@ -56,7 +58,7 @@ public class Startup(IConfiguration configuration)
   {
     services.AddApiVersioning(config =>
     {
-      config.DefaultApiVersion = new ApiVersion(1, 0);
+      config.DefaultApiVersion = new ApiVersion(2.0);
       config.AssumeDefaultVersionWhenUnspecified = true;
     });
     services.AddEndpointsApiExplorer();
@@ -65,7 +67,7 @@ public class Startup(IConfiguration configuration)
       // configuring Swagger/OpenAPI. More at https://aka.ms/aspnetcore/swashbuckle
       services.AddSwaggerGen(config =>
      {
-       config.SwaggerDoc("v1.0", new OpenApiInfo { Title = "Media Api", Version = "v1.0" });
+       config.SwaggerDoc("v2.0", new OpenApiInfo { Title = "Media Api", Version = "v2.0" });
        config.OperationFilter<RemoveVersionParameterFilter>();
        config.DocumentFilter<ReplaceVersionWithExactValueInPathFilter>();
        config.EnableAnnotations();
@@ -224,19 +226,19 @@ public class Startup(IConfiguration configuration)
       // configure automapping classes here
       cfg.CreateMap<GroupCreated, Group>();
       cfg.CreateMap<GroupUpdated, Group>();
-      cfg.CreateMap<TagFilter, Application.Contracts.TagFilter>();
-      cfg.CreateMap<DBContext.Models.Albums, Album>();
-      cfg.CreateMap<DBContext.Models.Genres, Genre>();
-      cfg.CreateMap<DBContext.Models.Genres, GenreBitrate>();
-      cfg.CreateMap<DBContext.Models.Artists, Artist>();
-      cfg.CreateMap<DBContext.Models.Languages, Language>();
+      cfg.CreateMap<Contracts.TagFilter, Application.Contracts.Repositories.TagFilter>();
+      cfg.CreateMap<DBContext.Models.Album, Album>();
+      cfg.CreateMap<DBContext.Models.Genre, Genre>();
+      cfg.CreateMap<DBContext.Models.Genre, GenreBitrate>();
+      cfg.CreateMap<DBContext.Models.Artist, Artist>();
+      cfg.CreateMap<DBContext.Models.Language, Language>();
       cfg.CreateMap<RecordChangeRequest, Record>();
-      cfg.CreateMap<DBContext.Models.Livestreams, Livestream>();
-      cfg.CreateMap<DBContext.Models.Livestreams, LivestreamSettings>();
+      cfg.CreateMap<DBContext.Models.Livestream, Livestream>();
+      cfg.CreateMap<DBContext.Models.Livestream, LivestreamSettings>();
       cfg.CreateMap<LivestreamChangeRequest, LivestreamSettings>();
       cfg.CreateMap<SettingsRequest, Settings>();
       cfg.CreateMap<Contracts.RecordFolder, Application.Models.RecordFolder>();
-      cfg.CreateMap<DBContext.Models.Groups, Group>()
+      cfg.CreateMap<DBContext.Models.Group, Group>()
         .ConstructUsing(g => new Group(g.GroupId, g.Name, g.IsDefault));
     })).AsSelf().SingleInstance();
     cBuilder.Register(c =>
@@ -249,10 +251,15 @@ public class Startup(IConfiguration configuration)
     .As<IMapper>()
     .InstancePerLifetimeScope();
 
+    cBuilder.RegisterType<SqlAlbumRepository>().AsImplementedInterfaces();
+    cBuilder.RegisterType<SqlArtistRepository>().AsImplementedInterfaces();
+    cBuilder.RegisterType<SqlGenreRepository>().AsImplementedInterfaces();
+    cBuilder.RegisterType<SqlLanguageRepository>().AsImplementedInterfaces();
     cBuilder.RegisterType<SqlSettingsRepository>().AsImplementedInterfaces();
     cBuilder.RegisterType<SqlRecordsRepository>().AsImplementedInterfaces();
     cBuilder.RegisterType<SqlGroupRepository>().AsImplementedInterfaces();
     cBuilder.RegisterType<SqlLivestreamRepository>().AsImplementedInterfaces();
+    cBuilder.RegisterType<RecordService>().AsImplementedInterfaces();
   }
 
   private static void MigrateDB(Func<ApplicationDBContext> factory)

@@ -3,6 +3,7 @@ using System;
 using Media.DBContext;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Media.DBContext.Migrations
 {
     [DbContext(typeof(ApplicationDBContext))]
-    partial class ApplicationDBContextModelSnapshot : ModelSnapshot
+    [Migration("20240714173117_AddedCover")]
+    partial class AddedCover
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -23,7 +26,7 @@ namespace Media.DBContext.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
-            modelBuilder.Entity("GroupLivestream", b =>
+            modelBuilder.Entity("GroupsLivestreams", b =>
                 {
                     b.Property<Guid>("GroupsGroupId")
                         .HasColumnType("uuid")
@@ -42,7 +45,7 @@ namespace Media.DBContext.Migrations
                     b.ToTable("groups_livestreams", "public");
                 });
 
-            modelBuilder.Entity("GroupRecord", b =>
+            modelBuilder.Entity("GroupsRecords", b =>
                 {
                     b.Property<Guid>("GroupsGroupId")
                         .HasColumnType("uuid")
@@ -61,7 +64,7 @@ namespace Media.DBContext.Migrations
                     b.ToTable("groups_records", "public");
                 });
 
-            modelBuilder.Entity("Media.DBContext.Models.Album", b =>
+            modelBuilder.Entity("Media.DBContext.Models.Albums", b =>
                 {
                     b.Property<Guid>("AlbumId")
                         .ValueGeneratedOnAdd()
@@ -73,26 +76,18 @@ namespace Media.DBContext.Migrations
                         .HasColumnType("text")
                         .HasColumnName("album_name");
 
-                    b.Property<string>("Cover")
-                        .HasColumnType("text")
-                        .HasColumnName("cover");
-
                     b.HasKey("AlbumId")
                         .HasName("pk_albums");
 
                     b.ToTable("albums", "public");
                 });
 
-            modelBuilder.Entity("Media.DBContext.Models.Artist", b =>
+            modelBuilder.Entity("Media.DBContext.Models.Artists", b =>
                 {
                     b.Property<Guid>("ArtistId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("artist_id");
-
-                    b.Property<string>("Cover")
-                        .HasColumnType("text")
-                        .HasColumnName("cover");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -105,7 +100,7 @@ namespace Media.DBContext.Migrations
                     b.ToTable("artists", "public");
                 });
 
-            modelBuilder.Entity("Media.DBContext.Models.Genre", b =>
+            modelBuilder.Entity("Media.DBContext.Models.Genres", b =>
                 {
                     b.Property<Guid>("GenreId")
                         .ValueGeneratedOnAdd()
@@ -115,10 +110,6 @@ namespace Media.DBContext.Migrations
                     b.Property<int?>("Bitrate")
                         .HasColumnType("integer")
                         .HasColumnName("bitrate");
-
-                    b.Property<string>("Cover")
-                        .HasColumnType("text")
-                        .HasColumnName("cover");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -131,7 +122,7 @@ namespace Media.DBContext.Migrations
                     b.ToTable("genres", "public");
                 });
 
-            modelBuilder.Entity("Media.DBContext.Models.Group", b =>
+            modelBuilder.Entity("Media.DBContext.Models.Groups", b =>
                 {
                     b.Property<Guid>("GroupId")
                         .ValueGeneratedOnAdd()
@@ -153,7 +144,7 @@ namespace Media.DBContext.Migrations
                     b.ToTable("groups", "public");
                 });
 
-            modelBuilder.Entity("Media.DBContext.Models.Language", b =>
+            modelBuilder.Entity("Media.DBContext.Models.Languages", b =>
                 {
                     b.Property<Guid>("LanguageId")
                         .ValueGeneratedOnAdd()
@@ -171,16 +162,12 @@ namespace Media.DBContext.Migrations
                     b.ToTable("languages", "public");
                 });
 
-            modelBuilder.Entity("Media.DBContext.Models.Livestream", b =>
+            modelBuilder.Entity("Media.DBContext.Models.Livestreams", b =>
                 {
                     b.Property<Guid>("RecordId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("record_id");
-
-                    b.Property<string>("Cover")
-                        .HasColumnType("text")
-                        .HasColumnName("cover");
 
                     b.Property<int>("ProviderType")
                         .HasColumnType("integer")
@@ -201,7 +188,7 @@ namespace Media.DBContext.Migrations
                     b.ToTable("livestreams", "public");
                 });
 
-            modelBuilder.Entity("Media.DBContext.Models.Record", b =>
+            modelBuilder.Entity("Media.DBContext.Models.Records", b =>
                 {
                     b.Property<Guid>("RecordId")
                         .ValueGeneratedOnAdd()
@@ -286,7 +273,7 @@ namespace Media.DBContext.Migrations
                     b.ToTable("records", "public");
                 });
 
-            modelBuilder.Entity("Media.DBContext.Models.SeedRecord", b =>
+            modelBuilder.Entity("Media.DBContext.Models.SeedRecords", b =>
                 {
                     b.Property<Guid?>("AlbumId")
                         .HasColumnType("uuid")
@@ -365,7 +352,7 @@ namespace Media.DBContext.Migrations
                     b.ToTable("seed_records", "public");
                 });
 
-            modelBuilder.Entity("Media.DBContext.Models.Setting", b =>
+            modelBuilder.Entity("Media.DBContext.Models.Settings", b =>
                 {
                     b.Property<Guid>("SettingId")
                         .ValueGeneratedOnAdd()
@@ -392,16 +379,16 @@ namespace Media.DBContext.Migrations
                     b.ToTable("settings", "public");
                 });
 
-            modelBuilder.Entity("GroupLivestream", b =>
+            modelBuilder.Entity("GroupsLivestreams", b =>
                 {
-                    b.HasOne("Media.DBContext.Models.Group", null)
+                    b.HasOne("Media.DBContext.Models.Groups", null)
                         .WithMany()
                         .HasForeignKey("GroupsGroupId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_groups_livestreams_groups_groups_group_id");
 
-                    b.HasOne("Media.DBContext.Models.Livestream", null)
+                    b.HasOne("Media.DBContext.Models.Livestreams", null)
                         .WithMany()
                         .HasForeignKey("LivestreamsRecordId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -409,16 +396,16 @@ namespace Media.DBContext.Migrations
                         .HasConstraintName("fk_groups_livestreams_livestreams_livestreams_record_id");
                 });
 
-            modelBuilder.Entity("GroupRecord", b =>
+            modelBuilder.Entity("GroupsRecords", b =>
                 {
-                    b.HasOne("Media.DBContext.Models.Group", null)
+                    b.HasOne("Media.DBContext.Models.Groups", null)
                         .WithMany()
                         .HasForeignKey("GroupsGroupId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_groups_records_groups_groups_group_id");
 
-                    b.HasOne("Media.DBContext.Models.Record", null)
+                    b.HasOne("Media.DBContext.Models.Records", null)
                         .WithMany()
                         .HasForeignKey("RecordsRecordId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -426,24 +413,24 @@ namespace Media.DBContext.Migrations
                         .HasConstraintName("fk_groups_records_records_records_record_id");
                 });
 
-            modelBuilder.Entity("Media.DBContext.Models.Record", b =>
+            modelBuilder.Entity("Media.DBContext.Models.Records", b =>
                 {
-                    b.HasOne("Media.DBContext.Models.Album", "Album")
+                    b.HasOne("Media.DBContext.Models.Albums", "Album")
                         .WithMany("Records")
                         .HasForeignKey("AlbumId")
                         .HasConstraintName("fk_records_albums_album_id");
 
-                    b.HasOne("Media.DBContext.Models.Artist", "Artist")
+                    b.HasOne("Media.DBContext.Models.Artists", "Artist")
                         .WithMany("Records")
                         .HasForeignKey("ArtistId")
                         .HasConstraintName("fk_records_artists_artist_id");
 
-                    b.HasOne("Media.DBContext.Models.Genre", "Genre")
+                    b.HasOne("Media.DBContext.Models.Genres", "Genre")
                         .WithMany("Records")
                         .HasForeignKey("GenreId")
                         .HasConstraintName("fk_records_genres_genre_id");
 
-                    b.HasOne("Media.DBContext.Models.Language", "Language")
+                    b.HasOne("Media.DBContext.Models.Languages", "Language")
                         .WithMany("Records")
                         .HasForeignKey("LanguageId")
                         .HasConstraintName("fk_records_languages_language_id");
@@ -457,22 +444,22 @@ namespace Media.DBContext.Migrations
                     b.Navigation("Language");
                 });
 
-            modelBuilder.Entity("Media.DBContext.Models.Album", b =>
+            modelBuilder.Entity("Media.DBContext.Models.Albums", b =>
                 {
                     b.Navigation("Records");
                 });
 
-            modelBuilder.Entity("Media.DBContext.Models.Artist", b =>
+            modelBuilder.Entity("Media.DBContext.Models.Artists", b =>
                 {
                     b.Navigation("Records");
                 });
 
-            modelBuilder.Entity("Media.DBContext.Models.Genre", b =>
+            modelBuilder.Entity("Media.DBContext.Models.Genres", b =>
                 {
                     b.Navigation("Records");
                 });
 
-            modelBuilder.Entity("Media.DBContext.Models.Language", b =>
+            modelBuilder.Entity("Media.DBContext.Models.Languages", b =>
                 {
                     b.Navigation("Records");
                 });

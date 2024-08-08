@@ -3,7 +3,7 @@ using AutoMapper;
 using Media.API.Contracts;
 using Media.API.Extensions;
 using Media.Application.Constants;
-using Media.Application.Contracts;
+using Media.Application.Contracts.Repositories;
 using Media.Application.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -18,7 +18,8 @@ using System.Threading.Tasks;
 namespace Media.API.Controllers;
 
 [ApiController]
-[ApiVersion("1.0")]
+[ApiVersion(1.0)]
+[ApiVersion(2.0)]
 [Route("api/v{version:apiVersion}/media/[controller]")]
 [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
 public class LivestreamController : ControllerBase
@@ -97,7 +98,6 @@ public class LivestreamController : ControllerBase
   /// <response code="404">If livestream does not exist.</response>
   [HttpGet("{id:Guid}")]
   [ProducesResponseType(StatusCodes.Status404NotFound)]
-  [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme, Policy = Roles.Admin)]
   public ActionResult<LivestreamSettings> Get(Guid id)
   {
     if (!repository.Exists(id))

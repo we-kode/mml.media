@@ -1,7 +1,7 @@
 ﻿using Asp.Versioning;
 using AutoMapper;
 using Media.API.Extensions;
-using Media.Application.Contracts;
+using Media.Application.Contracts.Repositories;
 using Media.Application.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -12,16 +12,17 @@ using System;
 namespace Media.API.Controllers;
 
 [ApiController]
-[ApiVersion("1.0")]
+[ApiVersion(1.0)]
+[ApiVersion(2.0)]
 [Route("api/v{version:apiVersion}/media/[controller]")]
 [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
 public class StreamController : ControllerBase
 {
 
-  private readonly IRecordsRepository repository;
+  private readonly IRecordRepository repository;
   private readonly IMapper mapper;
 
-  public StreamController(IRecordsRepository repository, IMapper mapper)
+  public StreamController(IRecordRepository repository, IMapper mapper)
   {
     this.repository = repository;
     this.mapper = mapper;
