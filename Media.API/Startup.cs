@@ -179,7 +179,7 @@ public class Startup(IConfiguration configuration)
       app.UseSwagger();
       app.UseSwaggerUI(config =>
       {
-        config.SwaggerEndpoint("/swagger/v1.0/swagger.json", "Media API v1.0");
+        config.SwaggerEndpoint("/swagger/v2.0/swagger.json", "Media API v2.0");
       });
       app.UseDeveloperExceptionPage();
     }
