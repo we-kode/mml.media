@@ -9,7 +9,7 @@
   <ItemGroup>
     <PackageReference Include="AutoMapper" Version="13.0.1" />
     <PackageReference Include="ByteDev.Crypto" Version="8.0.0" />
-    <PackageReference Include="MassTransit" Version="8.2.3" />
+    <PackageReference Include="MassTransit" Version="8.2.4" />
     <PackageReference Include="TagLibSharp" Version="2.3.0" />
     <PackageReference Include="WeKoDe.MML.Messages" Version="1.0.0" />
     <PackageReference Include="xFFmpeg.NET" Version="7.2.0" />
