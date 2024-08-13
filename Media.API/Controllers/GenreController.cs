@@ -35,7 +35,7 @@ public class GenreController(IGenreRepository genresRepository) : ControllerBase
   }
 
   /// <summary>
-  /// Loads a list of common artists.
+  /// Loads a list of common genres.
   /// </summary>
   /// <returns><see cref="Genres"/></returns>
   [HttpGet("commonGenres")]
