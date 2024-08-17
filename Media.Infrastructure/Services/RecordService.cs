@@ -74,35 +74,19 @@ public class RecordService(
 
     // update artist
     var oldArtist = recordToUpdated.Artist;
-    Guid? artistId = null;
-    if (recordToUpdated.Artist != record.Artist)
-    {
-      artistId = (await artistRepository.TryGetOrCreate(record.Artist))?.ArtistId;
-    }
+    Guid? artistId = (await artistRepository.TryGetOrCreate(record.Artist))?.ArtistId;
 
     // update album
     var oldAlbum = recordToUpdated.Album;
-    Guid? albumId = null;
-    if (recordToUpdated.Album != record.Album)
-    {
-      albumId = (await albumRepository.TryGetOrCreate(record.Album))?.AlbumId;
-    }
+    Guid? albumId = (await albumRepository.TryGetOrCreate(record.Album))?.AlbumId;
 
     // update genre
     var oldGenre = recordToUpdated.Genre;
-    Guid? genreId = null;
-    if (recordToUpdated.Genre != record.Genre)
-    {
-      genreId = (await genreRepository.TryGetOrCreate(record.Genre))?.GenreId;
-    }
+    Guid? genreId = (await genreRepository.TryGetOrCreate(record.Genre))?.GenreId;
 
     // update language
     var oldLang = recordToUpdated.Language;
-    Guid? languageId = null;
-    if (recordToUpdated.Language != record.Language)
-    {
-      languageId = (await languageRepository.TryGetOrCreate(record.Language))?.LanguageId;
-    }
+    Guid? languageId = (await languageRepository.TryGetOrCreate(record.Language))?.LanguageId;
 
     await recordRepository.Update(record, (artistId, albumId, genreId, languageId));
 
