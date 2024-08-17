@@ -492,7 +492,11 @@ public class SqlRecordsRepository(Func<ApplicationDBContext> contextFactory, IMa
   {
     using var context = contextFactory();
     return [.. context.Records
+      .Include(rec => rec.Artist)
+      .Include(rec => rec.Album)
+      .Include(rec => rec.Genre)
       .Include(rec => rec.Groups)
+      .Include(rec => rec.Language)
       .Where(rec => checksums.Contains(rec.Checksum))
       .Where(rec => rec.Groups.Any(g => clientGroups.Contains(g.GroupId)))
       .Select(rec => MapModel(rec))];
