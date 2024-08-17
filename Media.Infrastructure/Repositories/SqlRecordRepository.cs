@@ -226,7 +226,7 @@ public class SqlRecordsRepository(Func<ApplicationDBContext> contextFactory, IMa
     var paramCount = 0;
 
     var filterGroupsQuery = filterByGroups ? $"WHERE rec.record_id IN (SELECT g1.records_record_id FROM public.groups_records AS g1 WHERE g1.groups_group_id IN ({string.Join(',', groups.Select(id => $"{{{paramCount++}}}"))}))" : string.Empty;
-    var ilikeFilter = string.IsNullOrEmpty(filter) ? "'%%'" : $"'%{filter}%'";
+    var ilikeFilter = string.IsNullOrEmpty(filter) ? "%%" : $"%{filter}%";
     var filterQuery = $"AND rec.title ILIKE {{{paramCount++}}}";
 
 
