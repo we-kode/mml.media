@@ -107,10 +107,10 @@ public class RecordService(
     await recordRepository.Update(record, (artistId, albumId, genreId, languageId));
 
     // try remove old data
-    await artistRepository.TryRemove(record.Artist);
-    await genreRepository.TryRemove(record.Genre);
-    await albumRepository.TryRemove(record.Album);
-    await languageRepository.TryRemove(record.Language);
+    await artistRepository.TryRemove(oldArtist);
+    await genreRepository.TryRemove(oldGenre);
+    await albumRepository.TryRemove(oldAlbum);
+    await languageRepository.TryRemove(oldLang);
 
     scope.Complete();
   }
