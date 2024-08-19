@@ -135,7 +135,6 @@ public class SqlGenreRepository(Func<ApplicationDBContext> contextFactory, IMapp
 
     var count = query.Count();
     var genres = query
-      .OrderBy(g => g.Name)
       .Skip(0)
       .Take(15)
       .Select(g => mapper.Map<Genre>(g))
