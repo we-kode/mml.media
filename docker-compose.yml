@@ -5,16 +5,16 @@ services:
       context: .
       dockerfile: Media.API/Dockerfile
       args:
-        - UID=${UID}
-        - GID=${GUID}
-        - DOT_NET_BUILD_CONFIG=${DOT_NET_BUILD_CONFIG}
+       - UID=${UID}
+       - GID=${GID}
+       - DOT_NET_BUILD_CONFIG=${DOT_NET_BUILD_CONFIG}
     container_name: wekode.mml.media
     restart: always
-    user: ${UID}:${GUID}
+    user: ${UID}:${GID}
     volumes:
-      - ${VOL_CERTS}:/etc/ssl/certs:ro
-      - ${VOL_RECORDS}:/records
-      - ${APPSETTINGS}:/configs/appsettings.json:ro
+      - ${VOL_CERTS}:/etc/ssl/certs:ro,z
+      - ${VOL_RECORDS}:/records:Z
+      - ${APPSETTINGS}:/configs/appsettings.json:ro,Z
       - /etc/localtime:/etc/localtime:ro
     networks:
       - wekode.mml

@@ -1,7 +1,7 @@
 ﻿
 using AutoMapper;
 using MassTransit;
-using Media.Application.Contracts;
+using Media.Application.Contracts.Repositories;
 using Media.Application.Models;
 using Messages;
 using System.Threading.Tasks;
@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 namespace Media.Application.Consumers;
 
 /// <summary>
-/// Handles messages for chnaged groups
+/// Handles messages for changed groups
 /// </summary>
 public class GroupConsumer : IConsumer<GroupCreated>, IConsumer<GroupUpdated>, IConsumer<GroupDeleted>
 {

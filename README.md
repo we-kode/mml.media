@@ -20,7 +20,7 @@ Create a local copy of the `.env` file name e.g. `dev.env` and fill in the confi
 
 ### Local build the docker image
 
-To build the docker image on your machien run
+To build the docker image on your machine run
 
 ```
 docker-compose --env-file dev.env up --build -d

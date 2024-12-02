@@ -15,9 +15,19 @@ namespace Media.Application.Models
     public string? Artist { get; set; }
 
     /// <summary>
+    /// The artists id or null if no one provided.
+    /// </summary>
+    public Guid? ArtistId { get; set; }
+
+    /// <summary>
     /// Genre of the record or null if no one provided.
     /// </summary>
     public string? Genre { get; set; }
+
+    /// <summary>
+    /// Genre id of the record or null if no one provided.
+    /// </summary>
+    public Guid? GenreId { get; set; }
 
     /// <summary>
     /// Album of the record or null if no one provided.
@@ -25,9 +35,19 @@ namespace Media.Application.Models
     public string? Album { get; set; }
 
     /// <summary>
+    /// Album id of the record or null if no one provided.
+    /// </summary>
+    public Guid? AlbumId { get; set; }
+
+    /// <summary>
     /// Language of the record or null if no one provided.
     /// </summary>
     public string? Language { get; set; }
+
+    /// <summary>
+    /// Language id of the record or null if no one provided.
+    /// </summary>
+    public Guid? LanguageId { get; set; }
 
     /// <summary>
     /// Front cover of record.

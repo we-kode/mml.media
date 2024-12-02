@@ -35,8 +35,8 @@ namespace Media.API
             {
               options.ListenAnyIP(5052, listenOptions =>
               {
-                var cert = config["TLS:Cert"];
-                var pwd = config["TLS:Password"];
+                var cert = config["TLS:Cert"] ?? string.Empty;
+                var pwd = config["TLS:Password"] ?? string.Empty;
                 listenOptions.UseHttps(cert, pwd);
               });
             });

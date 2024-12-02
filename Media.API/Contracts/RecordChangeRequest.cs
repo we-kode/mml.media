@@ -40,6 +40,11 @@ public class RecordChangeRequest
   public string? Language { get; set; }
 
   /// <summary>
+  /// Indicates whether the record is locked.
+  /// </summary>
+  public bool Locked { get; set; }
+
+  /// <summary>
   /// The cover of tis record.
   /// </summary>
   public byte[] Cover { get; set; } = Array.Empty<byte>();
