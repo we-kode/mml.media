@@ -1,11 +1,11 @@
-FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS base
 RUN apt update && apt install ffmpeg -y
 ARG USERNAME=mml
 ARG UID
 ARG GID
 RUN groupadd --gid $GID $USERNAME \
     && useradd --uid $UID --gid $GID -m $USERNAME
-
+USER $USERNAME
 RUN mkdir /records
 RUN chown -R $USERNAME:$USERNAME /records
 RUN chmod 755 /records
@@ -16,7 +16,7 @@ WORKDIR /app
 EXPOSE 5052
 ENV ASPNETCORE_ENVIRONMENT=Release
 
-FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 ARG DOT_NET_BUILD_CONFIG=Release
 WORKDIR /src
 COPY ["Media.API/Media.API.csproj", "Media.API/"]
