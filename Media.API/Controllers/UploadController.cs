@@ -1,10 +1,10 @@
 ﻿using Asp.Versioning;
-using MassTransit;
 using Media.Messages;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MimeDetective;
 using OpenIddict.Validation.AspNetCore;
+using Rebus.Bus;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -18,11 +18,11 @@ namespace Media.API.Controllers;
 [ApiVersion(2.0)]
 [Route("api/v{version:apiVersion}/media/[controller]")]
 [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme, Policy = Application.Constants.Roles.Admin)]
-public class UploadController(IPublishEndpoint publishEndpoint) : ControllerBase
+public class UploadController(IBus publishEndpoint) : ControllerBase
 {
-  private readonly ContentInspector inspector = new ContentInspectorBuilder()
+  private readonly IContentInspector inspector = new ContentInspectorBuilder()
   {
-    Definitions = MimeDetective.Definitions.Default.FileTypes.Audio.MP3(),
+    Definitions = MimeDetective.Definitions.DefaultDefinitions.FileTypes.Audio.MP3(),
     Parallel = true
   }.Build();
 
@@ -75,7 +75,7 @@ public class UploadController(IPublishEndpoint publishEndpoint) : ControllerBase
         }
 
         // publish message to start compressing file and indexing.
-        await publishEndpoint.Publish<FileUploaded>(new
+        await publishEndpoint.Publish(new FileUploaded
         {
           FileName = fileName,
           Date = DateTime.Parse(Request.Form["LastModifiedDate"]!),

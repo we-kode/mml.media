@@ -1,5 +1,4 @@
 ﻿using Asp.Versioning;
-using AutoMapper;
 using Media.API.Extensions;
 using Media.Application.Contracts.Repositories;
 using Media.Application.Models;
@@ -16,17 +15,8 @@ namespace Media.API.Controllers;
 [ApiVersion(2.0)]
 [Route("api/v{version:apiVersion}/media/[controller]")]
 [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
-public class StreamController : ControllerBase
+public class StreamController(IRecordRepository repository) : ControllerBase
 {
-
-  private readonly IRecordRepository repository;
-  private readonly IMapper mapper;
-
-  public StreamController(IRecordRepository repository, IMapper mapper)
-  {
-    this.repository = repository;
-    this.mapper = mapper;
-  }
 
   /// <summary>
   /// Streams the given record.
@@ -104,7 +94,7 @@ public class StreamController : ControllerBase
   {
     var isAdmin = HttpContext.IsAdmin();
     var clientGroups = HttpContext.ClientGroups();
-    return repository.Next(id, filter, mapper.Map<TagFilter>(tagFilter), !isAdmin, clientGroups, repeat ?? false, shuffle ?? false);
+    return repository.Next(id, filter, tagFilter.Map(), !isAdmin, clientGroups, repeat ?? false, shuffle ?? false);
   }
 
   /// <summary>
@@ -122,7 +112,7 @@ public class StreamController : ControllerBase
   {
     var isAdmin = HttpContext.IsAdmin();
     var clientGroups = HttpContext.ClientGroups();
-    return repository.Previous(id, filter, mapper.Map<TagFilter>(tagFilter), !isAdmin, clientGroups, repeat ?? false);
+    return repository.Previous(id, filter, tagFilter.Map(), !isAdmin, clientGroups, repeat ?? false);
   }
 
 }

@@ -1,4 +1,3 @@
-using AutoMapper;
 using Media.Application.Contracts.Repositories;
 using Media.Application.Models;
 using Media.DBContext;
@@ -10,8 +9,9 @@ using System.Threading.Tasks;
 
 namespace Media.Infrastructure.Repositories;
 
-public class SqlAlbumRepository(Func<ApplicationDBContext> contextFactory, IMapper mapper) : IAlbumRepository {
-  public Albums List(string? filter, bool filterByGroups, IEnumerable<Guid> clientGroups, int skip = Media.Application.Constants.List.Skip, int take = Media.Application.Constants.List.Take)
+public class SqlAlbumRepository(Func<ApplicationDBContext> contextFactory) : IAlbumRepository
+{
+  public Albums List(string? filter, bool filterByGroups, IEnumerable<Guid> clientGroups, int skip = Application.Constants.List.Skip, int take = Application.Constants.List.Take)
   {
     using var context = contextFactory();
     var query = context.Albums
@@ -27,7 +27,11 @@ public class SqlAlbumRepository(Func<ApplicationDBContext> contextFactory, IMapp
       .OrderBy(album => album.AlbumName)
       .Skip(skip)
       .Take(take)
-      .Select(album => mapper.Map<Album>(album))
+      .Select(album => new Album
+      {
+        AlbumId = album.AlbumId,
+        AlbumName = album.AlbumName
+      })
       .ToList();
 
     return new Albums
@@ -49,7 +53,7 @@ public class SqlAlbumRepository(Func<ApplicationDBContext> contextFactory, IMapp
     {
       context.Albums.RemoveRange(context.Albums.Where(rec => rec.AlbumName == albumName));
     }
-    
+
     await context.SaveChangesAsync().ConfigureAwait(false);
   }
 
@@ -73,6 +77,6 @@ public class SqlAlbumRepository(Func<ApplicationDBContext> contextFactory, IMapp
       await context.SaveChangesAsync().ConfigureAwait(false);
     }
 
-    return mapper.Map<Album?>(album);
+    return album != null ? new Album { AlbumId = album.AlbumId, AlbumName = album.AlbumName } : null;
   }
 }

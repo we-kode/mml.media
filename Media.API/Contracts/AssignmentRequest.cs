@@ -11,16 +11,16 @@ namespace Media.API.Contracts
     /// <summary>
     /// Items to be assigned.
     /// </summary>
-    public List<Guid> Items { get; set; } = new List<Guid>();
+    public List<Guid> Items { get; set; } = [];
 
     /// <summary>
     /// Listz of groups to which the items should be assigned.
     /// </summary>
-    public List<Guid> Groups { get; set; } = new List<Guid>();
+    public List<Guid> Groups { get; set; } = [];
 
     /// <summary>
     /// Listz of init groups.
     /// </summary>
-    public List<Guid> InitGroups { get; set; } = new List<Guid>();
+    public List<Guid> InitGroups { get; set; } = [];
   }
 }

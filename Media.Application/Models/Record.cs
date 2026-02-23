@@ -61,7 +61,7 @@ public class Record
   /// <summary>
   /// The cover of this record.
   /// </summary>
-  public byte[] Cover { get; set; } = Array.Empty<byte>();
+  public byte[] Cover { get; set; } = [];
 
   /// <summary>
   ///  Checksum of the record.
@@ -107,9 +107,9 @@ public class Record
     Date = date;
     Duration = duration.TotalMilliseconds;
     Checksum = checksum;
-    Groups = groups ?? new List<Group>();
+    Groups = groups ?? [];
     Bitrate = bitrate;
-    Cover = string.IsNullOrEmpty(cover) ? Array.Empty<byte>() : Convert.FromBase64String(cover);
+    Cover = string.IsNullOrEmpty(cover) ? [] : Convert.FromBase64String(cover);
     Locked = isLocked;
   }
 
@@ -117,6 +117,6 @@ public class Record
   {
     RecordId = recordId;
     Title = title;
-    Groups = new List<Group>();
+    Groups = [];
   }
 }

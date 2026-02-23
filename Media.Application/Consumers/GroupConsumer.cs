@@ -1,9 +1,7 @@
-﻿
-using AutoMapper;
-using MassTransit;
-using Media.Application.Contracts.Repositories;
+﻿using Media.Application.Contracts.Repositories;
 using Media.Application.Models;
-using Messages;
+using Messages.Events;
+using Rebus.Handlers;
 using System.Threading.Tasks;
 
 namespace Media.Application.Consumers;
@@ -11,29 +9,20 @@ namespace Media.Application.Consumers;
 /// <summary>
 /// Handles messages for changed groups
 /// </summary>
-public class GroupConsumer : IConsumer<GroupCreated>, IConsumer<GroupUpdated>, IConsumer<GroupDeleted>
+public class GroupConsumer(IGroupRepository groupRepository) : IHandleMessages<GroupCreated>, IHandleMessages<GroupUpdated>, IHandleMessages<GroupDeleted>
 {
-  private readonly IGroupRepository groupRepository;
-  private readonly IMapper mapper;
-
-  public GroupConsumer(IGroupRepository groupRepository, IMapper mapper)
+  public async Task Handle(GroupCreated context)
   {
-    this.groupRepository = groupRepository;
-    this.mapper = mapper;
+    await groupRepository.Create(new Group(context.Id, context.Name, context.IsDefault)).ConfigureAwait(false);
   }
 
-  public async Task Consume(ConsumeContext<GroupCreated> context)
+  public async Task Handle(GroupUpdated context)
   {
-    await groupRepository.Create(mapper.Map<Group>(context.Message)).ConfigureAwait(false);
+    await groupRepository.Update(new Group(context.Id, context.Name, context.IsDefault)).ConfigureAwait(false);
   }
 
-  public async Task Consume(ConsumeContext<GroupUpdated> context)
+  public async Task Handle(GroupDeleted context)
   {
-    await groupRepository.Update(mapper.Map<Group>(context.Message)).ConfigureAwait(false);
-  }
-
-  public async Task Consume(ConsumeContext<GroupDeleted> context)
-  {
-    await groupRepository.Delete(context.Message.Id).ConfigureAwait(false);
+    await groupRepository.Delete(context.Id).ConfigureAwait(false);
   }
 }

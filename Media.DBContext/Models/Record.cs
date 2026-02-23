@@ -101,5 +101,5 @@ public class Record
   /// <summary>
   /// The groups associated with this record.
   /// </summary>
-  public ICollection<Group> Groups { get; set; } = new List<Group>();
+  public ICollection<Group> Groups { get; set; } = [];
 }

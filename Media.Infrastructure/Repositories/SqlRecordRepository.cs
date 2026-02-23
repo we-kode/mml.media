@@ -1,9 +1,7 @@
-using AutoMapper;
 using Media.Application.Contracts.Repositories;
 using Media.Application.Models;
 using Media.DBContext;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -14,7 +12,7 @@ using System.Transactions;
 
 namespace Media.Infrastructure.Repositories;
 
-public class SqlRecordsRepository(Func<ApplicationDBContext> contextFactory, IMapper mapper, IGroupRepository groupRepository) : IRecordRepository
+public class SqlRecordsRepository(Func<ApplicationDBContext> contextFactory, IGroupRepository groupRepository) : IRecordRepository
 {
   public bool IsIndexed(string checksum)
   {
@@ -144,14 +142,14 @@ public class SqlRecordsRepository(Func<ApplicationDBContext> contextFactory, IMa
   public Record? Next(Guid id, string? filter, TagFilter tagFilter, bool filterByGroups, IEnumerable<Guid> clientGroups, bool repeat, bool shuffle)
   {
     using var context = contextFactory();
-    var query = Filter(context, filter, tagFilter, filterByGroups, clientGroups.ToList());
+    var query = Filter(context, filter, tagFilter, filterByGroups, [.. clientGroups]);
     return DetermineRecord(query, id, repeat, shuffle);
   }
 
   public Record? Previous(Guid id, string? filter, TagFilter tagFilter, bool filterByGroups, IEnumerable<Guid> clientGroups, bool repeat)
   {
     using var context = contextFactory();
-    var query = Filter(context, filter, tagFilter, filterByGroups, clientGroups.ToList());
+    var query = Filter(context, filter, tagFilter, filterByGroups, [.. clientGroups]);
     return DetermineRecord(query, id, repeat, reverse: true);
   }
 
@@ -207,7 +205,7 @@ public class SqlRecordsRepository(Func<ApplicationDBContext> contextFactory, IMa
     return MapModel(query.FirstOrDefault(rec => rec.RecordId == previousId));
   }
 
-  private IQueryable<DBContext.Models.SeedRecord> Filter(ApplicationDBContext context, string? filter, TagFilter tagFilter, bool filterByGroups, IList<Guid> groups)
+  private static IQueryable<DBContext.Models.SeedRecord> Filter(ApplicationDBContext context, string? filter, TagFilter tagFilter, bool filterByGroups, IList<Guid> groups)
   {
     var selectQuery = @"SELECT 
                   rec.*, a.name as artist_name, al.album_name as album_name, g.name as genre_name, l.name as language_name,
@@ -398,7 +396,7 @@ public class SqlRecordsRepository(Func<ApplicationDBContext> contextFactory, IMa
       record.Date,
       record.Duration,
       record.Bitrate ?? 0,
-      record.Groups.Select(g => new Group(g.GroupId, g.Name, g.IsDefault)).ToArray(),
+      [.. record.Groups.Select(g => new Group(g.GroupId, g.Name, g.IsDefault))],
       record.Album?.AlbumName ?? string.Empty,
       record.Genre?.Name ?? string.Empty,
       record.Language?.Name ?? string.Empty,
@@ -513,7 +511,7 @@ public class SqlRecordsRepository(Func<ApplicationDBContext> contextFactory, IMa
      .Where(g => groups.Contains(g.GroupId));
     foreach (var record in rAssign)
     {
-      record.Groups = record.Groups = record.Groups.Where(rg => initGroups.Contains(rg.GroupId) && !groups.Contains(rg.GroupId)).Union(gAssign).ToList();
+      record.Groups = record.Groups = [.. record.Groups.Where(rg => initGroups.Contains(rg.GroupId) && !groups.Contains(rg.GroupId)).Union(gAssign)];
     }
     context.SaveChanges();
     scope.Complete();
@@ -531,7 +529,7 @@ public class SqlRecordsRepository(Func<ApplicationDBContext> contextFactory, IMa
 
       foreach (var record in records)
       {
-        record.Groups = record.Groups = record.Groups.Where(rg => initGroups.Contains(rg.GroupId) && !groups.Contains(rg.GroupId)).Union(gAssign).ToList();
+        record.Groups = record.Groups = [.. record.Groups.Where(rg => initGroups.Contains(rg.GroupId) && !groups.Contains(rg.GroupId)).Union(gAssign)];
       }
     }
     context.SaveChanges();
@@ -581,7 +579,7 @@ public class SqlRecordsRepository(Func<ApplicationDBContext> contextFactory, IMa
     return new Groups
     {
       TotalCount = count,
-      Items = [..mapper.ProjectTo<Group>(groups)],
+      Items = [.. groups.Select(g => new Group(g.GroupId, g.Name, g.IsDefault))],
     };
   }
 
@@ -603,7 +601,7 @@ public class SqlRecordsRepository(Func<ApplicationDBContext> contextFactory, IMa
     return new Groups
     {
       TotalCount = count,
-      Items = [..mapper.ProjectTo<Group>(groups)],
+      Items = [..groups.Select(g => new Group(g.GroupId, g.Name, g.IsDefault))],
     };
   }
 
@@ -611,6 +609,6 @@ public class SqlRecordsRepository(Func<ApplicationDBContext> contextFactory, IMa
   {
     using var context = contextFactory();
     var dateRange = folder.ToDateRange();
-    return context.Records.Where(rec => rec.Date.Date >= dateRange.Item1 && rec.Date.Date <= dateRange.Item2).Select(rec => rec.RecordId).ToList();
+    return [.. context.Records.Where(rec => rec.Date.Date >= dateRange.Item1 && rec.Date.Date <= dateRange.Item2).Select(rec => rec.RecordId)];
   }
 }

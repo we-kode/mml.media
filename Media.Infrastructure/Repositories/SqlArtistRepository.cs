@@ -1,4 +1,3 @@
-using AutoMapper;
 using Media.Application.Contracts.Repositories;
 using Media.Application.Models;
 using Media.DBContext;
@@ -10,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace Media.Infrastructure.Repositories;
 
-public class SqlArtistRepository(Func<ApplicationDBContext> contextFactory, IMapper mapper) : IArtistRepository
+public class SqlArtistRepository(Func<ApplicationDBContext> contextFactory) : IArtistRepository
 {
   public Artists List(string? filter, bool filterByGroups, IEnumerable<Guid> clientGroups, int skip = Application.Constants.List.Skip, int take = Application.Constants.List.Take)
   {
@@ -28,7 +27,11 @@ public class SqlArtistRepository(Func<ApplicationDBContext> contextFactory, IMap
       .OrderBy(artist => artist.Name)
       .Skip(skip)
       .Take(take)
-      .Select(artist => mapper.Map<Artist>(artist))
+      .Select(artist => new Artist
+      {
+        ArtistId = artist.ArtistId,
+        Name = artist.Name
+      })
       .ToList();
 
     return new Artists
@@ -50,7 +53,11 @@ public class SqlArtistRepository(Func<ApplicationDBContext> contextFactory, IMap
     var artists = query
       .Skip(0)
       .Take(15)
-      .Select(artist => mapper.Map<Artist>(artist))
+      .Select(artist => new Artist
+      {
+        ArtistId = artist.ArtistId,
+        Name = artist.Name
+      })
       .ToList();
 
     return new Artists
@@ -72,7 +79,7 @@ public class SqlArtistRepository(Func<ApplicationDBContext> contextFactory, IMap
     var artists = query
       .Skip(0)
       .Take(15)
-      .Select(artist => mapper.Map<Artist>(artist))
+      .Select(artist => new Artist { ArtistId = artist.ArtistId, Name = artist.Name })
       .ToList();
 
     return new Artists
@@ -117,6 +124,10 @@ public class SqlArtistRepository(Func<ApplicationDBContext> contextFactory, IMap
       await context.SaveChangesAsync().ConfigureAwait(false);
     }
 
-    return mapper.Map<Artist?>(artist);
+    return artist != null ? new Artist
+    {
+      ArtistId = artist.ArtistId,
+      Name = artist.Name
+    } : null;
   }
 }

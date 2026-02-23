@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Media.DBContext
 {
-  public class ApplicationDBContext : DbContext
+  public class ApplicationDBContext(DbContextOptions<ApplicationDBContext> options) : DbContext(options)
   {
     public DbSet<Setting> Settings { get; set; } = null!;
     public DbSet<Record> Records { get; set; } = null!;
@@ -15,10 +15,6 @@ namespace Media.DBContext
     public DbSet<Group> Groups { get; set; } = null!;
     public DbSet<Language> Languages { get; set; } = null!;
     public DbSet<SeedRecord> SeedRecords { get; set; } = null!;
-
-    public ApplicationDBContext(DbContextOptions<ApplicationDBContext> options) : base(options)
-    {
-    }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder) => optionsBuilder.UseSnakeCaseNamingConvention();
 

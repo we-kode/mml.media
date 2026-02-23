@@ -1,5 +1,4 @@
-﻿using AutoMapper;
-using Media.Application.Contracts.Repositories;
+﻿using Media.Application.Contracts.Repositories;
 using Media.Application.Models;
 using Media.DBContext;
 using Microsoft.EntityFrameworkCore;
@@ -11,10 +10,9 @@ using System.Transactions;
 
 namespace Media.Infrastructure.Repositories;
 
-public class SqlLivestreamRepository(Func<ApplicationDBContext> contextFactory, IMapper mapper, IGroupRepository groupRepository) : ILivestreamRepository
+public class SqlLivestreamRepository(Func<ApplicationDBContext> contextFactory, IGroupRepository groupRepository) : ILivestreamRepository
 {
   private readonly Func<ApplicationDBContext> _contextFactory = contextFactory;
-  private readonly IMapper mapper = mapper;
   private readonly IGroupRepository _groupRepository = groupRepository;
 
   public void Assign(List<Guid> items, List<Guid> initGroups, List<Guid> groups)
@@ -28,7 +26,7 @@ public class SqlLivestreamRepository(Func<ApplicationDBContext> contextFactory, 
      .Where(g => groups.Contains(g.GroupId));
     foreach (var record in rAssing)
     {
-      record.Groups = record.Groups.Where(rg => initGroups.Contains(rg.GroupId) && !groups.Contains(rg.GroupId)).Union(gAssign).ToList();
+      record.Groups = [.. record.Groups.Where(rg => initGroups.Contains(rg.GroupId) && !groups.Contains(rg.GroupId)).Union(gAssign)];
     }
     context.SaveChanges();
     scope.Complete();
@@ -66,7 +64,7 @@ public class SqlLivestreamRepository(Func<ApplicationDBContext> contextFactory, 
     return new Groups
     {
       TotalCount = count,
-      Items = mapper.ProjectTo<Group>(groups).ToList(),
+      Items = [.. groups.Select(g => new Group(g.GroupId, g.Name, g.IsDefault))],
     };
   }
 
@@ -94,7 +92,7 @@ public class SqlLivestreamRepository(Func<ApplicationDBContext> contextFactory, 
       .OrderBy(elem => elem.Title)
       .Skip(skip)
       .Take(take)
-      .Select(elem => mapper.Map<Livestream>(elem))
+      .Select(elem => new Livestream { RecordId = elem.RecordId, Title = elem.Title, Groups = elem.Groups.Select(g => new Group(g.GroupId, g.Name, g.IsDefault)).ToList() })
       .ToList();
 
     return new Livestreams
@@ -108,7 +106,14 @@ public class SqlLivestreamRepository(Func<ApplicationDBContext> contextFactory, 
   {
     using var context = _contextFactory();
     var item = context.Livestreams.Include(stream => stream.Groups).First(stream => stream.RecordId == id);
-    return mapper.Map<LivestreamSettings>(item);
+    return new LivestreamSettings
+    {
+      Groups = [.. item.Groups.Select(g => new Group(g.GroupId, g.Name, g.IsDefault))],
+      ProviderType = item.ProviderType,
+      RecordId = item.RecordId,
+      Title = item.Title,
+      Url = item.Url
+    };
   }
 
   public string Stream(Guid id)

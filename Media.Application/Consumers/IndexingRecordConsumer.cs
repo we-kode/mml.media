@@ -2,7 +2,6 @@
 using ByteDev.Crypto.Hashing;
 using ByteDev.Crypto.Hashing.Algorithms;
 using FFmpeg.NET;
-using MassTransit;
 using Media.Application.Models;
 using Media.Messages;
 using System;
@@ -13,6 +12,7 @@ using System.Threading.Tasks;
 using Media.Application.Extensions;
 using Media.Application.Contracts.Repositories;
 using Media.Application.Contracts.Services;
+using Rebus.Handlers;
 
 namespace Media.Application.Consumers;
 
@@ -23,14 +23,14 @@ public class IndexingRecordConsumer(
   ISettingRepository settingsRepository,
   IRecordRepository recordRepository,
   IRecordService recordsService,
-  IGenreRepository genresRepository) : IConsumer<FileUploaded>
+  IGenreRepository genresRepository) : IHandleMessages<FileUploaded>
 {
-  private readonly Engine engine = new Engine($"/usr/bin/ffmpeg");
-  private readonly IFileChecksumService checksumService = new FileChecksumService(new Sha1Algorithm(), EncodingType.Hex);
+  private readonly Engine engine = new($"/usr/bin/ffmpeg");
+  private readonly FileChecksumService checksumService = new(new Sha1Algorithm(), EncodingType.Hex);
 
-  public async Task Consume(ConsumeContext<FileUploaded> context)
+  public async Task Handle(FileUploaded context)
   {
-    var inputPath = @$"/tmp/records/{context.Message.FileName}";
+    var inputPath = @$"/tmp/records/{context.FileName}";
     var inputFile = new InputFile(inputPath);
 
     if (!File.Exists(inputPath))
@@ -53,7 +53,7 @@ public class IndexingRecordConsumer(
 
     // get id3 tags and remove them from original file.
     var taglibFile = TagLib.File.Create(inputPath);
-    var originalFileName = Path.GetFileNameWithoutExtension(context.Message.FileName);
+    var originalFileName = Path.GetFileNameWithoutExtension(context.FileName);
     var trackNumber = (int)taglibFile.Tag.Track;
     var isDateParsed = DateTime.TryParseExact(originalFileName.Split('-').FirstOrDefault(), "yyMMdd", CultureInfo.CurrentCulture, DateTimeStyles.None, out var parsedDate);
     var cover = taglibFile.Tag.Pictures.FirstOrDefault();
@@ -71,7 +71,7 @@ public class IndexingRecordConsumer(
       Genre = taglibFile.Tag.FirstGenre,
       Language = taglibFile.LanguageTag(),
       TrackNumber = trackNumber,
-      Date = isDateParsed ? parsedDate.ToUniversalTime().AddMinutes(trackNumber) : context.Message.Date.ToUniversalTime(),
+      Date = isDateParsed ? parsedDate.ToUniversalTime().AddMinutes(trackNumber) : context.Date.ToUniversalTime(),
       Duration = taglibFile.Properties.Duration,
       OriginalFileName = originalFileName,
       PhysicalFilePath = outputPath,
@@ -111,7 +111,7 @@ public class IndexingRecordConsumer(
     metadata.Bitrate = compressionRate ?? fileMetaData.AudioData.BitRateKbs;
 
     // save indexed file
-    await recordsService.SaveMetaData(metadata, context.Message.Groups);
+    await recordsService.SaveMetaData(metadata, context.Groups);
   }
 
   /// <summary>

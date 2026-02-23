@@ -1,5 +1,4 @@
 ﻿using Asp.Versioning;
-using AutoMapper;
 using Media.API.Contracts;
 using Media.API.Extensions;
 using Media.Application.Constants;
@@ -28,8 +27,7 @@ public class RecordController(
   IGenreRepository genresRepository,
   IAlbumRepository albumsRepository,
   IRecordService recordsService,
-  ILanguageRepository languageRepository,
-  IMapper mapper) : ControllerBase
+  ILanguageRepository languageRepository) : ControllerBase
 {
 
   /// <summary>
@@ -44,7 +42,7 @@ public class RecordController(
   {
     var isAdmin = HttpContext.IsAdmin();
     var clientGroups = HttpContext.ClientGroups();
-    return recordRepository.List(filter, mapper.Map<Application.Contracts.Repositories.TagFilter>(tagFilter), !isAdmin, clientGroups, skip, take);
+    return recordRepository.List(filter, tagFilter.Map(), !isAdmin, clientGroups, skip, take);
   }
 
   /// <summary>
@@ -59,75 +57,7 @@ public class RecordController(
   {
     var isAdmin = HttpContext.IsAdmin();
     var clientGroups = HttpContext.ClientGroups();
-    return recordRepository.ListFolder(filter, mapper.Map<Application.Contracts.Repositories.TagFilter>(tagFilter), !isAdmin, clientGroups, skip, take);
-  }
-
-  /// <summary>
-  /// Loads a list of artists.
-  /// </summary>
-  /// <param name="filter">Filter request to filter the list of artists.</param>
-  /// <param name="skip">Offset of the list</param>
-  /// <param name="take">Size of chunk to be loaded</param>
-  /// <returns><see cref="Artists"/></returns>
-  [HttpGet("artists")]
-  [MapToApiVersion(1.0)]
-  [Obsolete]
-  public Artists GetArtists([FromQuery] string? filter, [FromQuery] int skip = Application.Constants.List.Skip, [FromQuery] int take = Application.Constants.List.Take)
-  {
-    var isAdmin = HttpContext.IsAdmin();
-    var clientGroups = HttpContext.ClientGroups();
-    return artistsRepository.List(filter, !isAdmin, clientGroups, skip, take);
-  }
-
-  /// <summary>
-  /// Loads a list of genres.
-  /// </summary>
-  /// <param name="filter">Filter request to filter the list of genres</param>
-  /// <param name="skip">Offset of the list</param>
-  /// <param name="take">Size of chunk to be loaded</param>
-  /// <returns><see cref="Artists"/></returns>
-  [HttpGet("genres")]
-  [MapToApiVersion(1.0)]
-  [Obsolete]
-  public Genres GetGenres([FromQuery] string? filter, [FromQuery] int skip = Application.Constants.List.Skip, [FromQuery] int take = Application.Constants.List.Take)
-  {
-    var isAdmin = HttpContext.IsAdmin();
-    var clientGroups = HttpContext.ClientGroups();
-    return genresRepository.List(filter, !isAdmin, clientGroups, skip, take);
-  }
-
-  /// <summary>
-  /// Loads a list of albums.
-  /// </summary>
-  /// <param name="filter">Filter request to filter the list of albums.</param>
-  /// <param name="skip">Offset of the list</param>
-  /// <param name="take">Size of chunk to be loaded</param>
-  /// <returns><see cref="Albums"/></returns>
-  [HttpGet("albums")]
-  [MapToApiVersion(1.0)]
-  [Obsolete]
-  public Albums GetAlbums([FromQuery] string? filter, [FromQuery] int skip = Application.Constants.List.Skip, [FromQuery] int take = Application.Constants.List.Take)
-  {
-    var isAdmin = HttpContext.IsAdmin();
-    var clientGroups = HttpContext.ClientGroups();
-    return albumsRepository.List(filter, !isAdmin, clientGroups, skip, take);
-  }
-
-  /// <summary>
-  /// Loads a list of languages.
-  /// </summary>
-  /// <param name="filter">Filter request to filter the list of albums.</param>
-  /// <param name="skip">Offset of the list</param>
-  /// <param name="take">Size of chunk to be loaded</param>
-  /// <returns><see cref="Languages"/></returns>
-  [HttpGet("languages")]
-  [MapToApiVersion(1.0)]
-  [Obsolete]
-  public Languages GetLanguages([FromQuery] string? filter, [FromQuery] int skip = Application.Constants.List.Skip, [FromQuery] int take = Application.Constants.List.Take)
-  {
-    var isAdmin = HttpContext.IsAdmin();
-    var clientGroups = HttpContext.ClientGroups();
-    return languageRepository.ListLanguages(filter, !isAdmin, clientGroups, skip, take);
+    return recordRepository.ListFolder(filter, tagFilter.Map(), !isAdmin, clientGroups, skip, take);
   }
 
   /// <summary>
@@ -154,7 +84,7 @@ public class RecordController(
   [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme, Policy = Roles.Admin)]
   public async Task<IActionResult> DeleteFolders([FromBody] IList<Contracts.RecordFolder> data)
   {
-    await recordsService.DeleteFolders(data.Select(f => mapper.Map<Application.Models.RecordFolder>(f))).ConfigureAwait(false);
+    await recordsService.DeleteFolders(data.Select(f => f.Map())).ConfigureAwait(false);
     return Ok();
   }
 
@@ -178,7 +108,7 @@ public class RecordController(
   [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme, Policy = Roles.Admin)]
   public IActionResult AssignFolder([FromBody] AssignFolderRequest request)
   {
-    recordRepository.AssignFolder(request.Items.Select(f => mapper.Map<Application.Models.RecordFolder>(f)), request.InitGroups, request.Groups);
+    recordRepository.AssignFolder(request.Items.Select(f => f.Map()), request.InitGroups, request.Groups);
     return Ok();
   }
 
@@ -201,7 +131,7 @@ public class RecordController(
   [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme, Policy = Roles.Admin)]
   public Groups AssignedFolderGroups([FromBody] List<Contracts.RecordFolder> items)
   {
-    return recordRepository.GetAssignedFolderGroups(items.Select(f => mapper.Map<Application.Models.RecordFolder>(f)));
+    return recordRepository.GetAssignedFolderGroups(items.Select(f => f.Map()));
   }
 
   /// <summary>
@@ -224,7 +154,7 @@ public class RecordController(
   [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme, Policy = Roles.Admin)]
   public IActionResult LockFolder([FromBody] FolderItemsRequest request)
   {
-    recordRepository.LockFolder(request.Items.Select(f => mapper.Map<Application.Models.RecordFolder>(f)));
+    recordRepository.LockFolder(request.Items.Select(f => f.Map()));
     return Ok();
   }
 
@@ -261,51 +191,7 @@ public class RecordController(
       return NotFound();
     }
 
-    await recordsService.Update(mapper.Map<Record>(request)).ConfigureAwait(false);
-    return Ok();
-  }
-
-  /// <summary>
-  /// Returns available bitrates.
-  /// </summary>
-  [HttpGet("bitrates")]
-  [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme, Policy = Roles.Admin)]
-  [MapToApiVersion(1.0)]
-  [Obsolete]
-  public GenreBitrates Bitrates()
-  {
-    return genresRepository.Bitrates();
-  }
-
-  /// <summary>
-  /// Returns available bitrates.
-  /// </summary>
-  [HttpPost("bitrates")]
-  [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme, Policy = Roles.Admin)]
-  [MapToApiVersion(1.0)]
-  [Obsolete]
-  public IActionResult Bitrates([FromBody] List<GenreBitrate> bitrates)
-  {
-    genresRepository.UpdateBitrates(bitrates);
-    return Ok();
-  }
-
-  /// <summary>
-  /// Removes one bitrate.
-  /// </summary>
-  [HttpDelete("bitrate/{genreId:Guid}")]
-  [ProducesResponseType(StatusCodes.Status404NotFound)]
-  [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme, Policy = Roles.Admin)]
-  [MapToApiVersion(1.0)]
-  [Obsolete]
-  public IActionResult Bitrate(Guid genreId)
-  {
-    if (!genresRepository.Exists(genreId))
-    {
-      return NotFound();
-    }
-
-    genresRepository.DeleteBitrate(genreId);
+    await recordsService.Update(request.Map()).ConfigureAwait(false);
     return Ok();
   }
 
@@ -319,4 +205,118 @@ public class RecordController(
     var clientGroups = HttpContext.ClientGroups();
     return recordRepository.GetRecords(checksums, clientGroups);
   }
+
+  #region obsolete
+  /// <summary>
+  /// Returns available bitrates.
+  /// </summary>
+  [HttpGet("bitrates")]
+  [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme, Policy = Roles.Admin)]
+  [MapToApiVersion(1.0)]
+  [Obsolete("Use /media/genre/bitrates endpoint")]
+  public GenreBitrates Bitrates()
+  {
+    return genresRepository.Bitrates();
+  }
+
+  /// <summary>
+  /// Returns available bitrates.
+  /// </summary>
+  [HttpPost("bitrates")]
+  [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme, Policy = Roles.Admin)]
+  [MapToApiVersion(1.0)]
+  [Obsolete("Use /media/genre/bitrates endpoint")]
+  public IActionResult Bitrates([FromBody] List<GenreBitrate> bitrates)
+  {
+    genresRepository.UpdateBitrates(bitrates);
+    return Ok();
+  }
+
+  /// <summary>
+  /// Removes one bitrate.
+  /// </summary>
+  [HttpDelete("bitrate/{genreId:Guid}")]
+  [ProducesResponseType(StatusCodes.Status404NotFound)]
+  [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme, Policy = Roles.Admin)]
+  [MapToApiVersion(1.0)]
+  [Obsolete("Use /media/genre/bitrate/{id} endpoint")]
+  public IActionResult Bitrate(Guid genreId)
+  {
+    if (!genresRepository.Exists(genreId))
+    {
+      return NotFound();
+    }
+
+    genresRepository.DeleteBitrate(genreId);
+    return Ok();
+  }
+
+  /// <summary>
+  /// Loads a list of artists.
+  /// </summary>
+  /// <param name="filter">Filter request to filter the list of artists.</param>
+  /// <param name="skip">Offset of the list</param>
+  /// <param name="take">Size of chunk to be loaded</param>
+  /// <returns><see cref="Artists"/></returns>
+  [HttpGet("artists")]
+  [MapToApiVersion(1.0)]
+  [Obsolete("Use /media/artist/artists endpoint")]
+  public Artists GetArtists([FromQuery] string? filter, [FromQuery] int skip = Application.Constants.List.Skip, [FromQuery] int take = Application.Constants.List.Take)
+  {
+    var isAdmin = HttpContext.IsAdmin();
+    var clientGroups = HttpContext.ClientGroups();
+    return artistsRepository.List(filter, !isAdmin, clientGroups, skip, take);
+  }
+
+  /// <summary>
+  /// Loads a list of genres.
+  /// </summary>
+  /// <param name="filter">Filter request to filter the list of genres</param>
+  /// <param name="skip">Offset of the list</param>
+  /// <param name="take">Size of chunk to be loaded</param>
+  /// <returns><see cref="Artists"/></returns>
+  [HttpGet("genres")]
+  [MapToApiVersion(1.0)]
+  [Obsolete("Use /media/genre/genres endpoint")]
+  public Genres GetGenres([FromQuery] string? filter, [FromQuery] int skip = Application.Constants.List.Skip, [FromQuery] int take = Application.Constants.List.Take)
+  {
+    var isAdmin = HttpContext.IsAdmin();
+    var clientGroups = HttpContext.ClientGroups();
+    return genresRepository.List(filter, !isAdmin, clientGroups, skip, take);
+  }
+
+  /// <summary>
+  /// Loads a list of albums.
+  /// </summary>
+  /// <param name="filter">Filter request to filter the list of albums.</param>
+  /// <param name="skip">Offset of the list</param>
+  /// <param name="take">Size of chunk to be loaded</param>
+  /// <returns><see cref="Albums"/></returns>
+  [HttpGet("albums")]
+  [MapToApiVersion(1.0)]
+  [Obsolete("Use /media/album/albums endpoint")]
+  public Albums GetAlbums([FromQuery] string? filter, [FromQuery] int skip = Application.Constants.List.Skip, [FromQuery] int take = Application.Constants.List.Take)
+  {
+    var isAdmin = HttpContext.IsAdmin();
+    var clientGroups = HttpContext.ClientGroups();
+    return albumsRepository.List(filter, !isAdmin, clientGroups, skip, take);
+  }
+
+  /// <summary>
+  /// Loads a list of languages.
+  /// </summary>
+  /// <param name="filter">Filter request to filter the list of albums.</param>
+  /// <param name="skip">Offset of the list</param>
+  /// <param name="take">Size of chunk to be loaded</param>
+  /// <returns><see cref="Languages"/></returns>
+  [HttpGet("languages")]
+  [MapToApiVersion(1.0)]
+  [Obsolete("Use /media/language/languages endpoint")]
+  public Languages GetLanguages([FromQuery] string? filter, [FromQuery] int skip = Application.Constants.List.Skip, [FromQuery] int take = Application.Constants.List.Take)
+  {
+    var isAdmin = HttpContext.IsAdmin();
+    var clientGroups = HttpContext.ClientGroups();
+    return languageRepository.ListLanguages(filter, !isAdmin, clientGroups, skip, take);
+  }
+  #endregion
 }

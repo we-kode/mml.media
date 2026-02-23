@@ -1,5 +1,4 @@
 ﻿using Asp.Versioning;
-using AutoMapper;
 using Media.API.Contracts;
 using Media.API.Extensions;
 using Media.Application.Constants;
@@ -22,18 +21,11 @@ namespace Media.API.Controllers;
 [ApiVersion(2.0)]
 [Route("api/v{version:apiVersion}/media/[controller]")]
 [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
-public class LivestreamController : ControllerBase
+public class LivestreamController(ILivestreamRepository repository) : ControllerBase
 {
 
-  private readonly ILivestreamRepository repository;
-  private readonly IMapper mapper;
-  static Lazy<HttpClient> client = new Lazy<HttpClient>();
-
-  public LivestreamController(ILivestreamRepository repository, IMapper mapper)
-  {
-    this.repository = repository;
-    this.mapper = mapper;
-  }
+  private readonly ILivestreamRepository repository = repository;
+  static readonly Lazy<HttpClient> client = new();
 
   /// <summary>
   /// Loads a list of existing livestreams.
@@ -123,7 +115,13 @@ public class LivestreamController : ControllerBase
       return NotFound();
     }
 
-    await repository.Update(mapper.Map<LivestreamSettings>(request)).ConfigureAwait(false);
+    await repository.Update(new LivestreamSettings
+    {
+      Url = request.Url,
+      Title = request.Title,
+      RecordId = request.RecordId ?? Guid.NewGuid(),
+      Groups = request.Groups
+    }).ConfigureAwait(false);
     return Ok();
   }
 

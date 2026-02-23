@@ -1,5 +1,4 @@
 
-using AutoMapper;
 using Media.Application.Contracts.Repositories;
 using Media.Application.Models;
 using Media.DBContext;
@@ -11,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace Media.Infrastructure.Repositories;
 
-public class SqlGenreRepository(Func<ApplicationDBContext> contextFactory, IMapper mapper) : IGenreRepository
+public class SqlGenreRepository(Func<ApplicationDBContext> contextFactory) : IGenreRepository
 {
   public int? Bitrate(string genreName)
   {
@@ -25,12 +24,17 @@ public class SqlGenreRepository(Func<ApplicationDBContext> contextFactory, IMapp
     var genres = context.Genres
       .Where(genre => genre.Bitrate.HasValue)
       .OrderBy(genre => genre.Name)
-      .Select(genre => mapper.Map<GenreBitrate>(genre));
+      .Select(genre => new GenreBitrate
+      {
+        GenreId = genre.GenreId,
+        Name = genre.Name,
+        Bitrate = genre.Bitrate
+      });
 
     return new GenreBitrates
     {
       TotalCount = genres.Count(),
-      Items = [..genres]
+      Items = [.. genres]
     };
   }
 
@@ -116,7 +120,11 @@ public class SqlGenreRepository(Func<ApplicationDBContext> contextFactory, IMapp
       .OrderBy(g => g.Name)
       .Skip(skip)
       .Take(take)
-      .Select(g => mapper.Map<Genre>(g))
+      .Select(g => new Genre
+      {
+        Name = g.Name,
+        GenreId = g.GenreId
+      })
       .ToList();
 
     return new Genres
@@ -137,7 +145,11 @@ public class SqlGenreRepository(Func<ApplicationDBContext> contextFactory, IMapp
     var genres = query
       .Skip(0)
       .Take(15)
-      .Select(g => mapper.Map<Genre>(g))
+      .Select(g => new Genre
+      {
+        GenreId = g.GenreId,
+        Name = g.Name
+      })
       .ToList();
 
     return new Genres
@@ -159,7 +171,7 @@ public class SqlGenreRepository(Func<ApplicationDBContext> contextFactory, IMapp
     {
       context.Genres.RemoveRange(context.Genres.Where(rec => rec.Name == genreName && rec.Bitrate == null));
     }
-    
+
     await context.SaveChangesAsync().ConfigureAwait(false);
   }
 
@@ -182,7 +194,11 @@ public class SqlGenreRepository(Func<ApplicationDBContext> contextFactory, IMapp
       context.Genres.Add(genre);
       await context.SaveChangesAsync().ConfigureAwait(false);
     }
-    
-    return mapper.Map<Genre?>(genre);
+
+    return genre != null ? new Genre
+    {
+      GenreId = genre.GenreId,
+      Name = genre.Name,
+    } : null;
   }
 }

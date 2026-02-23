@@ -30,10 +30,10 @@ public class Group
   /// <summary>
   /// List of records, which belong to the group.
   /// </summary>
-  public ICollection<Record> Records { get; set; } = new List<Record>();
+  public ICollection<Record> Records { get; set; } = [];
 
   /// <summary>
   /// List of livestreams, which belong to the group.
   /// </summary>
-  public ICollection<Livestream> Livestreams { get; set; } = new List<Livestream>();
+  public ICollection<Livestream> Livestreams { get; set; } = [];
 }

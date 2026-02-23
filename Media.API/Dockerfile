@@ -1,5 +1,5 @@
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS base
-RUN apt update && apt install ffmpeg -y
+RUN apt update && apt install -y ffmpeg libgssapi-krb5-2 && rm -rf /var/lib/apt/lists/*
 ARG USERNAME=mml
 ARG UID
 ARG GID

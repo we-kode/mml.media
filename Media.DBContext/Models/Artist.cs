@@ -35,5 +35,5 @@ public class Artist
   /// <summary>
   /// List of records, which belong to the artist.
   /// </summary>
-  public ICollection<Record> Records { get; set; } = new List<Record>();
+  public ICollection<Record> Records { get; set; } = [];
 }

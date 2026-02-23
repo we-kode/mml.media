@@ -1,30 +1,30 @@
+using Asp.Versioning;
 using Autofac;
-using AutoMapper;
-using MassTransit;
 using Media.API.Contracts;
+using Media.API.Filters;
+using Media.API.HostedServices;
+using Media.API.Middleware;
 using Media.Application.Consumers;
 using Media.Application.Models;
 using Media.DBContext;
-using Media.Filters;
-using Media.Middleware;
-using Messages;
+using Media.Infrastructure.Repositories;
+using Media.Infrastructure.Services;
+using Messages.Events;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.OpenApi.Models;
+using Microsoft.OpenApi;
 using OpenIddict.Abstractions;
 using OpenIddict.Validation.AspNetCore;
-using System;
-using System.Net.Http;
 using OpenIddict.Validation.SystemNetHttp;
-using Media.API.HostedServices;
-using Asp.Versioning;
-using Media.Infrastructure.Repositories;
-using Media.Application.Contracts.Repositories;
-using Media.Infrastructure.Services;
+using Rebus.Config;
+using System;
+using System.IO;
+using System.Net.Http;
+using System.Security.Cryptography.X509Certificates;
 
 namespace Media.API;
 
@@ -77,34 +77,23 @@ public class Startup(IConfiguration configuration)
 
   private void ConfigureMBusServices(IServiceCollection services)
   {
-    services.AddMassTransit(mt =>
-    {
-      mt.AddConsumer<IndexingRecordConsumer>(cc =>
-      {
-        if (int.TryParse(Configuration["MassTransit:ConcurrentMessageLimit"], out var limit))
-        {
-          cc.ConcurrentMessageLimit = limit;
-        }
-      });
-      mt.AddConsumer<GroupConsumer>();
-      mt.UsingRabbitMq((context, cfg) =>
-      {
-        cfg.Host(Configuration["MassTransit:Host"], Configuration["MassTransit:VirtualHost"], h =>
-        {
-          h.Username(Configuration["MassTransit:User"] ?? throw new ArgumentNullException("MassTransit:User"));
-          h.Password(Configuration["MassTransit:Password"] ?? throw new ArgumentNullException("MassTransit:Password"));
-        });
+    // Configure Rebus with RabbitMQ transport
+    var mBusHost = Configuration["MessageBus:Host"] ?? throw new ArgumentNullException("MessageBus:Host");
+    var mBusVirtualHost = Configuration["MessageBus:VirtualHost"];
+    var mBusUser = Configuration["MessageBus:User"] ?? throw new ArgumentNullException("MessageBus:User");
+    var mBusPassword = Configuration["MessageBus:Password"] ?? throw new ArgumentNullException("MessageBus:Password");
 
-        cfg.ConfigureEndpoints(context);
-      });
-    });
-    services.AddOptions<MassTransitHostOptions>()
-      .Configure(options =>
-      {
-        options.WaitUntilStarted = bool.Parse(Configuration["MassTransit:WaitUntilStarted"] ?? "True");
-        options.StartTimeout = TimeSpan.FromSeconds(double.Parse(Configuration["MassTransit:StartTimeoutSeconds"] ?? "60"));
-        options.StopTimeout = TimeSpan.FromSeconds(double.Parse(Configuration["MassTransit:StopTimeoutSeconds"] ?? "60"));
-      });
+    var mBusConnection = $"amqp://{mBusUser}:{mBusPassword}@{mBusHost}";
+    if (!string.IsNullOrEmpty(mBusVirtualHost))
+    {
+      mBusConnection += $"/{mBusVirtualHost}";
+    }
+
+    services.AddRebus(mt =>
+      mt.Transport(t => t.UseRabbitMq(mBusConnection, "mml-queue"))
+    );
+
+    services.AutoRegisterHandlersFromAssemblyOf<GroupConsumer>();
   }
 
   private static void ConfigureCorsServices(IServiceCollection services)
@@ -160,7 +149,8 @@ public class Startup(IConfiguration configuration)
     {
       options.SetIssuer(new Uri(Configuration["OpenId:Issuer"] ?? throw new ArgumentNullException("OpenId:Issuer")));
       options.AddAudiences(Configuration["ApiClient:ClientId"] ?? throw new ArgumentNullException("ApiClient:ClientId"));
-      options.AddEncryptionCertificate(new System.Security.Cryptography.X509Certificates.X509Certificate2(Configuration["OpenId:EncryptionCert"] ?? throw new ArgumentNullException("OpenId:EncryptionCert")));
+      var encryptCert = X509CertificateLoader.LoadPkcs12(File.ReadAllBytes(Configuration["OpenId:EncryptionCert"] ?? throw new ArgumentNullException("OpenId:EncryptionCert")), null);
+      options.AddEncryptionCertificate(encryptCert);
       options.UseIntrospection()
                .SetClientId(Configuration["ApiClient:ClientId"] ?? string.Empty)
                .SetClientSecret(Configuration["ApiClient:ClientSecret"] ?? string.Empty);
@@ -219,37 +209,6 @@ public class Startup(IConfiguration configuration)
 
     cBuilder.RegisterInstance(factory);
     MigrateDB(factory);
-
-    // automapper
-    cBuilder.Register(context => new MapperConfiguration(cfg =>
-    {
-      // configure automapping classes here
-      cfg.CreateMap<GroupCreated, Group>();
-      cfg.CreateMap<GroupUpdated, Group>();
-      cfg.CreateMap<Contracts.TagFilter, Application.Contracts.Repositories.TagFilter>();
-      cfg.CreateMap<DBContext.Models.Album, Album>();
-      cfg.CreateMap<DBContext.Models.Genre, Genre>();
-      cfg.CreateMap<DBContext.Models.Genre, GenreBitrate>();
-      cfg.CreateMap<DBContext.Models.Artist, Artist>();
-      cfg.CreateMap<DBContext.Models.Language, Language>();
-      cfg.CreateMap<RecordChangeRequest, Record>();
-      cfg.CreateMap<DBContext.Models.Livestream, Livestream>();
-      cfg.CreateMap<DBContext.Models.Livestream, LivestreamSettings>();
-      cfg.CreateMap<LivestreamChangeRequest, LivestreamSettings>();
-      cfg.CreateMap<SettingsRequest, Settings>();
-      cfg.CreateMap<Contracts.RecordFolder, Application.Models.RecordFolder>();
-      cfg.CreateMap<DBContext.Models.Group, Group>()
-        .ConstructUsing(g => new Group(g.GroupId, g.Name, g.IsDefault));
-    })).AsSelf().SingleInstance();
-    cBuilder.Register(c =>
-    {
-      //This resolves a new context that can be used later.
-      var context = c.Resolve<IComponentContext>();
-      var config = context.Resolve<MapperConfiguration>();
-      return config.CreateMapper(context.Resolve);
-    })
-    .As<IMapper>()
-    .InstancePerLifetimeScope();
 
     cBuilder.RegisterType<SqlAlbumRepository>().AsImplementedInterfaces();
     cBuilder.RegisterType<SqlArtistRepository>().AsImplementedInterfaces();

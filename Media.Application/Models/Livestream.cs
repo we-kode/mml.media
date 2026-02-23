@@ -22,6 +22,6 @@ public class Livestream
 
   public Livestream()
   {
-    Groups = new List<Group>();
+    Groups = [];
   }
 }

@@ -27,7 +27,7 @@ public class GenreController(IGenreRepository genresRepository) : ControllerBase
   /// <param name="take">Size of chunk to be loaded</param>
   /// <returns><see cref="Genres"/></returns>
   [HttpGet("genres")]
-  public Genres GetGenres([FromQuery] string? filter, [FromQuery] int skip = Application.Constants.List.Skip, [FromQuery] int take = Application.Constants.List.Take)
+  public Genres GetGenres([FromQuery] string? filter, [FromQuery] int skip = List.Skip, [FromQuery] int take = List.Take)
   {
     var isAdmin = HttpContext.IsAdmin();
     var clientGroups = HttpContext.ClientGroups();

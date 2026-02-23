@@ -35,7 +35,7 @@ namespace Media.Application.Models
 
     public LivestreamSettings()
     {
-      Groups = new List<Group>();
+      Groups = [];
     }
   }
 }

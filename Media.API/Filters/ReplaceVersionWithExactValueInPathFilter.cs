@@ -1,7 +1,7 @@
-﻿using Microsoft.OpenApi.Models;
+﻿using Microsoft.OpenApi;
 using Swashbuckle.AspNetCore.SwaggerGen;
 
-namespace Media.Filters;
+namespace Media.API.Filters;
 
 public class ReplaceVersionWithExactValueInPathFilter : IDocumentFilter
 {

@@ -17,7 +17,7 @@ public class MigrateBitrates(ISettingRepository _settings, IGenreRepository _gen
     {
       // migrate bitrate for all existing files
       Console.WriteLine("Start migration of bitrate indexing...");
-      Engine engine = new Engine($"/usr/bin/ffmpeg");
+      Engine engine = new($"/usr/bin/ffmpeg");
       var path = @$"/records/";
       var files = Directory.GetFiles(path);
       for (int i = 0; i < files.Length; ++i)
