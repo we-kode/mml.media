@@ -26,6 +26,8 @@ public class UploadController(IBus publishEndpoint) : ControllerBase
     Parallel = true
   }.Build();
 
+  private readonly string[] allowedMimeTypes = ["audio/mpeg3", "audio/mpeg", "audio/mp3", "audio/mpg", "audio/x-mpeg-3"];
+
   /// <summary>
   /// Uploads one file to the tmp folder.
   /// </summary>
@@ -49,7 +51,7 @@ public class UploadController(IBus publishEndpoint) : ControllerBase
         var resultsByMimeType = mimeResult.ByMimeType();
         readStream.Close();
 
-        if (!resultsByMimeType.Any(result => result.MimeType == "audio/mpeg3"))
+        if (!resultsByMimeType.Any(result => allowedMimeTypes.Contains(result.MimeType)))
         {
           return BadRequest("INVALID_FORMAT_MP3");
         }

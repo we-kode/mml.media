@@ -9,6 +9,7 @@ using Media.Application.Models;
 using Media.DBContext;
 using Media.Infrastructure.Repositories;
 using Media.Infrastructure.Services;
+using Media.Messages;
 using Messages.Events;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -90,7 +91,14 @@ public class Startup(IConfiguration configuration)
     }
 
     services.AddRebus(mt =>
-      mt.Transport(t => t.UseRabbitMq(mBusConnection, "mml-queue"))
+      mt.Transport(t => t.UseRabbitMq(mBusConnection, "mml.media.queue")),
+      onCreated: async bus => {
+        // Hier werden alle Abonnements beim Start einmalig registriert
+        await bus.Subscribe<GroupCreated>();
+        await bus.Subscribe<GroupDeleted>();
+        await bus.Subscribe<GroupUpdated>();
+        await bus.Subscribe<FileUploaded>();
+      }
     );
 
     services.AutoRegisterHandlersFromAssemblyOf<GroupConsumer>();
