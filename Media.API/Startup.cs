@@ -1,15 +1,12 @@
 using Asp.Versioning;
 using Autofac;
-using Media.API.Contracts;
 using Media.API.Filters;
 using Media.API.HostedServices;
 using Media.API.Middleware;
 using Media.Application.Consumers;
-using Media.Application.Models;
 using Media.DBContext;
 using Media.Infrastructure.Repositories;
 using Media.Infrastructure.Services;
-using Media.Messages;
 using Messages.Events;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -97,7 +94,6 @@ public class Startup(IConfiguration configuration)
         await bus.Subscribe<GroupCreated>();
         await bus.Subscribe<GroupDeleted>();
         await bus.Subscribe<GroupUpdated>();
-        await bus.Subscribe<FileUploaded>();
       }
     );
 
@@ -227,6 +223,7 @@ public class Startup(IConfiguration configuration)
     cBuilder.RegisterType<SqlGroupRepository>().AsImplementedInterfaces();
     cBuilder.RegisterType<SqlLivestreamRepository>().AsImplementedInterfaces();
     cBuilder.RegisterType<RecordService>().AsImplementedInterfaces();
+    cBuilder.RegisterType<IndexService>().AsImplementedInterfaces();
   }
 
   private static void MigrateDB(Func<ApplicationDBContext> factory)

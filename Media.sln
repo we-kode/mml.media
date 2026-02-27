@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 17
-VisualStudioVersion = 17.1.32319.34
+# Visual Studio Version 18
+VisualStudioVersion = 18.3.11520.95 d18.3
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Media.API", "Media.API\Media.API.csproj", "{CDB073B0-8D33-4B38-A1AD-A65BF0B9D19F}"
 EndProject
@@ -12,8 +12,6 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Media.Application", "Media.Application\Media.Application.csproj", "{95778609-2E26-4D23-8840-1BD96FD2A734}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Media.Infrastructure", "Media.Infrastructure\Media.Infrastructure.csproj", "{2B5A6831-9C5C-4E1D-85B4-1F6A78EA464A}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Media.Messages", "Media.Messages\Media.Messages.csproj", "{37C8B3AD-28DB-47D8-80A0-4FE849C31417}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -41,10 +39,6 @@ Global
 		{2B5A6831-9C5C-4E1D-85B4-1F6A78EA464A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2B5A6831-9C5C-4E1D-85B4-1F6A78EA464A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{2B5A6831-9C5C-4E1D-85B4-1F6A78EA464A}.Release|Any CPU.Build.0 = Release|Any CPU
-		{37C8B3AD-28DB-47D8-80A0-4FE849C31417}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{37C8B3AD-28DB-47D8-80A0-4FE849C31417}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{37C8B3AD-28DB-47D8-80A0-4FE849C31417}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{37C8B3AD-28DB-47D8-80A0-4FE849C31417}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

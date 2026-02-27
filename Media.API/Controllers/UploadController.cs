@@ -1,10 +1,9 @@
 ﻿using Asp.Versioning;
-using Media.Messages;
+using Media.Application.Contracts.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MimeDetective;
 using OpenIddict.Validation.AspNetCore;
-using Rebus.Bus;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -18,7 +17,7 @@ namespace Media.API.Controllers;
 [ApiVersion(2.0)]
 [Route("api/v{version:apiVersion}/media/[controller]")]
 [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme, Policy = Application.Constants.Roles.Admin)]
-public class UploadController(IBus publishEndpoint) : ControllerBase
+public class UploadController(IIndexService indexService) : ControllerBase
 {
   private readonly IContentInspector inspector = new ContentInspectorBuilder()
   {
@@ -76,13 +75,8 @@ public class UploadController(IBus publishEndpoint) : ControllerBase
           }
         }
 
-        // publish message to start compressing file and indexing.
-        await publishEndpoint.Publish(new FileUploaded
-        {
-          FileName = fileName,
-          Date = DateTime.Parse(Request.Form["LastModifiedDate"]!),
-          Groups = groups
-        }).ConfigureAwait(false);
+        // index file and extract metadata from it.
+        _ = indexService.IndexFile(fileName, DateTime.Parse(Request.Form["LastModifiedDate"]!), groups);
 
         return Ok();
       }

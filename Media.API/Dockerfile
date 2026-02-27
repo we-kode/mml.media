@@ -23,7 +23,6 @@ COPY ["Media.API/Media.API.csproj", "Media.API/"]
 COPY ["Media.DBContext/Media.DBContext.csproj", "Media.DBContext/"]
 COPY ["Media.Application/Media.Application.csproj", "Media.Application/"]
 COPY ["Media.Infrastructure/Media.Infrastructure.csproj", "Media.Infrastructure/"]
-COPY ["Media.Messages/Media.Messages.csproj", "Media.Messages/"]
 RUN dotnet restore "Media.API/Media.API.csproj"
 COPY . .
 WORKDIR "/src/Media.API"
