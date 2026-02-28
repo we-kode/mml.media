@@ -31,7 +31,7 @@ public class RecordService(
       var recordIds = recordRepository.GetRecords(folder);
       foreach (var recordId in recordIds)
       {
-        await RemoveRecord(recordId, false).ConfigureAwait(false);
+        await RemoveRecord(recordId).ConfigureAwait(false);
       }
     }
     scope.Complete();
@@ -99,7 +99,7 @@ public class RecordService(
     scope.Complete();
   }
 
-  private async Task RemoveRecord(Guid id, bool removeLocked = true)
+  private async Task RemoveRecord(Guid id, bool removeLocked = false)
   {
     var record = recordRepository.TryGetRecord(id);
     if (record == null)
