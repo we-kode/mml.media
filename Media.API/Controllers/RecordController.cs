@@ -193,7 +193,7 @@ public class RecordController(
       return NotFound();
     }
 
-    await recordsService.Update(request.Map()).ConfigureAwait(false);
+    await recordsService.Update(request.Map(), request.Cover).ConfigureAwait(false);
     return Ok();
   }
 

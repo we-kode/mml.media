@@ -22,6 +22,6 @@ public class Records
   /// </summary>
   public Records()
   {
-    Items = new List<Record>();
+    Items = [];
   }
 }

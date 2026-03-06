@@ -30,5 +30,6 @@ public interface IRecordService {
   /// Updates one record.
   /// </summary>
   /// <param name="record"><see cref="Record"/> to be updated.</param>
-  Task Update(Record record);
+  /// <param name="cover">The cover of the record as byte array.</param>
+  Task Update(Record record, byte[] cover);
 }

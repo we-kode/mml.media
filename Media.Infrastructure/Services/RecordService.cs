@@ -1,5 +1,7 @@
+using Media.Application.Contracts.IO;
 using Media.Application.Contracts.Repositories;
 using Media.Application.Contracts.Services;
+using Media.Application.Extensions;
 using Media.Application.Models;
 using Microsoft.EntityFrameworkCore;
 using System;
@@ -14,7 +16,8 @@ public class RecordService(
   IArtistRepository artistRepository,
   IAlbumRepository albumRepository,
   IGenreRepository genreRepository,
-  ILanguageRepository languageRepository) : IRecordService
+  ILanguageRepository languageRepository,
+  ICoverLoader coverLoader) : IRecordService
 {
   public async Task DeleteRecord(Guid guid)
   {
@@ -59,7 +62,7 @@ public class RecordService(
     }
   }
 
-  public async Task Update(Record record)
+  public async Task Update(Record record, byte[] cover)
   {
     using var scope = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled);
 
@@ -87,6 +90,18 @@ public class RecordService(
     // update language
     var oldLang = recordToUpdated.Language;
     Guid? languageId = (await languageRepository.TryGetOrCreate(record.Language))?.LanguageId;
+
+    // update cover
+    if (cover.Length > 0)
+    {
+      var fileName = cover.ToFileName();
+      await coverLoader.Save(cover, fileName);
+      record.Cover = fileName;
+    }
+    else
+    {
+      record.Cover = null;
+    }
 
     await recordRepository.Update(record, (artistId, albumId, genreId, languageId));
 
