@@ -41,7 +41,6 @@ namespace Media.API.Extensions
         Genre = record.Genre,
         Language = record.Language,
         Locked = record.Locked,
-        Cover = record.Cover,
         Groups = record.Groups
       };
     }

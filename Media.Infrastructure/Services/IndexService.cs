@@ -2,6 +2,7 @@
 using ByteDev.Crypto.Hashing;
 using ByteDev.Crypto.Hashing.Algorithms;
 using FFmpeg.NET;
+using Media.Application.Contracts.IO;
 using Media.Application.Contracts.Repositories;
 using Media.Application.Contracts.Services;
 using Media.Application.Extensions;
@@ -18,7 +19,8 @@ namespace Media.Infrastructure.Services;
 public class IndexService(ISettingRepository settingsRepository,
   IRecordRepository recordRepository,
   IRecordService recordsService,
-  IGenreRepository genresRepository) : IIndexService
+  IGenreRepository genresRepository,
+  ICoverLoader coverLoader) : IIndexService
 {
 
   private readonly Engine engine = new($"/usr/bin/ffmpeg");
@@ -54,10 +56,11 @@ public class IndexService(ISettingRepository settingsRepository,
     var trackNumber = (int)taglibFile.Tag.Track;
     var isDateParsed = DateTime.TryParseExact(originalFileName.Split('-').FirstOrDefault(), "yyMMdd", CultureInfo.CurrentCulture, DateTimeStyles.None, out var parsedDate);
     var cover = taglibFile.Tag.Pictures.FirstOrDefault();
-    string? coverBase64 = null;
+    string? coverFileName = null;
     if (cover != null)
     {
-      coverBase64 = Convert.ToBase64String(cover.Data.Data);
+      coverFileName = cover.Data.Data.ToFileName();
+      await coverLoader.Save(cover.Data.Data, coverFileName);
     }
 
     var metadata = new RecordMetaData
@@ -73,7 +76,7 @@ public class IndexService(ISettingRepository settingsRepository,
       OriginalFileName = originalFileName,
       PhysicalFilePath = outputPath,
       Checksum = outputFileName,
-      Cover = coverBase64,
+      Cover = coverFileName,
     };
     taglibFile.RemoveTags(TagLib.TagTypes.AllTags);
     taglibFile.Save();

@@ -2,6 +2,7 @@
 using Media.API.Contracts;
 using Media.API.Extensions;
 using Media.Application.Constants;
+using Media.Application.Contracts.IO;
 using Media.Application.Contracts.Repositories;
 using Media.Application.Contracts.Services;
 using Media.Application.Models;
@@ -27,7 +28,8 @@ public class RecordController(
   IGenreRepository genresRepository,
   IAlbumRepository albumsRepository,
   IRecordService recordsService,
-  ILanguageRepository languageRepository) : ControllerBase
+  ILanguageRepository languageRepository,
+  ICoverLoader coverLoader) : ControllerBase
 {
 
   /// <summary>
@@ -191,7 +193,7 @@ public class RecordController(
       return NotFound();
     }
 
-    await recordsService.Update(request.Map()).ConfigureAwait(false);
+    await recordsService.Update(request.Map(), request.Cover).ConfigureAwait(false);
     return Ok();
   }
 
@@ -204,6 +206,24 @@ public class RecordController(
   {
     var clientGroups = HttpContext.ClientGroups();
     return recordRepository.GetRecords(checksums, clientGroups);
+  }
+
+  /// <summary>
+  /// Loads cover by file name.
+  /// </summary>
+  /// <param name="fileName">The name of file to be loaded.</param>
+  /// <returns>The cover</returns>
+  [HttpGet("cover/{fileName}")]
+  [ProducesResponseType(StatusCodes.Status404NotFound)]
+  public async Task<IActionResult> GetCover(string fileName)
+  {
+    var coverData = await coverLoader.Load(fileName);
+    if (coverData == null)
+    {
+      return NotFound();
+    }
+
+    return File(coverData, "image/jpeg");
   }
 
   #region obsolete

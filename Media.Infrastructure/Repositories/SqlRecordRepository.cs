@@ -455,7 +455,7 @@ public class SqlRecordsRepository(Func<ApplicationDBContext> contextFactory, IGr
       recordToUpdated.Groups.Remove(deletedGroup);
     }
 
-    recordToUpdated.Cover = record.Cover.Length > 0 ? Convert.ToBase64String(record.Cover) : null;
+    recordToUpdated.Cover = record.Cover;
     recordToUpdated.Locked = record.Locked;
 
     await context.SaveChangesAsync().ConfigureAwait(false);

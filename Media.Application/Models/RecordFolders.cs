@@ -22,6 +22,6 @@ public class RecordFolders
   /// </summary>
   public RecordFolders()
   {
-    Items = new List<RecordFolder>();
+    Items = [];
   }
 }

@@ -7,6 +7,7 @@ using Media.Application.Consumers;
 using Media.DBContext;
 using Media.Infrastructure.Repositories;
 using Media.Infrastructure.Services;
+using Media.Infrastructure.IO;
 using Messages.Events;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -34,13 +35,29 @@ public class Startup(IConfiguration configuration)
   // This method gets called by the runtime. Use this method to add services to the container.
   public void ConfigureServices(IServiceCollection services)
   {
+    ConfigureFolders();
     services.AddControllers();
+    services.AddMemoryCache();
     ConfigureLocaleServices(services);
     ConfigureApiServices(services);
     ConfigureMBusServices(services);
     ConfigureCorsServices(services);
     ConfigureAuth(services);
     services.AddHostedService<MigrateBitrates>();
+    services.AddHostedService<MigrateCovers>();
+  }
+
+  private static void ConfigureFolders()
+  {
+    var folders = new[] { "covers" };
+    foreach (var folder in folders)
+    {
+      var path = Path.Combine("/records", folder);
+      if (!Directory.Exists(path))
+      {
+        Directory.CreateDirectory(path);
+      }
+    }
   }
 
   private static void ConfigureLocaleServices(IServiceCollection services)
@@ -224,6 +241,7 @@ public class Startup(IConfiguration configuration)
     cBuilder.RegisterType<SqlLivestreamRepository>().AsImplementedInterfaces();
     cBuilder.RegisterType<RecordService>().AsImplementedInterfaces();
     cBuilder.RegisterType<IndexService>().AsImplementedInterfaces();
+    cBuilder.RegisterType<CoverLoader>().AsImplementedInterfaces();
   }
 
   private static void MigrateDB(Func<ApplicationDBContext> factory)

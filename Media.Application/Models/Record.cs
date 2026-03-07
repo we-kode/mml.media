@@ -61,7 +61,7 @@ public class Record
   /// <summary>
   /// The cover of this record.
   /// </summary>
-  public byte[] Cover { get; set; } = [];
+  public string? Cover { get; set; }
 
   /// <summary>
   ///  Checksum of the record.
@@ -109,7 +109,7 @@ public class Record
     Checksum = checksum;
     Groups = groups ?? [];
     Bitrate = bitrate;
-    Cover = string.IsNullOrEmpty(cover) ? [] : Convert.FromBase64String(cover);
+    Cover = cover;
     Locked = isLocked;
   }
 
