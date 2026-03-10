@@ -99,6 +99,11 @@ public class Record
   public bool Locked { get; set; }
 
   /// <summary>
+  /// The name of the instance, which is the owner of the record. This is used to identify the instance that owns the record in a multi-instance setup.
+  /// </summary>
+  public string OwnerInstance { get; set; } = Environment.GetEnvironmentVariable("INSTANCE") ?? string.Empty;
+
+  /// <summary>
   /// The groups associated with this record.
   /// </summary>
   public ICollection<Group> Groups { get; set; } = [];

@@ -38,6 +38,6 @@ public class Livestream
   /// <summary>
   /// The groups associated with this stream.
   /// </summary>
-  public ICollection<Group> Groups { get; set; } = new List<Group>();
+  public ICollection<Group> Groups { get; set; } = [];
 
 }

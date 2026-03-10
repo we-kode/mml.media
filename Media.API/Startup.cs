@@ -35,6 +35,11 @@ public class Startup(IConfiguration configuration)
   // This method gets called by the runtime. Use this method to add services to the container.
   public void ConfigureServices(IServiceCollection services)
   {
+    if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("INSTANCE")))
+    {
+      throw new ArgumentNullException("INSTANCE", "Instance configuration is required");
+    }
+
     ConfigureFolders();
     services.AddControllers();
     services.AddMemoryCache();

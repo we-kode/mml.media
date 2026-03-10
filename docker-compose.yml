@@ -11,6 +11,8 @@ services:
     container_name: wekode.mml.media
     restart: always
     user: ${UID}:${GID}
+    environment:
+      INSTANCE: ${INSTANCE}
     volumes:
       - ${VOL_CERTS}:/etc/ssl/certs:ro,z
       - ${VOL_RECORDS}:/records:Z

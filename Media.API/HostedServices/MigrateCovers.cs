@@ -19,14 +19,14 @@ internal class MigrateCovers(Func<ApplicationDBContext> contextFactory) : Backgr
   {
     using var ctx = contextFactory();
     // check if migration is already applied
-    var appliedMigrations = await ctx.Database.GetAppliedMigrationsAsync();
+    var appliedMigrations = await ctx.Database.GetAppliedMigrationsAsync(stoppingToken);
     if (appliedMigrations.Contains(migrationID))
     {
       return;
     }
 
     // get all records with covers
-    var records = await ctx.Records.Where(r => !string.IsNullOrWhiteSpace(r.Cover)).ToListAsync();
+    var records = await ctx.Records.Where(r => !string.IsNullOrWhiteSpace(r.Cover)).ToListAsync(stoppingToken);
 
     // extract covers from base64 and save them to disk with short hash as filename
     foreach (var record in records)
