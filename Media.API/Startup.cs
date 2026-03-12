@@ -3,11 +3,13 @@ using Autofac;
 using Media.API.Filters;
 using Media.API.HostedServices;
 using Media.API.Middleware;
+using Media.API.Services;
+using Media.Application.Constants;
 using Media.Application.Consumers;
 using Media.DBContext;
+using Media.Infrastructure.IO;
 using Media.Infrastructure.Repositories;
 using Media.Infrastructure.Services;
-using Media.Infrastructure.IO;
 using Messages.Events;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -23,7 +25,6 @@ using Rebus.Config;
 using System;
 using System.IO;
 using System.Net.Http;
-using System.Security.Cryptography.X509Certificates;
 
 namespace Media.API;
 
@@ -32,17 +33,16 @@ public class Startup(IConfiguration configuration)
 {
   public IConfiguration Configuration { get; } = configuration;
 
+  private readonly Uri issuer = new(configuration["OpenId:Issuer"] ?? throw new ArgumentNullException("OpenId:Issuer"));
+
   // This method gets called by the runtime. Use this method to add services to the container.
   public void ConfigureServices(IServiceCollection services)
   {
-    if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("INSTANCE")))
-    {
-      throw new ArgumentNullException("INSTANCE", "Instance configuration is required");
-    }
+    Console.WriteLine($"Starting up instance '{Env.INSTANCE}'");
 
+    services.AddMemoryCache();
     ConfigureFolders();
     services.AddControllers();
-    services.AddMemoryCache();
     ConfigureLocaleServices(services);
     ConfigureApiServices(services);
     ConfigureMBusServices(services);
@@ -111,15 +111,18 @@ public class Startup(IConfiguration configuration)
 
     services.AddRebus(mt =>
       mt.Transport(t => t.UseRabbitMq(mBusConnection, "mml.media.queue")),
-      onCreated: async bus => {
+      onCreated: async bus =>
+      {
         // Hier werden alle Abonnements beim Start einmalig registriert
         await bus.Subscribe<GroupCreated>();
         await bus.Subscribe<GroupDeleted>();
         await bus.Subscribe<GroupUpdated>();
+        await bus.Subscribe<ClientStateUpdated>();
       }
     );
 
     services.AutoRegisterHandlersFromAssemblyOf<GroupConsumer>();
+    services.AutoRegisterHandlersFromAssemblyOf<AuthorizationClient>();
   }
 
   private static void ConfigureCorsServices(IServiceCollection services)
@@ -137,8 +140,17 @@ public class Startup(IConfiguration configuration)
 
   private void ConfigureAuth(IServiceCollection services)
   {
-    services
-      .AddAuthentication(OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme);
+    services.AddHttpClient<IAuthorizationClient, AuthorizationClient>(c =>
+    {
+      c.BaseAddress = issuer!;
+    })
+    .ConfigureHttpClient(c =>
+    {
+      c.DefaultRequestHeaders.Add("ClientId", Configuration["ApiClient:ClientId"]);
+      c.DefaultRequestHeaders.Add("ClientSecret", Configuration["ApiClient:ClientSecret"]);
+    });
+
+    services.AddAuthentication(OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme);
 
     var httpClient = services
       .AddHttpClient(typeof(OpenIddictValidationSystemNetHttpOptions).Assembly.GetName().Name!)
@@ -158,30 +170,43 @@ public class Startup(IConfiguration configuration)
     }
 
     services.AddAuthorizationBuilder()
-      .AddPolicy(Application.Constants.Roles.Admin, policy =>
+      // TODO: Für später, default login policy schließt sync scope aus, damit die sync clients nur auf endpoint für sync nd nicht auf die apis zugreifen.
+      //.SetDefaultPolicy(new AuthorizationPolicyBuilder()
+      //  .AddAuthenticationSchemes(OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)
+      //  .RequireAuthenticatedUser()
+      //  .RequireAssertion(ctx =>
+      //  {
+      //    var scope = ctx.User.FindFirst(OpenIddictConstants.Claims.Scope)?.Value;
+      //    return scope == null || !scope.Contains("sync");
+      //  })
+      // .Build())
+      .AddPolicy(Roles.Admin, policy =>
       {
         policy.AddAuthenticationSchemes(OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme);
         policy.RequireAuthenticatedUser();
-        policy.RequireClaim(OpenIddictConstants.Claims.Role, Application.Constants.Roles.Admin);
+        policy.RequireClaim(OpenIddictConstants.Claims.Role, Roles.Admin);
       })
-      .AddPolicy(Application.Constants.Roles.Client, policy =>
+      .AddPolicy(Roles.Client, policy =>
       {
         policy.AddAuthenticationSchemes(OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme);
         policy.RequireAuthenticatedUser();
-        policy.RequireClaim(OpenIddictConstants.Claims.Role, Application.Constants.Roles.Client);
+        policy.RequireClaim(OpenIddictConstants.Claims.Role, Roles.Client);
       });
+    // TODO: Policy für sync services
+    //.AddPolicy("SyncService", policy =>
+    //{
+    //  policy.AddAuthenticationSchemes(OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme);
+    //  policy.RequireAuthenticatedUser();
+    //  policy.RequireClaim(OpenIddictConstants.Claims.Scope, "sync");
+    //}); 
+
     services.AddOpenIddict()
     .AddValidation(options =>
     {
-      options.SetIssuer(new Uri(Configuration["OpenId:Issuer"] ?? throw new ArgumentNullException("OpenId:Issuer")));
-      options.AddAudiences(Configuration["ApiClient:ClientId"] ?? throw new ArgumentNullException("ApiClient:ClientId"));
-      var encryptCert = X509CertificateLoader.LoadPkcs12(File.ReadAllBytes(Configuration["OpenId:EncryptionCert"] ?? throw new ArgumentNullException("OpenId:EncryptionCert")), null);
-      options.AddEncryptionCertificate(encryptCert);
-      options.UseIntrospection()
-               .SetClientId(Configuration["ApiClient:ClientId"] ?? string.Empty)
-               .SetClientSecret(Configuration["ApiClient:ClientSecret"] ?? string.Empty);
-      options.UseAspNetCore();
+      options.SetIssuer(issuer);
+      options.AddAudiences($"wekode.mml.media/{Env.INSTANCE.ToLower()}");
       options.UseSystemNetHttp();
+      options.UseAspNetCore();
     });
   }
 

@@ -184,4 +184,11 @@ public interface IRecordRepository
   /// <param name="clients">Groups should be loaded.</param>
   /// <returns>Ids of assigned groups.</returns>
   Groups GetAssignedFolderGroups(IEnumerable<RecordFolder> folders);
+  
+  /// <summary>
+  /// Checks if the record can be edit.
+  /// </summary>
+  /// <param name="recordId">Teh id of record to check.</param>
+  /// <returns>Whether allowed to edit or not.</returns>
+  bool AllowedToEdit(Guid recordId);
 }

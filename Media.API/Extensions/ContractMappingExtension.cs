@@ -34,7 +34,7 @@ namespace Media.API.Extensions
 
     public static Record Map(this Contracts.RecordChangeRequest record)
     {
-      return new Record(record.RecordId, record.Title)
+      return new Record(record.RecordId, record.Title, string.Empty)
       {
         Album = record.Album,
         Artist = record.Artist,

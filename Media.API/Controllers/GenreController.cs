@@ -1,5 +1,6 @@
 using Asp.Versioning;
 using Media.API.Extensions;
+using Media.API.Services;
 using Media.Application.Constants;
 using Media.Application.Contracts.Repositories;
 using Media.Application.Models;
@@ -17,7 +18,7 @@ namespace Media.API.Controllers;
 [ApiVersion(2.0)]
 [Route("api/v{version:apiVersion}/media/[controller]")]
 [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
-public class GenreController(IGenreRepository genresRepository) : ControllerBase
+public class GenreController(IGenreRepository genresRepository, IAuthorizationClient authClient) : ControllerBase
 {
   /// <summary>
   /// Loads a list of genres.
@@ -27,10 +28,10 @@ public class GenreController(IGenreRepository genresRepository) : ControllerBase
   /// <param name="take">Size of chunk to be loaded</param>
   /// <returns><see cref="Genres"/></returns>
   [HttpGet("genres")]
-  public Genres GetGenres([FromQuery] string? filter, [FromQuery] int skip = List.Skip, [FromQuery] int take = List.Take)
+  public async Task<Genres> GetGenres([FromQuery] string? filter, [FromQuery] int skip = List.Skip, [FromQuery] int take = List.Take)
   {
     var isAdmin = HttpContext.IsAdmin();
-    var clientGroups = HttpContext.ClientGroups();
+    var clientGroups = await HttpContext.ClientGroups(authClient);
     return genresRepository.List(filter, !isAdmin, clientGroups, skip, take);
   }
 
@@ -39,9 +40,9 @@ public class GenreController(IGenreRepository genresRepository) : ControllerBase
   /// </summary>
   /// <returns><see cref="Genres"/></returns>
   [HttpGet("commonGenres")]
-  public Genres GetCommonGenres()
+  public async Task<Genres> GetCommonGenres()
   {
-    var clientGroups = HttpContext.ClientGroups();
+    var clientGroups = await HttpContext.ClientGroups(authClient);
     return genresRepository.ListCommon(clientGroups);
   }
 

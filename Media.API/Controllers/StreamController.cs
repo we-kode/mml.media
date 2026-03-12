@@ -1,5 +1,6 @@
 ﻿using Asp.Versioning;
 using Media.API.Extensions;
+using Media.API.Services;
 using Media.Application.Contracts.Repositories;
 using Media.Application.Models;
 using Microsoft.AspNetCore.Authorization;
@@ -7,6 +8,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using OpenIddict.Validation.AspNetCore;
 using System;
+using System.Threading.Tasks;
 
 namespace Media.API.Controllers;
 
@@ -15,7 +17,7 @@ namespace Media.API.Controllers;
 [ApiVersion(2.0)]
 [Route("api/v{version:apiVersion}/media/[controller]")]
 [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
-public class StreamController(IRecordRepository repository) : ControllerBase
+public class StreamController(IRecordRepository repository, IAuthorizationClient authClient) : ControllerBase
 {
 
   /// <summary>
@@ -26,7 +28,7 @@ public class StreamController(IRecordRepository repository) : ControllerBase
   /// <response code="404">If record does not exist.</response>
   /// <response code="403">If record is not in group of client.</response>
   [HttpGet("{id:Guid}")]
-  public IActionResult Get(Guid id)
+  public async Task<IActionResult> Get(Guid id)
   {
     if (!repository.Exists(id))
     {
@@ -34,7 +36,7 @@ public class StreamController(IRecordRepository repository) : ControllerBase
     }
 
     var isAdmin = HttpContext.IsAdmin();
-    var clientGroups = HttpContext.ClientGroups();
+    var clientGroups = await HttpContext.ClientGroups(authClient);
     if (!isAdmin && !repository.IsInGroup(id, clientGroups))
     {
       return Forbid();
@@ -52,7 +54,7 @@ public class StreamController(IRecordRepository repository) : ControllerBase
   /// <response code="404">If record does not exist.</response>
   /// <response code="403">If record is not in group of client.</response>
   [HttpGet("{id}")]
-  public IActionResult Get(string id)
+  public async Task<IActionResult> Get(string id)
   {
     if (string.IsNullOrEmpty(id) || !id.EndsWith(".mp3"))
     {
@@ -67,7 +69,7 @@ public class StreamController(IRecordRepository repository) : ControllerBase
     }
 
     var isAdmin = HttpContext.IsAdmin();
-    var clientGroups = HttpContext.ClientGroups();
+    var clientGroups = await HttpContext.ClientGroups(authClient);
     if (!isAdmin && !repository.IsInGroup(recordId, clientGroups))
     {
       return Forbid();
@@ -90,10 +92,10 @@ public class StreamController(IRecordRepository repository) : ControllerBase
   /// <param name="shuffle">True, if a random record should be loaded next.</param>
   /// <returns><see cref="Guid" /> or null if no next record exists.</returns>
   [HttpPost("next/{id:Guid}")]
-  public Record? Next(Guid id, [FromBody] Contracts.TagFilter tagFilter, [FromQuery] string? filter, [FromQuery] bool? repeat, [FromQuery] bool? shuffle)
+  public async Task<Record?> Next(Guid id, [FromBody] Contracts.TagFilter tagFilter, [FromQuery] string? filter, [FromQuery] bool? repeat, [FromQuery] bool? shuffle)
   {
     var isAdmin = HttpContext.IsAdmin();
-    var clientGroups = HttpContext.ClientGroups();
+    var clientGroups = await HttpContext.ClientGroups(authClient);
     return repository.Next(id, filter, tagFilter.Map(), !isAdmin, clientGroups, repeat ?? false, shuffle ?? false);
   }
 
@@ -108,10 +110,10 @@ public class StreamController(IRecordRepository repository) : ControllerBase
   /// <param name="repeat">True, if the records should play endless.</param>
   /// <returns><see cref="Guid" /> or null if no previous record exists.</returns>
   [HttpPost("previous/{id:Guid}")]
-  public Record? Previous(Guid id, [FromBody] Contracts.TagFilter tagFilter, [FromQuery] string? filter, [FromQuery] bool? repeat)
+  public async Task<Record?> Previous(Guid id, [FromBody] Contracts.TagFilter tagFilter, [FromQuery] string? filter, [FromQuery] bool? repeat)
   {
     var isAdmin = HttpContext.IsAdmin();
-    var clientGroups = HttpContext.ClientGroups();
+    var clientGroups = await HttpContext.ClientGroups(authClient);
     return repository.Previous(id, filter, tagFilter.Map(), !isAdmin, clientGroups, repeat ?? false);
   }
 

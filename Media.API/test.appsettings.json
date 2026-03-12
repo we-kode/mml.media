@@ -16,7 +16,6 @@
     "MediaConnection": "Server=wekode.mml.db;Port=5432;Database=media;User Id=media;Password=media;"
   },
   "OpenId": {
-    "EncryptionCert": "/etc/ssl/certs/identity.encrypt.pfx",
     "Issuer": "https://<url>:<port>/"
   },
   "ApiClient": {

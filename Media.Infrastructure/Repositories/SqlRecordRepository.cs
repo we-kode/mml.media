@@ -1,3 +1,4 @@
+using Media.Application.Constants;
 using Media.Application.Contracts.Repositories;
 using Media.Application.Models;
 using Media.DBContext;
@@ -249,7 +250,7 @@ public class SqlRecordsRepository(Func<ApplicationDBContext> contextFactory, IGr
     sb.AppendLine(filterLanguageQuery);
     sb.AppendLine("ORDER BY Cast(rec.date as Date) desc, rec.Date asc");
 
-    var args = (object[]) [
+    var args = (object[])[
       ..groups,
       ilikeFilter,
       ..tagFilter.Artists,
@@ -286,7 +287,8 @@ public class SqlRecordsRepository(Func<ApplicationDBContext> contextFactory, IGr
       record.GenreName ?? "",
       record.LanguageName ?? "",
       checksum: record.Checksum,
-      record.Cover ?? string.Empty);
+      record.Cover ?? string.Empty
+    );
   }
 
   public void SaveMetaData(RecordMetaData metaData, List<Guid> groups)
@@ -328,7 +330,8 @@ public class SqlRecordsRepository(Func<ApplicationDBContext> contextFactory, IGr
     context.SaveChanges();
   }
 
-  public async Task RemoveRecord(Guid recordId) {
+  public async Task RemoveRecord(Guid recordId)
+  {
     using var context = contextFactory();
     var record = context.Records.FirstOrDefault(rec => rec.RecordId == recordId);
     if (record == null)
@@ -402,7 +405,8 @@ public class SqlRecordsRepository(Func<ApplicationDBContext> contextFactory, IGr
       record.Language?.Name ?? string.Empty,
       record.Checksum,
       record.Cover ?? string.Empty,
-      record.Locked);
+      record.Locked,
+      record.OwnerInstance);
   }
 
   public async Task Update(Record record, (Guid? artistId, Guid? albumId, Guid? genreId, Guid? languageId) references)
@@ -422,12 +426,17 @@ public class SqlRecordsRepository(Func<ApplicationDBContext> contextFactory, IGr
     }
 
     // Update title
-    recordToUpdated.Title = record.Title;
+    if (recordToUpdated.OwnerInstance == Env.INSTANCE)
+    {
+      recordToUpdated.Title = record.Title;
+      recordToUpdated.ArtistId = references.artistId;
+      recordToUpdated.AlbumId = references.albumId;
+      recordToUpdated.GenreId = references.genreId;
+      recordToUpdated.LanguageId = references.languageId;
+      recordToUpdated.Cover = record.Cover;
+    }
 
-    recordToUpdated.ArtistId = references.artistId;
-    recordToUpdated.AlbumId = references.albumId;
-    recordToUpdated.GenreId = references.genreId;
-    recordToUpdated.LanguageId = references.languageId;
+    recordToUpdated.Locked = record.Locked;
 
     // update groups
     var addedGroups = record.Groups
@@ -454,9 +463,6 @@ public class SqlRecordsRepository(Func<ApplicationDBContext> contextFactory, IGr
     {
       recordToUpdated.Groups.Remove(deletedGroup);
     }
-
-    recordToUpdated.Cover = record.Cover;
-    recordToUpdated.Locked = record.Locked;
 
     await context.SaveChangesAsync().ConfigureAwait(false);
   }
@@ -601,7 +607,7 @@ public class SqlRecordsRepository(Func<ApplicationDBContext> contextFactory, IGr
     return new Groups
     {
       TotalCount = count,
-      Items = [..groups.Select(g => new Group(g.GroupId, g.Name, g.IsDefault))],
+      Items = [.. groups.Select(g => new Group(g.GroupId, g.Name, g.IsDefault))],
     };
   }
 
@@ -610,5 +616,11 @@ public class SqlRecordsRepository(Func<ApplicationDBContext> contextFactory, IGr
     using var context = contextFactory();
     var dateRange = folder.ToDateRange();
     return [.. context.Records.Where(rec => rec.Date.Date >= dateRange.Item1 && rec.Date.Date <= dateRange.Item2).Select(rec => rec.RecordId)];
+  }
+
+  public bool AllowedToEdit(Guid recordId)
+  {
+    using var context = contextFactory();
+    return context.Records.FirstOrDefault(rec => rec.RecordId == recordId)?.OwnerInstance == Env.INSTANCE;
   }
 }

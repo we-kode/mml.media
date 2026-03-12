@@ -1,6 +1,7 @@
 ﻿using Asp.Versioning;
 using Media.API.Contracts;
 using Media.API.Extensions;
+using Media.API.Services;
 using Media.Application.Constants;
 using Media.Application.Contracts.IO;
 using Media.Application.Contracts.Repositories;
@@ -29,7 +30,8 @@ public class RecordController(
   IAlbumRepository albumsRepository,
   IRecordService recordsService,
   ILanguageRepository languageRepository,
-  ICoverLoader coverLoader) : ControllerBase
+  ICoverLoader coverLoader,
+  IAuthorizationClient authClient) : ControllerBase
 {
 
   /// <summary>
@@ -40,10 +42,10 @@ public class RecordController(
   /// <param name="take">Size of chunk to be loaded</param>
   /// <returns><see cref="Records"/></returns>
   [HttpPost("list")]
-  public Records List([FromBody] Contracts.TagFilter tagFilter, [FromQuery] string? filter, [FromQuery] int skip = Application.Constants.List.Skip, [FromQuery] int take = Application.Constants.List.Take)
+  public async Task<Records> List([FromBody] Contracts.TagFilter tagFilter, [FromQuery] string? filter, [FromQuery] int skip = Application.Constants.List.Skip, [FromQuery] int take = Application.Constants.List.Take)
   {
     var isAdmin = HttpContext.IsAdmin();
-    var clientGroups = HttpContext.ClientGroups();
+    var clientGroups = await HttpContext.ClientGroups(authClient);
     return recordRepository.List(filter, tagFilter.Map(), !isAdmin, clientGroups, skip, take);
   }
 
@@ -55,10 +57,10 @@ public class RecordController(
   /// <param name="take">Size of chunk to be loaded</param>
   /// <returns><see cref="RecordFolders"/></returns>
   [HttpPost("listFolder")]
-  public RecordFolders ListFolder([FromBody] Contracts.TagFilter tagFilter, [FromQuery] string? filter, [FromQuery] int skip = Application.Constants.List.Skip, [FromQuery] int take = Application.Constants.List.Take)
+  public async Task<RecordFolders> ListFolder([FromBody] Contracts.TagFilter tagFilter, [FromQuery] string? filter, [FromQuery] int skip = Application.Constants.List.Skip, [FromQuery] int take = Application.Constants.List.Take)
   {
     var isAdmin = HttpContext.IsAdmin();
-    var clientGroups = HttpContext.ClientGroups();
+    var clientGroups = await HttpContext.ClientGroups(authClient);
     return recordRepository.ListFolder(filter, tagFilter.Map(), !isAdmin, clientGroups, skip, take);
   }
 
@@ -185,12 +187,18 @@ public class RecordController(
   /// <response code="404">If record does not exists.</response>
   [HttpPost()]
   [ProducesResponseType(StatusCodes.Status404NotFound)]
+  [ProducesResponseType(StatusCodes.Status403Forbidden)]
   [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme, Policy = Roles.Admin)]
   public async Task<IActionResult> Post([FromBody] RecordChangeRequest request)
   {
     if (!recordRepository.Exists(request.RecordId))
     {
       return NotFound();
+    }
+
+    if (!recordRepository.AllowedToEdit(request.RecordId))
+    {
+      return Forbid("Not owned by instance.");
     }
 
     await recordsService.Update(request.Map(), request.Cover).ConfigureAwait(false);
@@ -202,9 +210,9 @@ public class RecordController(
   /// </summary>
   /// <param name="checksums">Checksums of records to be loaded.</param>
   [HttpPost("check")]
-  public ActionResult<List<Record>> Check([FromBody] List<string> checksums)
+  public async Task<ActionResult<List<Record>>> Check([FromBody] List<string> checksums)
   {
-    var clientGroups = HttpContext.ClientGroups();
+    var clientGroups = await HttpContext.ClientGroups(authClient);
     return recordRepository.GetRecords(checksums, clientGroups);
   }
 
@@ -281,10 +289,10 @@ public class RecordController(
   [HttpGet("artists")]
   [MapToApiVersion(1.0)]
   [Obsolete("Use /media/artist/artists endpoint")]
-  public Artists GetArtists([FromQuery] string? filter, [FromQuery] int skip = Application.Constants.List.Skip, [FromQuery] int take = Application.Constants.List.Take)
+  public async Task<Artists> GetArtists([FromQuery] string? filter, [FromQuery] int skip = Application.Constants.List.Skip, [FromQuery] int take = Application.Constants.List.Take)
   {
     var isAdmin = HttpContext.IsAdmin();
-    var clientGroups = HttpContext.ClientGroups();
+    var clientGroups = await HttpContext.ClientGroups(authClient);
     return artistsRepository.List(filter, !isAdmin, clientGroups, skip, take);
   }
 
@@ -298,10 +306,10 @@ public class RecordController(
   [HttpGet("genres")]
   [MapToApiVersion(1.0)]
   [Obsolete("Use /media/genre/genres endpoint")]
-  public Genres GetGenres([FromQuery] string? filter, [FromQuery] int skip = Application.Constants.List.Skip, [FromQuery] int take = Application.Constants.List.Take)
+  public async Task<Genres> GetGenres([FromQuery] string? filter, [FromQuery] int skip = Application.Constants.List.Skip, [FromQuery] int take = Application.Constants.List.Take)
   {
     var isAdmin = HttpContext.IsAdmin();
-    var clientGroups = HttpContext.ClientGroups();
+    var clientGroups = await HttpContext.ClientGroups(authClient);
     return genresRepository.List(filter, !isAdmin, clientGroups, skip, take);
   }
 
@@ -315,10 +323,10 @@ public class RecordController(
   [HttpGet("albums")]
   [MapToApiVersion(1.0)]
   [Obsolete("Use /media/album/albums endpoint")]
-  public Albums GetAlbums([FromQuery] string? filter, [FromQuery] int skip = Application.Constants.List.Skip, [FromQuery] int take = Application.Constants.List.Take)
+  public async Task<Albums> GetAlbums([FromQuery] string? filter, [FromQuery] int skip = Application.Constants.List.Skip, [FromQuery] int take = Application.Constants.List.Take)
   {
     var isAdmin = HttpContext.IsAdmin();
-    var clientGroups = HttpContext.ClientGroups();
+    var clientGroups = await HttpContext.ClientGroups(authClient);
     return albumsRepository.List(filter, !isAdmin, clientGroups, skip, take);
   }
 
@@ -332,10 +340,10 @@ public class RecordController(
   [HttpGet("languages")]
   [MapToApiVersion(1.0)]
   [Obsolete("Use /media/language/languages endpoint")]
-  public Languages GetLanguages([FromQuery] string? filter, [FromQuery] int skip = Application.Constants.List.Skip, [FromQuery] int take = Application.Constants.List.Take)
+  public async Task<Languages> GetLanguages([FromQuery] string? filter, [FromQuery] int skip = Application.Constants.List.Skip, [FromQuery] int take = Application.Constants.List.Take)
   {
     var isAdmin = HttpContext.IsAdmin();
-    var clientGroups = HttpContext.ClientGroups();
+    var clientGroups = await HttpContext.ClientGroups(authClient);
     return languageRepository.ListLanguages(filter, !isAdmin, clientGroups, skip, take);
   }
   #endregion
