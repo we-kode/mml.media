@@ -617,3 +617,16 @@ dev.env
 env.dev
 dev
 records
+
+# Graphify local caches and transient extraction files
+graphify-out/cache/
+graphify-out/cost.json
+graphify-out/.graphify_*
+graphify-out/converted/
+graphify-out/memory/
+graphify-out/20*/
+graphify-out/.graphify_root
+graphify-out/.graphify_labels.json*
+graphify-out/graph.html
+graphify-out/graph.json
+graphify-out/GRAPH_REPORT.md

@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Http;
 using OpenIddict.Abstractions;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 using static OpenIddict.Abstractions.OpenIddictConstants;
 
@@ -42,6 +41,6 @@ public static class HttpContextExtensions
       return [];
     }
 
-    return await authorization.GetGroups("bf8854b2-5174-4ca1-ac10-cb11ba4ff053");
+    return await authorization.GetGroups(clientId);
   }
 }

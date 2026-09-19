@@ -1,0 +1,818 @@
+{
+  "Media.API/Contracts/AssignFolderRequest.cs": {
+    "mtime": 1772296965.656235,
+    "seen": 1789824729.849587,
+    "ast_hash": "ed7fe7fcd6a6338500ff52ac4d749226",
+    "semantic_hash": ""
+  },
+  "Media.API/Contracts/AssignmentRequest.cs": {
+    "mtime": 1772296965.684359,
+    "seen": 1789824729.849587,
+    "ast_hash": "2b4ccbfad751f9663641542094045a13",
+    "semantic_hash": ""
+  },
+  "Media.API/Contracts/FolderItemsRequest.cs": {
+    "mtime": 1708630295.9664414,
+    "seen": 1789824729.849587,
+    "ast_hash": "d4341a4a2c20f32e7288831f4e4e53a5",
+    "semantic_hash": ""
+  },
+  "Media.API/Contracts/ItemsRequest.cs": {
+    "mtime": 1708630295.967445,
+    "seen": 1789824729.849587,
+    "ast_hash": "9a3af17a07271e3dedc05113464801ec",
+    "semantic_hash": ""
+  },
+  "Media.API/Contracts/LivestreamChangeRequest.cs": {
+    "mtime": 1772296965.7001963,
+    "seen": 1789824729.849587,
+    "ast_hash": "ff03aa73b39c5fa5cdd29dd552bd3b29",
+    "semantic_hash": ""
+  },
+  "Media.API/Contracts/RecordChangeRequest.cs": {
+    "mtime": 1772296965.7001963,
+    "seen": 1789824729.849587,
+    "ast_hash": "d6bb931d0e19f8a146f1d1166b312bbb",
+    "semantic_hash": ""
+  },
+  "Media.API/Contracts/RecordFolder.cs": {
+    "mtime": 1667648361.7938735,
+    "seen": 1789824729.849587,
+    "ast_hash": "57e8d1b68efbec9d3b13a49990bd7b44",
+    "semantic_hash": ""
+  },
+  "Media.API/Contracts/SettingsRequest.cs": {
+    "mtime": 1665834672.269177,
+    "seen": 1789824729.849587,
+    "ast_hash": "3ceefce5c634307c1553c8904e85d9b0",
+    "semantic_hash": ""
+  },
+  "Media.API/Contracts/TagFilter.cs": {
+    "mtime": 1723310569.3300695,
+    "seen": 1789824729.849587,
+    "ast_hash": "3172cdfd69ac85f2c8861f138c710053",
+    "semantic_hash": ""
+  },
+  "Media.API/Contracts/ValueRequest.cs": {
+    "mtime": 1720288355.2256415,
+    "seen": 1789824729.849587,
+    "ast_hash": "454188e4ef8c660e88d99eb6865ad50c",
+    "semantic_hash": ""
+  },
+  "Media.API/Controllers/AlbumController.cs": {
+    "mtime": 1773315347.2767417,
+    "seen": 1789824729.849587,
+    "ast_hash": "6fded3b1002121b6816411a51e06903a",
+    "semantic_hash": ""
+  },
+  "Media.API/Controllers/ArtistController.cs": {
+    "mtime": 1773315422.0659072,
+    "seen": 1789824729.849587,
+    "ast_hash": "8d58f76f023471cc14c5d282ac09e423",
+    "semantic_hash": ""
+  },
+  "Media.API/Controllers/GenreController.cs": {
+    "mtime": 1773315484.6616158,
+    "seen": 1789824729.849587,
+    "ast_hash": "56c55dffe19beeb27ef7053000561fea",
+    "semantic_hash": ""
+  },
+  "Media.API/Controllers/GroupController.cs": {
+    "mtime": 1772296965.8067648,
+    "seen": 1789824729.849587,
+    "ast_hash": "e7007ec6d8b53d029002f0c5da95bea4",
+    "semantic_hash": ""
+  },
+  "Media.API/Controllers/LanguageController.cs": {
+    "mtime": 1773315536.9893692,
+    "seen": 1789824729.849587,
+    "ast_hash": "67a7275c5154b127dddbc7793a5ff333",
+    "semantic_hash": ""
+  },
+  "Media.API/Controllers/LivestreamController.cs": {
+    "mtime": 1773315588.9634404,
+    "seen": 1789824729.849587,
+    "ast_hash": "0c92f3ca139aec75350bb94b308df567",
+    "semantic_hash": ""
+  },
+  "Media.API/Controllers/RecordController.cs": {
+    "mtime": 1773315278.6651561,
+    "seen": 1789824729.849587,
+    "ast_hash": "e3ad97e4365292531ae97510004af233",
+    "semantic_hash": ""
+  },
+  "Media.API/Controllers/SettingsController.cs": {
+    "mtime": 1772296965.8857863,
+    "seen": 1789824729.849587,
+    "ast_hash": "4fb3abd6e62664dc314930be819a06c6",
+    "semantic_hash": ""
+  },
+  "Media.API/Controllers/StreamController.cs": {
+    "mtime": 1773315679.0931957,
+    "seen": 1789824729.849587,
+    "ast_hash": "a658e3ef53ad00607fcac1c2675d2504",
+    "semantic_hash": ""
+  },
+  "Media.API/Controllers/SyncController.cs": {
+    "mtime": 1773220828.0321982,
+    "seen": 1789824729.849587,
+    "ast_hash": "b14ca157b5b5bc5acbb561c632846102",
+    "semantic_hash": ""
+  },
+  "Media.API/Controllers/UploadController.cs": {
+    "mtime": 1772296965.9126892,
+    "seen": 1789824729.849587,
+    "ast_hash": "718d1d7e20126e08dac62a4d23c9b723",
+    "semantic_hash": ""
+  },
+  "Media.API/Extensions/ContractMappingExtension.cs": {
+    "mtime": 1773147133.249691,
+    "seen": 1789824729.849587,
+    "ast_hash": "ce86a982175037c335dfdfe06cd611f6",
+    "semantic_hash": ""
+  },
+  "Media.API/Extensions/HttpContextExtensions.cs": {
+    "mtime": 1774273370.7753356,
+    "seen": 1789824729.849587,
+    "ast_hash": "fe5016888e119d2a36d3b94c3e043c7e",
+    "semantic_hash": ""
+  },
+  "Media.API/Filters/RemoveVersionParameterFilter.cs": {
+    "mtime": 1772296965.9520648,
+    "seen": 1789824729.849587,
+    "ast_hash": "4b552470b3b81e440357d92e59cad2f0",
+    "semantic_hash": ""
+  },
+  "Media.API/Filters/ReplaceVersionWithExactValueInPathFilter.cs": {
+    "mtime": 1772296965.968588,
+    "seen": 1789824729.849587,
+    "ast_hash": "2be2a89f5131b0bea53e01a3c58678e7",
+    "semantic_hash": ""
+  },
+  "Media.API/HostedServices/MigrateBitrates.cs": {
+    "mtime": 1772296965.9862628,
+    "seen": 1789824729.849587,
+    "ast_hash": "81d7c4d964e7cb9e0444a26d32b48348",
+    "semantic_hash": ""
+  },
+  "Media.API/HostedServices/MigrateCovers.cs": {
+    "mtime": 1773078881.662579,
+    "seen": 1789824729.849587,
+    "ast_hash": "46079105722ff9bd90b49a4ee33f7aa5",
+    "semantic_hash": ""
+  },
+  "Media.API/Media.API.csproj": {
+    "mtime": 1773320983.4700866,
+    "seen": 1789824729.849587,
+    "ast_hash": "720817eb32996b79eb948320c552ee48",
+    "semantic_hash": ""
+  },
+  "Media.API/Middleware/ApiKeyValidator.cs": {
+    "mtime": 1773323344.8062804,
+    "seen": 1789824729.849587,
+    "ast_hash": "f42cd422ead5b3dfed06ecfbcd4a241a",
+    "semantic_hash": ""
+  },
+  "Media.API/Program.cs": {
+    "mtime": 1720288355.4326732,
+    "seen": 1789824729.849587,
+    "ast_hash": "796904b9f265456f344b8b9c5348b1cf",
+    "semantic_hash": ""
+  },
+  "Media.API/Properties/launchSettings.json": {
+    "mtime": 1665834672.305699,
+    "seen": 1789824729.849587,
+    "ast_hash": "0c2a4502a526f37a0887adf32de5cc54",
+    "semantic_hash": ""
+  },
+  "Media.API/Resources/ValidationMessages.Designer.cs": {
+    "mtime": 1665834672.319044,
+    "seen": 1789824729.849587,
+    "ast_hash": "b857c52f58773a46309b56f9f99bf81b",
+    "semantic_hash": ""
+  },
+  "Media.API/Services/AuthorizationClient.cs": {
+    "mtime": 1773335629.8764672,
+    "seen": 1789824729.849587,
+    "ast_hash": "33c22c5f741a4f03ffabfc74110e84fb",
+    "semantic_hash": ""
+  },
+  "Media.API/Services/IAuthorizationClient.cs": {
+    "mtime": 1773313146.903891,
+    "seen": 1789824729.849587,
+    "ast_hash": "f83b03320eeb2e078522ae3d536d9494",
+    "semantic_hash": ""
+  },
+  "Media.API/Startup.cs": {
+    "mtime": 1773335701.5818968,
+    "seen": 1789824729.849587,
+    "ast_hash": "d97dbcba397b3a512faa0ca45497f112",
+    "semantic_hash": ""
+  },
+  "Media.API/default.appsettings.json": {
+    "mtime": 1773308794.4731467,
+    "seen": 1789824729.849587,
+    "ast_hash": "30765094e5eeeb99c862075802683f99",
+    "semantic_hash": ""
+  },
+  "Media.API/test.appsettings.json": {
+    "mtime": 1773308780.3309412,
+    "seen": 1789824729.849587,
+    "ast_hash": "73cb3095e6f8a6fd4dc5c4e7201b217a",
+    "semantic_hash": ""
+  },
+  "Media.Application/Constants/Env.cs": {
+    "mtime": 1773220491.5219603,
+    "seen": 1789824729.849587,
+    "ast_hash": "61aa1971bb65a164509b950a68f317dc",
+    "semantic_hash": ""
+  },
+  "Media.Application/Constants/List.cs": {
+    "mtime": 1665834672.3388565,
+    "seen": 1789824729.849587,
+    "ast_hash": "2e828161e8e1c5b0b3522d4f1f4e08be",
+    "semantic_hash": ""
+  },
+  "Media.Application/Constants/Roles.cs": {
+    "mtime": 1665834672.3398607,
+    "seen": 1789824729.849587,
+    "ast_hash": "798681a4dc9d151b6d69f9a25a195fa0",
+    "semantic_hash": ""
+  },
+  "Media.Application/Consumers/GroupConsumer.cs": {
+    "mtime": 1772296966.0348358,
+    "seen": 1789824729.849587,
+    "ast_hash": "e406b96deb4fdb9b20051c4f80a1dd83",
+    "semantic_hash": ""
+  },
+  "Media.Application/Contracts/IO/ICoverLoader.cs": {
+    "mtime": 1773072808.1727662,
+    "seen": 1789824729.849587,
+    "ast_hash": "c769f2c35ca632d649ff5c630b2f6514",
+    "semantic_hash": ""
+  },
+  "Media.Application/Contracts/Repositories/IAlbumRepository.cs": {
+    "mtime": 1723310569.37407,
+    "seen": 1789824729.849587,
+    "ast_hash": "9c511d997d293430646ced99c207a9e9",
+    "semantic_hash": ""
+  },
+  "Media.Application/Contracts/Repositories/IArtistRepository.cs": {
+    "mtime": 1723310569.375073,
+    "seen": 1789824729.849587,
+    "ast_hash": "351eebe02113384c65b944c99d5e39a9",
+    "semantic_hash": ""
+  },
+  "Media.Application/Contracts/Repositories/IGenreRepository.cs": {
+    "mtime": 1723310569.3760698,
+    "seen": 1789824729.849587,
+    "ast_hash": "7566ba3d8d781c00b82afd18fdef771b",
+    "semantic_hash": ""
+  },
+  "Media.Application/Contracts/Repositories/IGroupRepository.cs": {
+    "mtime": 1723310569.3760698,
+    "seen": 1789824729.849587,
+    "ast_hash": "c9ffc80aa301e439e1ac60995814ae02",
+    "semantic_hash": ""
+  },
+  "Media.Application/Contracts/Repositories/ILanguageRepository.cs": {
+    "mtime": 1723310569.3770702,
+    "seen": 1789824729.849587,
+    "ast_hash": "a2e08433329add78b946ae0ec15e04ee",
+    "semantic_hash": ""
+  },
+  "Media.Application/Contracts/Repositories/ILivestreamRepository.cs": {
+    "mtime": 1723310569.3780713,
+    "seen": 1789824729.849587,
+    "ast_hash": "c8b9c67c465de8862c5c9f7a82d48edb",
+    "semantic_hash": ""
+  },
+  "Media.Application/Contracts/Repositories/IRecordRepository.cs": {
+    "mtime": 1773147351.9389076,
+    "seen": 1789824729.849587,
+    "ast_hash": "b494f0cdd2c5deff40c67304d8fa8110",
+    "semantic_hash": ""
+  },
+  "Media.Application/Contracts/Repositories/ISettingRepository.cs": {
+    "mtime": 1723310569.3790698,
+    "seen": 1789824729.849587,
+    "ast_hash": "f5dca9808c509ae0df26b7a5db06b78d",
+    "semantic_hash": ""
+  },
+  "Media.Application/Contracts/Repositories/TagFilter.cs": {
+    "mtime": 1723310569.380071,
+    "seen": 1789824729.849587,
+    "ast_hash": "7d62752459d53a64a8b66d5fba6636eb",
+    "semantic_hash": ""
+  },
+  "Media.Application/Contracts/Services/IIndexService.cs": {
+    "mtime": 1772296966.0352778,
+    "seen": 1789824729.849587,
+    "ast_hash": "a46aa9a508f4ac710f97822c62a3704a",
+    "semantic_hash": ""
+  },
+  "Media.Application/Contracts/Services/IRecordService.cs": {
+    "mtime": 1773072808.1727662,
+    "seen": 1789824729.849587,
+    "ast_hash": "af7e389e091d2344e90aa7a0a25634c8",
+    "semantic_hash": ""
+  },
+  "Media.Application/Extensions/CoverExtensions.cs": {
+    "mtime": 1773078852.3822856,
+    "seen": 1789824729.849587,
+    "ast_hash": "a9af45e6dbbaf0145ade6cb07c4899f7",
+    "semantic_hash": ""
+  },
+  "Media.Application/Extensions/TagLibFileExtensions.cs": {
+    "mtime": 1677077462.9664066,
+    "seen": 1789824729.849587,
+    "ast_hash": "7d62cebc53acd2cebccf183e17eb4397",
+    "semantic_hash": ""
+  },
+  "Media.Application/Media.Application.csproj": {
+    "mtime": 1773336213.3453152,
+    "seen": 1789824729.849587,
+    "ast_hash": "49adb3b3a2380492f7c6c498ab664a95",
+    "semantic_hash": ""
+  },
+  "Media.Application/Models/Album.cs": {
+    "mtime": 1665834672.3647637,
+    "seen": 1789824729.849587,
+    "ast_hash": "76e5d0048241c583d3c318451875f1f1",
+    "semantic_hash": ""
+  },
+  "Media.Application/Models/Albums.cs": {
+    "mtime": 1665834672.3657465,
+    "seen": 1789824729.849587,
+    "ast_hash": "697372d9baa1e29ce7c676000c9cb142",
+    "semantic_hash": ""
+  },
+  "Media.Application/Models/Artist.cs": {
+    "mtime": 1665834672.3707614,
+    "seen": 1789824729.849587,
+    "ast_hash": "9b901abf075dbcf5b58e4ac3264c5973",
+    "semantic_hash": ""
+  },
+  "Media.Application/Models/Artists.cs": {
+    "mtime": 1665834672.3707614,
+    "seen": 1789824729.849587,
+    "ast_hash": "ef7ea3ac957dcfd1969e344c6a49b95f",
+    "semantic_hash": ""
+  },
+  "Media.Application/Models/Genre.cs": {
+    "mtime": 1665834672.3717773,
+    "seen": 1789824729.849587,
+    "ast_hash": "8cecda7e825abff0e832441c21b1f25f",
+    "semantic_hash": ""
+  },
+  "Media.Application/Models/GenreBitrate.cs": {
+    "mtime": 1676736190.802336,
+    "seen": 1789824729.849587,
+    "ast_hash": "60cbf0b364c92ae6d0f365e23ceb3f7a",
+    "semantic_hash": ""
+  },
+  "Media.Application/Models/GenreBitrates.cs": {
+    "mtime": 1676736190.810333,
+    "seen": 1789824729.849587,
+    "ast_hash": "5c3dc0b15d0264244cd974e4bc6ac587",
+    "semantic_hash": ""
+  },
+  "Media.Application/Models/Genres.cs": {
+    "mtime": 1665834672.3717773,
+    "seen": 1789824729.849587,
+    "ast_hash": "fb51b90d9fd43d73810aa681285e5011",
+    "semantic_hash": ""
+  },
+  "Media.Application/Models/Group.cs": {
+    "mtime": 1665834672.3838167,
+    "seen": 1789824729.849587,
+    "ast_hash": "d7ad378ac23a971c5e4a7edbb23c103f",
+    "semantic_hash": ""
+  },
+  "Media.Application/Models/Groups.cs": {
+    "mtime": 1665834672.3848162,
+    "seen": 1789824729.849587,
+    "ast_hash": "1f4062ef09b26f5478c14fc88bd0b661",
+    "semantic_hash": ""
+  },
+  "Media.Application/Models/Language.cs": {
+    "mtime": 1674151320.3929396,
+    "seen": 1789824729.849587,
+    "ast_hash": "f2bf5fcb131076893c3046544d04ed90",
+    "semantic_hash": ""
+  },
+  "Media.Application/Models/Languages.cs": {
+    "mtime": 1674151377.3225274,
+    "seen": 1789824729.849587,
+    "ast_hash": "085ca12dc8590682d8edd350c7625c5e",
+    "semantic_hash": ""
+  },
+  "Media.Application/Models/Livestream.cs": {
+    "mtime": 1772296966.0675945,
+    "seen": 1789824729.849587,
+    "ast_hash": "0528e252db875bcb94db4722fc79672d",
+    "semantic_hash": ""
+  },
+  "Media.Application/Models/LivestreamSettings.cs": {
+    "mtime": 1772296966.0808458,
+    "seen": 1789824729.849587,
+    "ast_hash": "b06e102e8487ed78f76a8bc945e4bb9d",
+    "semantic_hash": ""
+  },
+  "Media.Application/Models/Livestreams.cs": {
+    "mtime": 1693500216.879803,
+    "seen": 1789824729.849587,
+    "ast_hash": "46005c777f4d5a982e30498782772911",
+    "semantic_hash": ""
+  },
+  "Media.Application/Models/Record.cs": {
+    "mtime": 1773146838.4305177,
+    "seen": 1789824729.849587,
+    "ast_hash": "4cc8f418a4a4bb090b46654e723ae0c9",
+    "semantic_hash": ""
+  },
+  "Media.Application/Models/RecordFolder.cs": {
+    "mtime": 1667648362.1898403,
+    "seen": 1789824729.849587,
+    "ast_hash": "c2e626040a1a8b264ed6463c0d364793",
+    "semantic_hash": ""
+  },
+  "Media.Application/Models/RecordFolders.cs": {
+    "mtime": 1773072808.2019885,
+    "seen": 1789824729.849587,
+    "ast_hash": "9af0b16d49dd2a9737c2c948dc6bbbc1",
+    "semantic_hash": ""
+  },
+  "Media.Application/Models/RecordMetaData.cs": {
+    "mtime": 1723310569.3820808,
+    "seen": 1789824729.849587,
+    "ast_hash": "736b679921d56110bac06fc5579dc938",
+    "semantic_hash": ""
+  },
+  "Media.Application/Models/RecordStream.cs": {
+    "mtime": 1772296966.123947,
+    "seen": 1789824729.849587,
+    "ast_hash": "0ff26784f0177be56bf1de87ab674d15",
+    "semantic_hash": ""
+  },
+  "Media.Application/Models/Records.cs": {
+    "mtime": 1773072808.2019885,
+    "seen": 1789824729.849587,
+    "ast_hash": "1f4bbb37c3fe277184cc4ac81dabbddc",
+    "semantic_hash": ""
+  },
+  "Media.Application/Models/Settings.cs": {
+    "mtime": 1665834672.3959732,
+    "seen": 1789824729.849587,
+    "ast_hash": "b939e235c145d927d2d32e2e35149e3f",
+    "semantic_hash": ""
+  },
+  "Media.DBContext/ApplicationDBContext.cs": {
+    "mtime": 1772296966.1458645,
+    "seen": 1789824729.849587,
+    "ast_hash": "bde30b07e015436f28cb01b06082f62a",
+    "semantic_hash": ""
+  },
+  "Media.DBContext/ApplicationDBContextFactory.cs": {
+    "mtime": 1665834672.3979745,
+    "seen": 1789824729.849587,
+    "ast_hash": "e95636db4ffa11b0b0f2cbeee12fc7ba",
+    "semantic_hash": ""
+  },
+  "Media.DBContext/Extensions/StringExtensions.cs": {
+    "mtime": 1665834672.398974,
+    "seen": 1789824729.849587,
+    "ast_hash": "10d1444db5a1349e63b17028783fe515",
+    "semantic_hash": ""
+  },
+  "Media.DBContext/Media.DBContext.csproj": {
+    "mtime": 1772296966.1777353,
+    "seen": 1789824729.849587,
+    "ast_hash": "1de164a78d6f2336b68304ae0b743203",
+    "semantic_hash": ""
+  },
+  "Media.DBContext/Migrations/20220630164705_Init.Designer.cs": {
+    "mtime": 1665834672.4059744,
+    "seen": 1789824729.849587,
+    "ast_hash": "a1896186352602a8272886e0fa237f3d",
+    "semantic_hash": ""
+  },
+  "Media.DBContext/Migrations/20220630164705_Init.cs": {
+    "mtime": 1665834672.4059744,
+    "seen": 1789824729.849587,
+    "ast_hash": "8be9fb51d9c4fbc0314542128c53ce49",
+    "semantic_hash": ""
+  },
+  "Media.DBContext/Migrations/20220711185340_Added_RecordFilePath.Designer.cs": {
+    "mtime": 1665834672.411974,
+    "seen": 1789824729.849587,
+    "ast_hash": "d5f0d2caa4fd1e465cb397bd6ba205a0",
+    "semantic_hash": ""
+  },
+  "Media.DBContext/Migrations/20220711185340_Added_RecordFilePath.cs": {
+    "mtime": 1665834672.411974,
+    "seen": 1789824729.849587,
+    "ast_hash": "2b660e46010d70c2f982d69c86c23288",
+    "semantic_hash": ""
+  },
+  "Media.DBContext/Migrations/20220712122257_Added_ChecksumColumn.Designer.cs": {
+    "mtime": 1665834672.4239726,
+    "seen": 1789824729.849587,
+    "ast_hash": "4f11d097aab834402f4f9074dfa90386",
+    "semantic_hash": ""
+  },
+  "Media.DBContext/Migrations/20220712122257_Added_ChecksumColumn.cs": {
+    "mtime": 1665834672.4239726,
+    "seen": 1789824729.849587,
+    "ast_hash": "e4b33bef8ba1d9302ae129f44e6c6f5a",
+    "semantic_hash": ""
+  },
+  "Media.DBContext/Migrations/20220714162616_Added_Duration.Designer.cs": {
+    "mtime": 1665834672.4278326,
+    "seen": 1789824729.849587,
+    "ast_hash": "b432e41f73a5ff35d375966a9fda766e",
+    "semantic_hash": ""
+  },
+  "Media.DBContext/Migrations/20220714162616_Added_Duration.cs": {
+    "mtime": 1665834672.4288516,
+    "seen": 1789824729.849587,
+    "ast_hash": "93d5855576a27ca050b1de23275394e1",
+    "semantic_hash": ""
+  },
+  "Media.DBContext/Migrations/20230119181118_Added_LanguageTag.Designer.cs": {
+    "mtime": 1674151878.6351712,
+    "seen": 1789824729.849587,
+    "ast_hash": "c80def57d8ed71b6c0892f93e2e9b45b",
+    "semantic_hash": ""
+  },
+  "Media.DBContext/Migrations/20230119181118_Added_LanguageTag.cs": {
+    "mtime": 1674151927.7798114,
+    "seen": 1789824729.849587,
+    "ast_hash": "e3759749be5fce9a703040ff3c92dc3a",
+    "semantic_hash": ""
+  },
+  "Media.DBContext/Migrations/20230216191110_Added_GenreBitrate.Designer.cs": {
+    "mtime": 1676736190.846929,
+    "seen": 1789824729.849587,
+    "ast_hash": "9e6fdf8e044fecd570b777a2252a6290",
+    "semantic_hash": ""
+  },
+  "Media.DBContext/Migrations/20230216191110_Added_GenreBitrate.cs": {
+    "mtime": 1676736190.8539317,
+    "seen": 1789824729.849587,
+    "ast_hash": "a6342f18cd487576d5100b29a0b4fc7b",
+    "semantic_hash": ""
+  },
+  "Media.DBContext/Migrations/20230325120813_Added_Livestreams.Designer.cs": {
+    "mtime": 1693500216.9045346,
+    "seen": 1789824729.849587,
+    "ast_hash": "1b4e5be47e0bcc1df9cb8efe3ba1fd86",
+    "semantic_hash": ""
+  },
+  "Media.DBContext/Migrations/20230325120813_Added_Livestreams.cs": {
+    "mtime": 1693500216.926252,
+    "seen": 1789824729.849587,
+    "ast_hash": "90d3811d6c5b074d65d2f59462f3ba42",
+    "semantic_hash": ""
+  },
+  "Media.DBContext/Migrations/20230819171732_Renamed_Livestream_Columns.Designer.cs": {
+    "mtime": 1693500216.9356468,
+    "seen": 1789824729.849587,
+    "ast_hash": "0dfb3eca4a5d9b1c851d56a924bc299a",
+    "semantic_hash": ""
+  },
+  "Media.DBContext/Migrations/20230819171732_Renamed_Livestream_Columns.cs": {
+    "mtime": 1693500216.943894,
+    "seen": 1789824729.849587,
+    "ast_hash": "ac02c2f3f92b7c12994cf4f1c347059b",
+    "semantic_hash": ""
+  },
+  "Media.DBContext/Migrations/20231226174154_Added_Bitrate.Designer.cs": {
+    "mtime": 1703612514.2717233,
+    "seen": 1789824729.849587,
+    "ast_hash": "533388d7ca3d413e7262dbb658dd44a5",
+    "semantic_hash": ""
+  },
+  "Media.DBContext/Migrations/20231226174154_Added_Bitrate.cs": {
+    "mtime": 1704357152.5082963,
+    "seen": 1789824729.849587,
+    "ast_hash": "a11663a0dd77cc93c0d884982a331aaf",
+    "semantic_hash": ""
+  },
+  "Media.DBContext/Migrations/20240103125018_Added_Cover.Designer.cs": {
+    "mtime": 1704286218.9928818,
+    "seen": 1789824729.849587,
+    "ast_hash": "1ce1da87cbec8066a3c658330b57366f",
+    "semantic_hash": ""
+  },
+  "Media.DBContext/Migrations/20240103125018_Added_Cover.cs": {
+    "mtime": 1704286327.3739007,
+    "seen": 1789824729.849587,
+    "ast_hash": "93d7c7a5c5c39556c812ab0566eacdc0",
+    "semantic_hash": ""
+  },
+  "Media.DBContext/Migrations/20240217161434_Added_Locked_Record_Column.Designer.cs": {
+    "mtime": 1708630295.9705956,
+    "seen": 1789824729.849587,
+    "ast_hash": "8c2cde9b663acad729a62f1145a88406",
+    "semantic_hash": ""
+  },
+  "Media.DBContext/Migrations/20240217161434_Added_Locked_Record_Column.cs": {
+    "mtime": 1708630295.9705956,
+    "seen": 1789824729.849587,
+    "ast_hash": "0577f68c3173185936e1b4fa17b46abf",
+    "semantic_hash": ""
+  },
+  "Media.DBContext/Migrations/20240714172027_MigrateDoNotValidate.Designer.cs": {
+    "mtime": 1723310569.3946428,
+    "seen": 1789824729.849587,
+    "ast_hash": "ba35d9d793af8c70bb53812b4710107c",
+    "semantic_hash": ""
+  },
+  "Media.DBContext/Migrations/20240714172027_MigrateDoNotValidate.cs": {
+    "mtime": 1723310569.3956487,
+    "seen": 1789824729.849587,
+    "ast_hash": "784db19073b67404b74dcbdc254c1ab6",
+    "semantic_hash": ""
+  },
+  "Media.DBContext/Migrations/20240714173117_AddedCover.Designer.cs": {
+    "mtime": 1723310569.3956487,
+    "seen": 1789824729.849587,
+    "ast_hash": "cb532372a412ef390d1cecc0ad0abf5e",
+    "semantic_hash": ""
+  },
+  "Media.DBContext/Migrations/20240714173117_AddedCover.cs": {
+    "mtime": 1723310569.3976583,
+    "seen": 1789824729.849587,
+    "ast_hash": "2f12066f66d7f495685e6774e3e11b10",
+    "semantic_hash": ""
+  },
+  "Media.DBContext/Migrations/20240804115634_Added_Artist_CreationDate.Designer.cs": {
+    "mtime": 1723310569.3986592,
+    "seen": 1789824729.849587,
+    "ast_hash": "e15832278f6f5f1c86cf261a8c60c3e3",
+    "semantic_hash": ""
+  },
+  "Media.DBContext/Migrations/20240804115634_Added_Artist_CreationDate.cs": {
+    "mtime": 1723310569.3986592,
+    "seen": 1789824729.849587,
+    "ast_hash": "cdb01d6595daaafac37ab1efb7db75ec",
+    "semantic_hash": ""
+  },
+  "Media.DBContext/Migrations/20260309175505_Added_OwnerInstanceColumn_Record.Designer.cs": {
+    "mtime": 1773078905.6638546,
+    "seen": 1789824729.849587,
+    "ast_hash": "3975fc8b85945b48745f526f58556540",
+    "semantic_hash": ""
+  },
+  "Media.DBContext/Migrations/20260309175505_Added_OwnerInstanceColumn_Record.cs": {
+    "mtime": 1773079629.383038,
+    "seen": 1789824729.849587,
+    "ast_hash": "cbc2a75a50cb19e720fb8a9381871cc3",
+    "semantic_hash": ""
+  },
+  "Media.DBContext/Migrations/ApplicationDBContextModelSnapshot.cs": {
+    "mtime": 1773078905.6648638,
+    "seen": 1789824729.849587,
+    "ast_hash": "194935bc34924ff1a41a0b9463c2544d",
+    "semantic_hash": ""
+  },
+  "Media.DBContext/Models/Album.cs": {
+    "mtime": 1772296966.2297308,
+    "seen": 1789824729.849587,
+    "ast_hash": "c2348e0aae1a3bc7e997b0774c921ef6",
+    "semantic_hash": ""
+  },
+  "Media.DBContext/Models/Artist.cs": {
+    "mtime": 1772296966.2543178,
+    "seen": 1789824729.849587,
+    "ast_hash": "e54894082e4eeb87bd77546def48531c",
+    "semantic_hash": ""
+  },
+  "Media.DBContext/Models/Genre.cs": {
+    "mtime": 1772296966.269516,
+    "seen": 1789824729.849587,
+    "ast_hash": "4842b382ec2f2e4a1e3843cd60d34914",
+    "semantic_hash": ""
+  },
+  "Media.DBContext/Models/Group.cs": {
+    "mtime": 1772296966.285769,
+    "seen": 1789824729.849587,
+    "ast_hash": "c65fcf65487da53183b9eb9efa6e3251",
+    "semantic_hash": ""
+  },
+  "Media.DBContext/Models/Language.cs": {
+    "mtime": 1723310569.4027226,
+    "seen": 1789824729.849587,
+    "ast_hash": "a065e95b82b7e72b366e46add5b44cfd",
+    "semantic_hash": ""
+  },
+  "Media.DBContext/Models/Livestream.cs": {
+    "mtime": 1773078657.4869468,
+    "seen": 1789824729.849587,
+    "ast_hash": "72c36e6a099a8ece567011a922fce4b4",
+    "semantic_hash": ""
+  },
+  "Media.DBContext/Models/Record.cs": {
+    "mtime": 1773078770.996207,
+    "seen": 1789824729.849587,
+    "ast_hash": "95a8baaa627ec686c8f196d6ac68bc2b",
+    "semantic_hash": ""
+  },
+  "Media.DBContext/Models/SeedRecord.cs": {
+    "mtime": 1723906609.523013,
+    "seen": 1789824729.849587,
+    "ast_hash": "f88ee56f1e22451536f6308157fbd414",
+    "semantic_hash": ""
+  },
+  "Media.DBContext/Models/Setting.cs": {
+    "mtime": 1723310569.412213,
+    "seen": 1789824729.849587,
+    "ast_hash": "857b7b767031bcd058de3e0e2b903133",
+    "semantic_hash": ""
+  },
+  "Media.Infrastructure/IO/CoverLoader.cs": {
+    "mtime": 1773072808.2185893,
+    "seen": 1789824729.849587,
+    "ast_hash": "e930c8126591a7d21860e1e5f2f0a4c5",
+    "semantic_hash": ""
+  },
+  "Media.Infrastructure/Media.Infrastructure.csproj": {
+    "mtime": 1772627614.0786755,
+    "seen": 1789824729.849587,
+    "ast_hash": "6d1836bdc8aa1c3b8514a929cc54da51",
+    "semantic_hash": ""
+  },
+  "Media.Infrastructure/Repositories/SqlAlbumRepository.cs": {
+    "mtime": 1772296966.3756413,
+    "seen": 1789824729.849587,
+    "ast_hash": "6e2244e30d11a7c31c913762e2e556c0",
+    "semantic_hash": ""
+  },
+  "Media.Infrastructure/Repositories/SqlArtistRepository.cs": {
+    "mtime": 1772296966.4070537,
+    "seen": 1789824729.849587,
+    "ast_hash": "0911914b010566d2e06e10c6590bcfa7",
+    "semantic_hash": ""
+  },
+  "Media.Infrastructure/Repositories/SqlGenreRepository.cs": {
+    "mtime": 1772296966.4302008,
+    "seen": 1789824729.849587,
+    "ast_hash": "f4fdef0b3a5e46edacd8ac499b4f0e3f",
+    "semantic_hash": ""
+  },
+  "Media.Infrastructure/Repositories/SqlGroupRepository.cs": {
+    "mtime": 1772296966.4607775,
+    "seen": 1789824729.849587,
+    "ast_hash": "6bc05337df19501fccca11c64c5c324d",
+    "semantic_hash": ""
+  },
+  "Media.Infrastructure/Repositories/SqlLanguageRepository.cs": {
+    "mtime": 1772296966.5009232,
+    "seen": 1789824729.849587,
+    "ast_hash": "e8c037d868d0b82e4adcd1a6fbbf64c7",
+    "semantic_hash": ""
+  },
+  "Media.Infrastructure/Repositories/SqlLivestreamRepository.cs": {
+    "mtime": 1772296966.530231,
+    "seen": 1789824729.849587,
+    "ast_hash": "a458f990ba672122cd73ce262e9448d6",
+    "semantic_hash": ""
+  },
+  "Media.Infrastructure/Repositories/SqlRecordRepository.cs": {
+    "mtime": 1773220624.6537359,
+    "seen": 1789824729.849587,
+    "ast_hash": "2f2f6469b9896ee7293867abcf58cb80",
+    "semantic_hash": ""
+  },
+  "Media.Infrastructure/Repositories/SqlSettingRepository.cs": {
+    "mtime": 1772296966.5883813,
+    "seen": 1789824729.849587,
+    "ast_hash": "f4301f9eab4a9a059eefabfad25e4110",
+    "semantic_hash": ""
+  },
+  "Media.Infrastructure/Services/IndexService.cs": {
+    "mtime": 1773072808.2519405,
+    "seen": 1789824729.849587,
+    "ast_hash": "d10df11c3250215ab3d9c7870b610b84",
+    "semantic_hash": ""
+  },
+  "Media.Infrastructure/Services/RecordService.cs": {
+    "mtime": 1773147794.1006267,
+    "seen": 1789824729.849587,
+    "ast_hash": "928642a682dcecc1a5a04533d2031140",
+    "semantic_hash": ""
+  },
+  "Media.sln": {
+    "mtime": 1772296966.592383,
+    "seen": 1789824729.849587,
+    "ast_hash": "a3e1142b363be24c2f876bd13cdfdf3e",
+    "semantic_hash": ""
+  },
+  "docker-compose.yml": {
+    "mtime": 1773079575.2469914,
+    "seen": 1789824729.849587,
+    "ast_hash": "fb06c87681dce56f1e596a113dafd426",
+    "semantic_hash": ""
+  }
+}
