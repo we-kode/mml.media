@@ -34,5 +34,6 @@ RUN dotnet publish "Media.API.csproj" -c ${DOT_NET_BUILD_CONFIG} -o /app/publish
 
 FROM base AS final
 WORKDIR /app
+RUN mkdir -p /secrets
 COPY --from=publish /app/publish .
 ENTRYPOINT ["dotnet", "media/Media.API.dll"]

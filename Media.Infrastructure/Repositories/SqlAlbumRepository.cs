@@ -49,7 +49,8 @@ public class SqlAlbumRepository(Func<ApplicationDBContext> contextFactory) : IAl
       return;
     }
 
-    if (!context.Records.Any(rec => rec.Album != null && rec.Album.AlbumName == albumName))
+    if (!context.Records.Any(rec => rec.Album != null && rec.Album.AlbumName == albumName)
+      && !context.FederationRules.Any(rule => rule.Albums.Any(item => item.AlbumName == albumName)))
     {
       context.Albums.RemoveRange(context.Albums.Where(rec => rec.AlbumName == albumName));
     }

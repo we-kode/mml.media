@@ -1,5 +1,10 @@
 ﻿using Media.Application.Contracts.Repositories;
 using Media.Application.Models;
+using Media.Application.Models.Federation;
+using Media.Application.Types;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace Media.API.Extensions
 {
@@ -18,7 +23,10 @@ namespace Media.API.Extensions
         Languages = tagFilter.Languages,
         Groups = tagFilter.Groups,
         StartDate = tagFilter.StartDate,
-        EndDate = tagFilter.EndDate
+        EndDate = tagFilter.EndDate,
+        Unassigned = tagFilter.Unassigned,
+        Instances = tagFilter.Instances,
+        SyncStates = tagFilter.SyncStates
       };
     }
 
@@ -43,6 +51,40 @@ namespace Media.API.Extensions
         Locked = record.Locked,
         Groups = record.Groups
       };
+    }
+
+    public static AuditQuery Map(this Contracts.AuditFilter filter)
+    {
+      return new AuditQuery
+      {
+        Filter = filter.Filter,
+        Statuses = filter.Status ?? [],
+        Actions = filter.Action ?? [],
+        Direction = filter.Direction,
+        Instances = filter.Instance ?? [],
+        From = filter.From?.UtcDateTime,
+        To = filter.To?.UtcDateTime,
+        Message = filter.Message,
+        Sort = ParseSort(filter.Sort),
+      };
+    }
+
+    private static List<AuditSort> ParseSort(IList<string>? columns)
+    {
+      var sort = new List<AuditSort>();
+      foreach (var column in columns ?? [])
+      {
+        var descending = column.StartsWith('-');
+        var name = descending ? column[1..] : column;
+        if (Enum.TryParse<AuditSortField>(name, true, out var field)
+          && Enum.IsDefined(field)
+          && !int.TryParse(name, out _)
+          && sort.All(s => s.Field != field))
+        {
+          sort.Add(new AuditSort(field, descending));
+        }
+      }
+      return sort;
     }
   }
 }

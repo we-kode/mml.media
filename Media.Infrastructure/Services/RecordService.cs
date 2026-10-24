@@ -1,8 +1,11 @@
+using Media.Application.Constants;
 using Media.Application.Contracts.IO;
 using Media.Application.Contracts.Repositories;
 using Media.Application.Contracts.Services;
 using Media.Application.Extensions;
 using Media.Application.Models;
+using Media.Application.Models.Federation;
+using Media.Application.Types;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
@@ -17,27 +20,37 @@ public class RecordService(
   IAlbumRepository albumRepository,
   IGenreRepository genreRepository,
   ILanguageRepository languageRepository,
-  ICoverLoader coverLoader) : IRecordService
+  ICoverLoader coverLoader,
+  IFederationJobRepository federationJobRepository,
+  IFederationAuditLogger federationAudit) : IRecordService
 {
-  public async Task DeleteRecord(Guid guid)
+  public async Task DeleteRecord(Guid guid, bool removeLocked = false)
   {
-    using var scope = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled);
-    await RemoveRecord(guid).ConfigureAwait(false);
-    scope.Complete();
+    var pending = new List<AuditEntry>();
+    using (var scope = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled))
+    {
+      await RemoveRecord(guid, pending, removeLocked).ConfigureAwait(false);
+      scope.Complete();
+    }
+    await federationAudit.Announce(pending).ConfigureAwait(false);
   }
 
   public async Task DeleteFolders(IEnumerable<RecordFolder> folders)
   {
-    using var scope = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled);
-    foreach (var folder in folders)
+    var pending = new List<AuditEntry>();
+    using (var scope = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled))
     {
-      var recordIds = recordRepository.GetRecords(folder);
-      foreach (var recordId in recordIds)
+      foreach (var folder in folders)
       {
-        await RemoveRecord(recordId).ConfigureAwait(false);
+        var recordIds = recordRepository.GetRecords(folder);
+        foreach (var recordId in recordIds)
+        {
+          await RemoveRecord(recordId, pending).ConfigureAwait(false);
+        }
       }
+      scope.Complete();
     }
-    scope.Complete();
+    await federationAudit.Announce(pending).ConfigureAwait(false);
   }
 
   public async Task SaveMetaData(RecordMetaData metaData, List<Guid> groups)
@@ -72,6 +85,39 @@ public class RecordService(
       return;
     }
 
+    // metadata of records owned by other instances are only changed by the owner, so only groups and lock are updated.
+    if (recordToUpdated.OwnerInstance != Env.INSTANCE)
+    {
+      await recordRepository.Update(record, (null, null, null, null)).ConfigureAwait(false);
+      scope.Complete();
+      return;
+    }
+
+    await UpdateMetadata(recordToUpdated, record, cover, fromOwner: false).ConfigureAwait(false);
+    var pending = await federationJobRepository.EnqueueForOutgoingLinks(record.RecordId, FederationJobType.UpdateRecord).ConfigureAwait(false);
+    scope.Complete();
+    scope.Dispose();
+    await federationAudit.Announce(pending).ConfigureAwait(false);
+  }
+
+  public async Task UpdateFromOwner(Record record, byte[] cover)
+  {
+    using var scope = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled);
+
+    var recordToUpdated = recordRepository.TryGetRecord(record.RecordId);
+    if (recordToUpdated == null)
+    {
+      return;
+    }
+
+    record.Groups = recordToUpdated.Groups;
+    record.Locked = recordToUpdated.Locked;
+    await UpdateMetadata(recordToUpdated, record, cover, fromOwner: true).ConfigureAwait(false);
+    scope.Complete();
+  }
+
+  private async Task UpdateMetadata(Record recordToUpdated, Record record, byte[] cover, bool fromOwner)
+  {
     // if to != null && new null remove
     // if new != null try remove old try get new and assign it
 
@@ -91,8 +137,8 @@ public class RecordService(
     var oldLang = recordToUpdated.Language;
     Guid? languageId = (await languageRepository.TryGetOrCreate(record.Language))?.LanguageId;
 
-    // update cover
-    if (cover.Length > 0)
+    // update cover. Admins can only replace the cover, the owner also removes it.
+    if (cover is { Length: > 0 })
     {
       var fileName = cover.ToFileName();
       await coverLoader.Save(cover, fileName);
@@ -100,21 +146,19 @@ public class RecordService(
     }
     else
     {
-      record.Cover = null;
+      record.Cover = fromOwner ? null : recordToUpdated.Cover;
     }
 
-    await recordRepository.Update(record, (artistId, albumId, genreId, languageId));
+    await recordRepository.Update(record, (artistId, albumId, genreId, languageId), fromOwner);
 
     // try remove old data
     await artistRepository.TryRemove(oldArtist);
     await genreRepository.TryRemove(oldGenre);
     await albumRepository.TryRemove(oldAlbum);
     await languageRepository.TryRemove(oldLang);
-
-    scope.Complete();
   }
 
-  private async Task RemoveRecord(Guid id, bool removeLocked = false)
+  private async Task RemoveRecord(Guid id, List<AuditEntry> pending, bool removeLocked = false)
   {
     var record = recordRepository.TryGetRecord(id);
     if (record == null)
@@ -125,6 +169,12 @@ public class RecordService(
     if (!removeLocked && record.Locked)
     {
       return;
+    }
+
+    // partners the record was sent to remove it as well. The links are removed together with the record.
+    if (record.OwnerInstance == Env.INSTANCE)
+    {
+      pending.AddRange(await federationJobRepository.EnqueueForOutgoingLinks(id, FederationJobType.DeleteRecord));
     }
 
     // Delete entry from db

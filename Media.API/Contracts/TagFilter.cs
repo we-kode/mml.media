@@ -1,4 +1,6 @@
-﻿using System;
+﻿using Media.Application.Models;
+using Media.Application.Types;
+using System;
 using System.Collections.Generic;
 
 namespace Media.API.Contracts;
@@ -58,6 +60,21 @@ public class TagFilter
   /// </summary>
   public DateTime? EndDate { get; set; }
 
+  /// <summary>
+  /// Only records without any group are returned if set.
+  /// </summary>
+  public bool Unassigned { get; set; }
+
+  /// <summary>
+  /// Names of the instances owning the records.
+  /// </summary>
+  public IList<string> Instances { get; set; }
+
+  /// <summary>
+  /// Only records in one of these synchronization states are returned if not empty.
+  /// </summary>
+  public IList<RecordSyncState> SyncStates { get; set; }
+
   public TagFilter()
   {
     Artists = [];
@@ -68,5 +85,7 @@ public class TagFilter
     AlbumNames = [];
     Languages = [];
     Groups = [];
+    Instances = [];
+    SyncStates = [];
   }
 }

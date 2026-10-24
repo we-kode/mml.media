@@ -1,8 +1,8 @@
 ﻿using Asp.Versioning;
+using Media.Application.Contracts.IO;
 using Media.Application.Contracts.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using MimeDetective;
 using OpenIddict.Validation.AspNetCore;
 using System;
 using System.Collections.Generic;
@@ -17,23 +17,16 @@ namespace Media.API.Controllers;
 [ApiVersion(2.0)]
 [Route("api/v{version:apiVersion}/media/[controller]")]
 [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme, Policy = Application.Constants.Roles.Admin)]
-public class UploadController(IIndexService indexService) : ControllerBase
+public class UploadController(IIndexService indexService, IAudioInspector audioInspector) : ControllerBase
 {
-  private readonly IContentInspector inspector = new ContentInspectorBuilder()
-  {
-    Definitions = MimeDetective.Definitions.DefaultDefinitions.FileTypes.Audio.MP3(),
-    Parallel = true
-  }.Build();
-
-  private readonly string[] allowedMimeTypes = ["audio/mpeg3", "audio/mpeg", "audio/mp3", "audio/mpg", "audio/x-mpeg-3"];
-
   /// <summary>
-  /// Uploads one file to the tmp folder.
+  /// Uploads one file to the tmp folder. The maximum file size is limited by the reverse proxy.
   /// </summary>
   /// <response code="400">If wrong or no file is uploaded.</response>
   /// <response code="500">If error on uploading file.</response>
   [HttpPost()]
   [DisableRequestSizeLimit]
+  [RequestFormLimits(MultipartBodyLengthLimit = long.MaxValue)]
   public async Task<IActionResult> Post()
   {
     try
@@ -46,17 +39,21 @@ public class UploadController(IIndexService indexService) : ControllerBase
       {
 
         using var readStream = file.OpenReadStream();
-        var mimeResult = inspector.Inspect(readStream);
-        var resultsByMimeType = mimeResult.ByMimeType();
+        var isMp3 = audioInspector.IsMp3(readStream);
         readStream.Close();
 
-        if (!resultsByMimeType.Any(result => allowedMimeTypes.Contains(result.MimeType)))
+        if (!isMp3)
         {
           return BadRequest("INVALID_FORMAT_MP3");
         }
 
-        var fileName = file.FileName;
-        var fullPath = Path.Combine(pathToSave, file.FileName);
+        var fileName = Path.GetFileName(file.FileName.Replace('\\', '/'));
+        if (string.IsNullOrWhiteSpace(fileName) || fileName == "." || fileName == "..")
+        {
+          return BadRequest("INVALID_FILE_NAME");
+        }
+
+        var fullPath = Path.Combine(pathToSave, fileName);
         using (var stream = new FileStream(fullPath, FileMode.Create))
         {
           file.CopyTo(stream);

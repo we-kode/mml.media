@@ -23,6 +23,101 @@ namespace Media.DBContext.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("AlbumFederationRule", b =>
+                {
+                    b.Property<Guid>("AlbumsAlbumId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("albums_album_id");
+
+                    b.Property<Guid>("FederationRuleRuleId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("federation_rule_rule_id");
+
+                    b.HasKey("AlbumsAlbumId", "FederationRuleRuleId")
+                        .HasName("pk_federation_rules_albums");
+
+                    b.HasIndex("FederationRuleRuleId")
+                        .HasDatabaseName("ix_federation_rules_albums_federation_rule_rule_id");
+
+                    b.ToTable("federation_rules_albums", "public");
+                });
+
+            modelBuilder.Entity("ArtistFederationRule", b =>
+                {
+                    b.Property<Guid>("ArtistsArtistId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("artists_artist_id");
+
+                    b.Property<Guid>("FederationRuleRuleId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("federation_rule_rule_id");
+
+                    b.HasKey("ArtistsArtistId", "FederationRuleRuleId")
+                        .HasName("pk_federation_rules_artists");
+
+                    b.HasIndex("FederationRuleRuleId")
+                        .HasDatabaseName("ix_federation_rules_artists_federation_rule_rule_id");
+
+                    b.ToTable("federation_rules_artists", "public");
+                });
+
+            modelBuilder.Entity("FederationPeerFederationRule", b =>
+                {
+                    b.Property<Guid>("PeersPeerId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("peers_peer_id");
+
+                    b.Property<Guid>("RulesRuleId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("rules_rule_id");
+
+                    b.HasKey("PeersPeerId", "RulesRuleId")
+                        .HasName("pk_federation_rules_peers");
+
+                    b.HasIndex("RulesRuleId")
+                        .HasDatabaseName("ix_federation_rules_peers_rules_rule_id");
+
+                    b.ToTable("federation_rules_peers", "public");
+                });
+
+            modelBuilder.Entity("FederationRuleGenre", b =>
+                {
+                    b.Property<Guid>("FederationRuleRuleId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("federation_rule_rule_id");
+
+                    b.Property<Guid>("GenresGenreId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("genres_genre_id");
+
+                    b.HasKey("FederationRuleRuleId", "GenresGenreId")
+                        .HasName("pk_federation_rules_genres");
+
+                    b.HasIndex("GenresGenreId")
+                        .HasDatabaseName("ix_federation_rules_genres_genres_genre_id");
+
+                    b.ToTable("federation_rules_genres", "public");
+                });
+
+            modelBuilder.Entity("FederationRuleGroup", b =>
+                {
+                    b.Property<Guid>("FederationRuleRuleId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("federation_rule_rule_id");
+
+                    b.Property<Guid>("GroupsGroupId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("groups_group_id");
+
+                    b.HasKey("FederationRuleRuleId", "GroupsGroupId")
+                        .HasName("pk_federation_rules_groups");
+
+                    b.HasIndex("GroupsGroupId")
+                        .HasDatabaseName("ix_federation_rules_groups_groups_group_id");
+
+                    b.ToTable("federation_rules_groups", "public");
+                });
+
             modelBuilder.Entity("GroupLivestream", b =>
                 {
                     b.Property<Guid>("GroupsGroupId")
@@ -107,6 +202,288 @@ namespace Media.DBContext.Migrations
                         .HasName("pk_artists");
 
                     b.ToTable("artists", "public");
+                });
+
+            modelBuilder.Entity("Media.DBContext.Models.FederationAuditEntry", b =>
+                {
+                    b.Property<Guid>("EntryId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("entry_id");
+
+                    b.Property<int>("Action")
+                        .HasColumnType("integer")
+                        .HasColumnName("action");
+
+                    b.Property<string>("Message")
+                        .HasColumnType("text")
+                        .HasColumnName("message");
+
+                    b.PrimitiveCollection<string>("RecordIds")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("record_ids");
+
+                    b.Property<string>("Source")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("source");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer")
+                        .HasColumnName("status");
+
+                    b.Property<string>("Target")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("target");
+
+                    b.Property<DateTime>("Timestamp")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("timestamp");
+
+                    b.Property<Guid?>("TransactionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("transaction_id");
+
+                    b.HasKey("EntryId")
+                        .HasName("pk_federation_audit_log");
+
+                    b.HasIndex("Timestamp")
+                        .HasDatabaseName("ix_federation_audit_log_timestamp");
+
+                    b.ToTable("federation_audit_log", "public");
+                });
+
+            modelBuilder.Entity("Media.DBContext.Models.FederationInvitation", b =>
+                {
+                    b.Property<Guid>("InvitationId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("invitation_id");
+
+                    b.Property<string>("CodeHash")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("code_hash");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTime>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("expires_at");
+
+                    b.Property<DateTime?>("UsedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("used_at");
+
+                    b.Property<string>("UsedBy")
+                        .HasColumnType("text")
+                        .HasColumnName("used_by");
+
+                    b.HasKey("InvitationId")
+                        .HasName("pk_federation_invitations");
+
+                    b.HasIndex("CodeHash")
+                        .IsUnique()
+                        .HasDatabaseName("ix_federation_invitations_code_hash");
+
+                    b.ToTable("federation_invitations", "public");
+                });
+
+            modelBuilder.Entity("Media.DBContext.Models.FederationJob", b =>
+                {
+                    b.Property<Guid>("JobId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("job_id");
+
+                    b.Property<int>("Attempts")
+                        .HasColumnType("integer")
+                        .HasColumnName("attempts");
+
+                    b.Property<Guid?>("AuditEntryId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("audit_entry_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<bool>("Failed")
+                        .HasColumnType("boolean")
+                        .HasColumnName("failed");
+
+                    b.Property<string>("LastError")
+                        .HasColumnType("text")
+                        .HasColumnName("last_error");
+
+                    b.Property<DateTime>("NextAttemptAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("next_attempt_at");
+
+                    b.Property<Guid>("PeerId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("peer_id");
+
+                    b.Property<Guid?>("RecordId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("record_id");
+
+                    b.Property<Guid?>("TransactionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("transaction_id");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("integer")
+                        .HasColumnName("type");
+
+                    b.HasKey("JobId")
+                        .HasName("pk_federation_jobs");
+
+                    b.HasIndex("NextAttemptAt")
+                        .HasDatabaseName("ix_federation_jobs_next_attempt_at");
+
+                    b.HasIndex("PeerId")
+                        .HasDatabaseName("ix_federation_jobs_peer_id");
+
+                    b.ToTable("federation_jobs", "public");
+                });
+
+            modelBuilder.Entity("Media.DBContext.Models.FederationPeer", b =>
+                {
+                    b.Property<Guid>("PeerId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("peer_id");
+
+                    b.Property<string>("BaseUrl")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("base_url");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("Endpoint")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("endpoint");
+
+                    b.Property<string>("Instance")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("instance");
+
+                    b.Property<string>("Jwks")
+                        .HasColumnType("text")
+                        .HasColumnName("jwks");
+
+                    b.Property<DateTime?>("JwksUpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("jwks_updated_at");
+
+                    b.Property<string>("JwksUri")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("jwks_uri");
+
+                    b.Property<Guid>("RequestId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("request_id");
+
+                    b.Property<int>("State")
+                        .HasColumnType("integer")
+                        .HasColumnName("state");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("PeerId")
+                        .HasName("pk_federation_peers");
+
+                    b.HasIndex("Instance")
+                        .IsUnique()
+                        .HasDatabaseName("ix_federation_peers_instance");
+
+                    b.ToTable("federation_peers", "public");
+                });
+
+            modelBuilder.Entity("Media.DBContext.Models.FederationRecordLink", b =>
+                {
+                    b.Property<Guid>("LinkId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("link_id");
+
+                    b.Property<int>("Direction")
+                        .HasColumnType("integer")
+                        .HasColumnName("direction");
+
+                    b.Property<Guid>("LocalRecordId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("local_record_id");
+
+                    b.Property<Guid>("PeerId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("peer_id");
+
+                    b.Property<Guid>("RemoteRecordId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("remote_record_id");
+
+                    b.Property<DateTime>("SyncedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("synced_at");
+
+                    b.Property<Guid>("TransactionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("transaction_id");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("LinkId")
+                        .HasName("pk_federation_record_links");
+
+                    b.HasIndex("LocalRecordId")
+                        .HasDatabaseName("ix_federation_record_links_local_record_id");
+
+                    b.HasIndex("PeerId", "LocalRecordId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_federation_record_links_peer_id_local_record_id");
+
+                    b.HasIndex("PeerId", "TransactionId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_federation_record_links_peer_id_transaction_id");
+
+                    b.ToTable("federation_record_links", "public");
+                });
+
+            modelBuilder.Entity("Media.DBContext.Models.FederationRule", b =>
+                {
+                    b.Property<Guid>("RuleId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("rule_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<int>("Direction")
+                        .HasColumnType("integer")
+                        .HasColumnName("direction");
+
+                    b.HasKey("RuleId")
+                        .HasName("pk_federation_rules");
+
+                    b.ToTable("federation_rules", "public");
                 });
 
             modelBuilder.Entity("Media.DBContext.Models.Genre", b =>
@@ -401,6 +778,91 @@ namespace Media.DBContext.Migrations
                     b.ToTable("settings", "public");
                 });
 
+            modelBuilder.Entity("AlbumFederationRule", b =>
+                {
+                    b.HasOne("Media.DBContext.Models.Album", null)
+                        .WithMany()
+                        .HasForeignKey("AlbumsAlbumId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_federation_rules_albums_albums_albums_album_id");
+
+                    b.HasOne("Media.DBContext.Models.FederationRule", null)
+                        .WithMany()
+                        .HasForeignKey("FederationRuleRuleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_federation_rules_albums_federation_rules_federation_rule_ru");
+                });
+
+            modelBuilder.Entity("ArtistFederationRule", b =>
+                {
+                    b.HasOne("Media.DBContext.Models.Artist", null)
+                        .WithMany()
+                        .HasForeignKey("ArtistsArtistId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_federation_rules_artists_artists_artists_artist_id");
+
+                    b.HasOne("Media.DBContext.Models.FederationRule", null)
+                        .WithMany()
+                        .HasForeignKey("FederationRuleRuleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_federation_rules_artists_federation_rules_federation_rule_r");
+                });
+
+            modelBuilder.Entity("FederationPeerFederationRule", b =>
+                {
+                    b.HasOne("Media.DBContext.Models.FederationPeer", null)
+                        .WithMany()
+                        .HasForeignKey("PeersPeerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_federation_rules_peers_federation_peers_peers_peer_id");
+
+                    b.HasOne("Media.DBContext.Models.FederationRule", null)
+                        .WithMany()
+                        .HasForeignKey("RulesRuleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_federation_rules_peers_federation_rules_rules_rule_id");
+                });
+
+            modelBuilder.Entity("FederationRuleGenre", b =>
+                {
+                    b.HasOne("Media.DBContext.Models.FederationRule", null)
+                        .WithMany()
+                        .HasForeignKey("FederationRuleRuleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_federation_rules_genres_federation_rules_federation_rule_ru");
+
+                    b.HasOne("Media.DBContext.Models.Genre", null)
+                        .WithMany()
+                        .HasForeignKey("GenresGenreId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_federation_rules_genres_genres_genres_genre_id");
+                });
+
+            modelBuilder.Entity("FederationRuleGroup", b =>
+                {
+                    b.HasOne("Media.DBContext.Models.FederationRule", null)
+                        .WithMany()
+                        .HasForeignKey("FederationRuleRuleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_federation_rules_groups_federation_rules_federation_rule_ru");
+
+                    b.HasOne("Media.DBContext.Models.Group", null)
+                        .WithMany()
+                        .HasForeignKey("GroupsGroupId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_federation_rules_groups_groups_groups_group_id");
+                });
+
             modelBuilder.Entity("GroupLivestream", b =>
                 {
                     b.HasOne("Media.DBContext.Models.Group", null)
@@ -433,6 +895,39 @@ namespace Media.DBContext.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_groups_records_records_records_record_id");
+                });
+
+            modelBuilder.Entity("Media.DBContext.Models.FederationJob", b =>
+                {
+                    b.HasOne("Media.DBContext.Models.FederationPeer", "Peer")
+                        .WithMany()
+                        .HasForeignKey("PeerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_federation_jobs_federation_peers_peer_id");
+
+                    b.Navigation("Peer");
+                });
+
+            modelBuilder.Entity("Media.DBContext.Models.FederationRecordLink", b =>
+                {
+                    b.HasOne("Media.DBContext.Models.Record", "LocalRecord")
+                        .WithMany()
+                        .HasForeignKey("LocalRecordId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_federation_record_links_records_local_record_id");
+
+                    b.HasOne("Media.DBContext.Models.FederationPeer", "Peer")
+                        .WithMany()
+                        .HasForeignKey("PeerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_federation_record_links_federation_peers_peer_id");
+
+                    b.Navigation("LocalRecord");
+
+                    b.Navigation("Peer");
                 });
 
             modelBuilder.Entity("Media.DBContext.Models.Record", b =>

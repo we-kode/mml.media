@@ -1,3 +1,4 @@
+using Media.Application.Models.Federation;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
@@ -10,11 +11,12 @@ public class ApiKeyValidator(RequestDelegate next, IConfiguration configuration)
   private const string APP_KEY_HEADER = "App-Key";
   private const string ADMIN_APP_KEY = "ADMIN_APP_KEY";
   private const string APP_KEY = "APP_KEY";
-  private const string MML_SYNC_HEADER = "MML-Sync-Peer";
+  // partner instances authenticate with signed assertions instead of an app key.
+  private static readonly PathString FederationPeerPath = new(FederationOptions.EndpointPath);
 
   public async Task Invoke(HttpContext context)
   {
-    if ((context.Request.Path.Value?.Contains("/snyc", System.StringComparison.InvariantCultureIgnoreCase) ?? false) && context.Request.Headers.TryGetValue(MML_SYNC_HEADER, out var _))
+    if (context.Request.Path.StartsWithSegments(FederationPeerPath, System.StringComparison.OrdinalIgnoreCase))
     {
       await next.Invoke(context);
       return;

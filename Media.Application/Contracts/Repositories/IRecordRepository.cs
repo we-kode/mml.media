@@ -108,11 +108,19 @@ public interface IRecordRepository
   Record? TryGetRecord(Guid id);
 
   /// <summary>
+  /// Returns the existing records with the given ids. Unknown ids are ignored.
+  /// </summary>
+  /// <param name="ids">Ids of the records.</param>
+  /// <returns>List of <see cref="Record"/>.</returns>
+  IList<Record> GetRecordsByIds(IEnumerable<Guid> ids);
+
+  /// <summary>
   /// Updates one record.
   /// </summary>
   /// <param name="record"><see cref="Record"/> to be updated.</param>
   /// <param name="references">Reference guids to be set.</param>
-  Task Update(Record record, (Guid? artistId, Guid? albumId, Guid? genreId, Guid? languageId) references);
+  /// <param name="fromOwner">Updates the metadata even if the record is owned by another instance. Only set it for changes sent by the owner.</param>
+  Task Update(Record record, (Guid? artistId, Guid? albumId, Guid? genreId, Guid? languageId) references, bool fromOwner = false);
 
   /// <summary>
   /// Remove the given record.
@@ -184,11 +192,24 @@ public interface IRecordRepository
   /// <param name="clients">Groups should be loaded.</param>
   /// <returns>Ids of assigned groups.</returns>
   Groups GetAssignedFolderGroups(IEnumerable<RecordFolder> folders);
-  
+
   /// <summary>
-  /// Checks if the record can be edit.
+  /// Returns the ids of all records owned by the given instance.
   /// </summary>
-  /// <param name="recordId">Teh id of record to check.</param>
-  /// <returns>Whether allowed to edit or not.</returns>
-  bool AllowedToEdit(Guid recordId);
+  /// <param name="ownerInstance">The name of the owning instance.</param>
+  /// <returns>Ids of the records.</returns>
+  IList<Guid> GetRecordIdsByOwner(string ownerInstance);
+
+  /// <summary>
+  /// Returns the id of the record with the given checksum or null if it does not exist.
+  /// </summary>
+  /// <param name="checksum">The checksum of the record.</param>
+  /// <returns>Id of the record or null.</returns>
+  Guid? GetRecordIdByChecksum(string checksum);
+
+  /// <summary>
+  /// Returns the names of all instances owning records, ordered by name.
+  /// </summary>
+  /// <returns>The instance names.</returns>
+  IList<string> GetOwnerInstances();
 }

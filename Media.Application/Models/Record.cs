@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Media.Application.Types;
+using System;
 using System.Collections.Generic;
 
 namespace Media.Application.Models;
@@ -82,6 +83,11 @@ public class Record
   /// List of groups the record is assigned to.
   /// </summary>
   public ICollection<Group> Groups { get; set; }
+
+  /// <summary>
+  /// The synchronization state of the record with partner instances. Only set in lists of records.
+  /// </summary>
+  public RecordSyncState SyncState { get; set; }
 
   /// <summary>
   /// Inits a record.

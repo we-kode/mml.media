@@ -1,16 +1,21 @@
 using Asp.Versioning;
 using Autofac;
+using Media.API.Authentication;
 using Media.API.Filters;
 using Media.API.HostedServices;
 using Media.API.Middleware;
 using Media.API.Services;
+using Media.API.Sockets;
 using Media.Application.Constants;
 using Media.Application.Consumers;
+using Media.Application.Contracts.Services;
+using Media.Application.Models.Federation;
 using Media.DBContext;
 using Media.Infrastructure.IO;
 using Media.Infrastructure.Repositories;
 using Media.Infrastructure.Services;
 using Messages.Events;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
@@ -35,6 +40,9 @@ public class Startup(IConfiguration configuration)
 
   private readonly Uri issuer = new(configuration["OpenId:Issuer"] ?? throw new ArgumentNullException("OpenId:Issuer"));
 
+  private readonly FederationOptions federationOptions = (configuration.GetSection("Federation").Get<FederationOptions>() ?? new FederationOptions())
+    .UseIssuerAsDefault(configuration["OpenId:Issuer"]);
+
   // This method gets called by the runtime. Use this method to add services to the container.
   public void ConfigureServices(IServiceCollection services)
   {
@@ -50,6 +58,29 @@ public class Startup(IConfiguration configuration)
     ConfigureAuth(services);
     services.AddHostedService<MigrateBitrates>();
     services.AddHostedService<MigrateCovers>();
+    ConfigureFederationServices(services);
+  }
+
+  private void ConfigureFederationServices(IServiceCollection services)
+  {
+    if (!federationOptions.IsEnabled)
+    {
+      Console.WriteLine("Federation is disabled, because neither 'Federation:PublicUrl' nor 'OpenId:Issuer' is configured.");
+    }
+
+    federationOptions.EnsureValidInstance(Env.INSTANCE);
+
+    services.AddSignalR();
+    services
+      .AddHttpClient<IFederationClient, FederationClient>(c =>
+      {
+        c.Timeout = TimeSpan.FromMinutes(30);
+        c.MaxResponseContentBufferSize = 1024 * 1024;
+      })
+      .ConfigurePrimaryHttpMessageHandler(_ => FederationHttpHandler.Create(
+        federationOptions,
+        acceptAnyCertificate: Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development"));
+    services.AddHostedService<FederationWorker>();
   }
 
   private static void ConfigureFolders()
@@ -150,7 +181,8 @@ public class Startup(IConfiguration configuration)
       c.DefaultRequestHeaders.Add("ClientSecret", Configuration["ApiClient:ClientSecret"]);
     });
 
-    services.AddAuthentication(OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme);
+    services.AddAuthentication(OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)
+      .AddScheme<AuthenticationSchemeOptions, FederationPeerAuthenticationHandler>(FederationPeerAuthenticationHandler.SchemeName, null);
 
     var httpClient = services
       .AddHttpClient(typeof(OpenIddictValidationSystemNetHttpOptions).Assembly.GetName().Name!)
@@ -170,16 +202,6 @@ public class Startup(IConfiguration configuration)
     }
 
     services.AddAuthorizationBuilder()
-      // TODO: Für später, default login policy schließt sync scope aus, damit die sync clients nur auf endpoint für sync nd nicht auf die apis zugreifen.
-      //.SetDefaultPolicy(new AuthorizationPolicyBuilder()
-      //  .AddAuthenticationSchemes(OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)
-      //  .RequireAuthenticatedUser()
-      //  .RequireAssertion(ctx =>
-      //  {
-      //    var scope = ctx.User.FindFirst(OpenIddictConstants.Claims.Scope)?.Value;
-      //    return scope == null || !scope.Contains("sync");
-      //  })
-      // .Build())
       .AddPolicy(Roles.Admin, policy =>
       {
         policy.AddAuthenticationSchemes(OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme);
@@ -192,13 +214,6 @@ public class Startup(IConfiguration configuration)
         policy.RequireAuthenticatedUser();
         policy.RequireClaim(OpenIddictConstants.Claims.Role, Roles.Client);
       });
-    // TODO: Policy für sync services
-    //.AddPolicy("SyncService", policy =>
-    //{
-    //  policy.AddAuthenticationSchemes(OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme);
-    //  policy.RequireAuthenticatedUser();
-    //  policy.RequireClaim(OpenIddictConstants.Claims.Scope, "sync");
-    //}); 
 
     services.AddOpenIddict()
     .AddValidation(options =>
@@ -240,6 +255,7 @@ public class Startup(IConfiguration configuration)
     app.UseEndpoints(endpoints =>
     {
       endpoints.MapControllers();
+      endpoints.MapHub<FederationHub>("/hub/federation");
     });
   }
 
@@ -272,6 +288,24 @@ public class Startup(IConfiguration configuration)
     cBuilder.RegisterType<RecordService>().AsImplementedInterfaces();
     cBuilder.RegisterType<IndexService>().AsImplementedInterfaces();
     cBuilder.RegisterType<CoverLoader>().AsImplementedInterfaces();
+    cBuilder.RegisterType<Mp3Inspector>().AsImplementedInterfaces().SingleInstance();
+
+    // federation
+    cBuilder.RegisterInstance(federationOptions);
+    cBuilder.RegisterType<FederationKeyStore>().UsingConstructor(typeof(FederationOptions)).AsImplementedInterfaces().SingleInstance();
+    cBuilder.RegisterType<FederationAssertionService>().AsImplementedInterfaces().SingleInstance();
+    cBuilder.RegisterType<FederationUploadStore>().AsImplementedInterfaces().SingleInstance();
+    cBuilder.RegisterType<SqlFederationPeerRepository>().AsImplementedInterfaces();
+    cBuilder.RegisterType<SqlFederationAuditRepository>().AsImplementedInterfaces();
+    cBuilder.RegisterType<SqlFederationJobRepository>().AsImplementedInterfaces();
+    cBuilder.RegisterType<SqlFederationInvitationRepository>().AsImplementedInterfaces();
+    cBuilder.RegisterType<SqlFederationRuleRepository>().AsImplementedInterfaces();
+    cBuilder.RegisterType<SqlFederationLinkRepository>().AsImplementedInterfaces();
+    cBuilder.RegisterType<FederationNotifier>().AsImplementedInterfaces();
+    cBuilder.RegisterType<FederationAuditLogger>().AsImplementedInterfaces();
+    cBuilder.RegisterType<FederationService>().AsImplementedInterfaces();
+    cBuilder.RegisterType<FederationSyncService>().AsImplementedInterfaces();
+    cBuilder.RegisterType<FederationJobProcessor>().AsImplementedInterfaces();
   }
 
   private static void MigrateDB(Func<ApplicationDBContext> factory)
@@ -281,5 +315,7 @@ public class Startup(IConfiguration configuration)
     {
       context.Database.Migrate();
     }
+
+    InstanceNameGuard.Ensure(new SqlSettingsRepository(factory), Env.INSTANCE);
   }
 }

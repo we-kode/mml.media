@@ -181,13 +181,12 @@ public class RecordController(
   }
 
   /// <summary>
-  /// Changes record.
+  /// Changes record. Records owned by another instance only get groups and lock changed.
   /// </summary>
   /// <param name="request">New Record to store.</param>
   /// <response code="404">If record does not exists.</response>
   [HttpPost()]
   [ProducesResponseType(StatusCodes.Status404NotFound)]
-  [ProducesResponseType(StatusCodes.Status403Forbidden)]
   [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme, Policy = Roles.Admin)]
   public async Task<IActionResult> Post([FromBody] RecordChangeRequest request)
   {
@@ -196,12 +195,7 @@ public class RecordController(
       return NotFound();
     }
 
-    if (!recordRepository.AllowedToEdit(request.RecordId))
-    {
-      return Forbid("Not owned by instance.");
-    }
-
-    await recordsService.Update(request.Map(), request.Cover).ConfigureAwait(false);
+    await recordsService.Update(request.Map(), request.Cover ?? []).ConfigureAwait(false);
     return Ok();
   }
 
