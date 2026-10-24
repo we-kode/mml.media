@@ -11,10 +11,14 @@ services:
     container_name: wekode.mml.media
     restart: always
     user: ${UID}:${GID}
+    environment:
+      INSTANCE: ${INSTANCE}
+      FEDERATION_KEY_SECRET: ${FEDERATION_KEY_SECRET:-}
     volumes:
       - ${VOL_CERTS}:/etc/ssl/certs:ro,z
       - ${VOL_RECORDS}:/records:Z
       - ${APPSETTINGS}:/configs/appsettings.json:ro,Z
+      - ${MEDIA_SECRETS_PATH:-./secrets}:/secrets
       - /etc/localtime:/etc/localtime:ro
     networks:
       - wekode.mml

@@ -167,7 +167,8 @@ public class SqlGenreRepository(Func<ApplicationDBContext> contextFactory) : IGe
       return;
     }
 
-    if (!context.Records.Any(rec => rec.Genre != null && rec.Genre.Name == genreName && rec.Genre.Bitrate == null))
+    if (!context.Records.Any(rec => rec.Genre != null && rec.Genre.Name == genreName && rec.Genre.Bitrate == null)
+      && !context.FederationRules.Any(rule => rule.Genres.Any(item => item.Name == genreName)))
     {
       context.Genres.RemoveRange(context.Genres.Where(rec => rec.Name == genreName && rec.Bitrate == null));
     }

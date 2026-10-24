@@ -97,7 +97,8 @@ public class SqlArtistRepository(Func<ApplicationDBContext> contextFactory) : IA
       return;
     }
 
-    if (!context.Records.Any(rec => rec.Artist != null && rec.Artist.Name == artistName))
+    if (!context.Records.Any(rec => rec.Artist != null && rec.Artist.Name == artistName)
+      && !context.FederationRules.Any(rule => rule.Artists.Any(item => item.Name == artistName)))
     {
       context.Artists.RemoveRange(context.Artists.Where(rec => rec.Name == artistName));
     }

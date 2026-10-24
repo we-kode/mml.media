@@ -20,7 +20,8 @@ public class IndexService(ISettingRepository settingsRepository,
   IRecordRepository recordRepository,
   IRecordService recordsService,
   IGenreRepository genresRepository,
-  ICoverLoader coverLoader) : IIndexService
+  ICoverLoader coverLoader,
+  IFederationSyncService federationSyncService) : IIndexService
 {
 
   private readonly Engine engine = new($"/usr/bin/ffmpeg");
@@ -112,6 +113,13 @@ public class IndexService(ISettingRepository settingsRepository,
 
     // save indexed file
     await recordsService.SaveMetaData(metadata, groups);
+
+    // send new record to partners with matching rules.
+    var recordId = recordRepository.GetRecordIdByChecksum(metadata.Checksum);
+    if (recordId.HasValue)
+    {
+      await federationSyncService.Synchronize([recordId.Value]);
+    }
   }
 
   /// <summary>

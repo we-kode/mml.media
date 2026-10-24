@@ -10,7 +10,7 @@ public static class CoverExtensions
   public static string ToFileName(this byte[] coverData)
   {
     var hash = System.Security.Cryptography.SHA256.HashData(coverData);
-    string fileName = System.Buffers.Text.Base64Url.EncodeToString(hash).Substring(0, 16);
+    string fileName = System.Buffers.Text.Base64Url.EncodeToString(hash)[..16];
     return $"{fileName}.jpg";
   }
 }

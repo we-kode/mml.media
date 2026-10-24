@@ -1,10 +1,12 @@
 using Asp.Versioning;
 using Media.API.Extensions;
+using Media.API.Services;
 using Media.Application.Contracts.Repositories;
 using Media.Application.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using OpenIddict.Validation.AspNetCore;
+using System.Threading.Tasks;
 
 namespace Media.API.Controllers;
 
@@ -12,7 +14,7 @@ namespace Media.API.Controllers;
 [ApiVersion(2.0)]
 [Route("api/v{version:apiVersion}/media/[controller]")]
 [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
-public class ArtistController(IArtistRepository artistsRepository) : ControllerBase
+public class ArtistController(IArtistRepository artistsRepository, IAuthorizationClient authClient) : ControllerBase
 {
   /// <summary>
   /// Loads a list of artists.
@@ -22,10 +24,10 @@ public class ArtistController(IArtistRepository artistsRepository) : ControllerB
   /// <param name="take">Size of chunk to be loaded</param>
   /// <returns><see cref="Artists"/></returns>
   [HttpGet("artists")]
-  public Artists GetArtists([FromQuery] string? filter, [FromQuery] int skip = Application.Constants.List.Skip, [FromQuery] int take = Application.Constants.List.Take)
+  public async Task<Artists> GetArtists([FromQuery] string? filter, [FromQuery] int skip = Application.Constants.List.Skip, [FromQuery] int take = Application.Constants.List.Take)
   {
     var isAdmin = HttpContext.IsAdmin();
-    var clientGroups = HttpContext.ClientGroups();
+    var clientGroups = await HttpContext.ClientGroups(authClient);
     return artistsRepository.List(filter, !isAdmin, clientGroups, skip, take);
   }
 
@@ -34,9 +36,9 @@ public class ArtistController(IArtistRepository artistsRepository) : ControllerB
   /// </summary>
   /// <returns><see cref="Artists"/></returns>
   [HttpGet("newestArtists")]
-  public Artists GetNewestArtists()
+  public async Task<Artists> GetNewestArtists()
   {
-    var clientGroups = HttpContext.ClientGroups();
+    var clientGroups = await HttpContext.ClientGroups(authClient);
     return artistsRepository.ListNewest(clientGroups);
   }
 
@@ -45,9 +47,9 @@ public class ArtistController(IArtistRepository artistsRepository) : ControllerB
   /// </summary>
   /// <returns><see cref="Artists"/></returns>
   [HttpGet("commonArtists")]
-  public Artists GetCommonArtists()
+  public async Task<Artists> GetCommonArtists()
   {
-    var clientGroups = HttpContext.ClientGroups();
+    var clientGroups = await HttpContext.ClientGroups(authClient);
     return artistsRepository.ListCommon(clientGroups);
   }
 }

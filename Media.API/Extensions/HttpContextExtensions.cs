@@ -1,8 +1,9 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Media.API.Services;
+using Microsoft.AspNetCore.Http;
 using OpenIddict.Abstractions;
 using System;
 using System.Collections.Generic;
-using System.Linq;
+using System.Threading.Tasks;
 using static OpenIddict.Abstractions.OpenIddictConstants;
 
 namespace Media.API.Extensions;
@@ -27,8 +28,19 @@ public static class HttpContextExtensions
   /// </summary>
   /// <param name="context"><see cref="HttpContext"/></param>
   /// <returns><see cref="IEnumerable{T}"/> of <see cref="Guid"/></returns>
-  public static IList<Guid> ClientGroups(this HttpContext context)
+  public static async Task<IList<Guid>> ClientGroups(this HttpContext context, IAuthorizationClient authorization)
   {
-    return context.User.GetClaims("ClientGroup").Select(g => Guid.Parse(g)).ToList();
+    if (context.IsAdmin())
+    {
+      return [];
+    }
+
+    var clientId = context.User.FindFirst("sub")?.Value;
+    if (string.IsNullOrEmpty(clientId))
+    {
+      return [];
+    }
+
+    return await authorization.GetGroups(clientId);
   }
 }

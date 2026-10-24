@@ -1,6 +1,7 @@
 ﻿using Asp.Versioning;
 using Media.API.Contracts;
 using Media.API.Extensions;
+using Media.API.Services;
 using Media.Application.Constants;
 using Media.Application.Contracts.Repositories;
 using Media.Application.Models;
@@ -21,7 +22,7 @@ namespace Media.API.Controllers;
 [ApiVersion(2.0)]
 [Route("api/v{version:apiVersion}/media/[controller]")]
 [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
-public class LivestreamController(ILivestreamRepository repository) : ControllerBase
+public class LivestreamController(ILivestreamRepository repository, IAuthorizationClient authClient) : ControllerBase
 {
 
   private readonly ILivestreamRepository repository = repository;
@@ -35,10 +36,10 @@ public class LivestreamController(ILivestreamRepository repository) : Controller
   /// <param name="take">Size of chunk to be loaded</param>
   /// <returns><see cref="Records"/></returns>
   [HttpPost("list")]
-  public Livestreams List([FromQuery] string? filter, [FromQuery] int skip = Application.Constants.List.Skip, [FromQuery] int take = Application.Constants.List.Take)
+  public async Task<Livestreams> List([FromQuery] string? filter, [FromQuery] int skip = Application.Constants.List.Skip, [FromQuery] int take = Application.Constants.List.Take)
   {
     var isAdmin = HttpContext.IsAdmin();
-    var clientGroups = HttpContext.ClientGroups();
+    var clientGroups = await HttpContext.ClientGroups(authClient);
     return repository.List(filter, !isAdmin, clientGroups, skip, take);
   }
 
@@ -141,7 +142,7 @@ public class LivestreamController(ILivestreamRepository repository) : Controller
     }
 
     var isAdmin = HttpContext.IsAdmin();
-    var clientGroups = HttpContext.ClientGroups();
+    var clientGroups = await HttpContext.ClientGroups(authClient);
     if (!isAdmin && !repository.IsInGroup(id, clientGroups))
     {
       return Forbid();
