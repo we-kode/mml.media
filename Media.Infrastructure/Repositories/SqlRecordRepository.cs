@@ -57,10 +57,15 @@ public class SqlRecordsRepository(Func<ApplicationDBContext> contextFactory, IGr
       .Where(j => j.RecordId.HasValue && ids.Contains(j.RecordId.Value) && (j.Failed || j.LastError != null))
       .Select(j => j.RecordId!.Value)
       .ToHashSet();
+    var pending = context.FederationJobs
+      .Where(j => j.RecordId.HasValue && ids.Contains(j.RecordId.Value) && !j.Failed && j.Type == (int)FederationJobType.PushRecord)
+      .Select(j => j.RecordId!.Value)
+      .ToHashSet();
 
     foreach (var record in records)
     {
       record.SyncState = problems.Contains(record.RecordId) ? RecordSyncState.Problem
+        : pending.Contains(record.RecordId) ? RecordSyncState.Pending
         : record.OwnerInstance != Env.INSTANCE ? RecordSyncState.Received
         : sent.Contains(record.RecordId) ? RecordSyncState.Sent
         : RecordSyncState.None;
@@ -132,14 +137,18 @@ public class SqlRecordsRepository(Func<ApplicationDBContext> contextFactory, IGr
 
     if (tagFilter.SyncStates.Count > 0)
     {
-      // the states are evaluated in the same order as in the list: problem, received, sent and none.
+      // the states are evaluated in the same order as in the list: problem, pending, received, sent and none.
       var instance = Env.INSTANCE;
       var states = tagFilter.SyncStates;
       var outgoing = (int)SyncDirection.Outgoing;
+      var push = (int)FederationJobType.PushRecord;
       query = query.Where(rec =>
         (states.Contains(RecordSyncState.Problem)
           && context.FederationJobs.Any(j => j.RecordId == rec.RecordId && (j.Failed || j.LastError != null)))
         || (!context.FederationJobs.Any(j => j.RecordId == rec.RecordId && (j.Failed || j.LastError != null))
+          && states.Contains(RecordSyncState.Pending)
+          && context.FederationJobs.Any(j => j.RecordId == rec.RecordId && !j.Failed && j.Type == push))
+        || (!context.FederationJobs.Any(j => j.RecordId == rec.RecordId && (j.Failed || j.LastError != null || j.Type == push))
           && ((states.Contains(RecordSyncState.Received) && rec.OwnerInstance != instance)
             || (states.Contains(RecordSyncState.Sent) && rec.OwnerInstance == instance
               && context.FederationRecordLinks.Any(l => l.LocalRecordId == rec.RecordId && l.Direction == outgoing))

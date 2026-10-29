@@ -1,5 +1,4 @@
 using Media.Application.Models.Federation;
-using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using System.Threading.Tasks;
@@ -43,14 +42,5 @@ public class ApiKeyValidator(RequestDelegate next, IConfiguration configuration)
   {
     context.Response.StatusCode = 401; //Unauthorized               
     await context.Response.WriteAsync(string.Empty);
-  }
-}
-
-public static class ApiKeyValidatorExtension
-{
-  public static IApplicationBuilder UseApiKeyValidation(this IApplicationBuilder app)
-  {
-    app.UseMiddleware<ApiKeyValidator>();
-    return app;
   }
 }

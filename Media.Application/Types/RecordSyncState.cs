@@ -24,4 +24,9 @@ public enum RecordSyncState
   /// An operation to synchronize the record with a partner failed.
   /// </summary>
   Problem = 3,
+
+  /// <summary>
+  /// The record is waiting to be sent or is being sent to at least one partner.
+  /// </summary>
+  Pending = 4,
 }

@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 
 namespace Media.Application.Models.Federation;
 
@@ -42,20 +41,4 @@ public class Invitation
   /// Date when the invitation expires.
   /// </summary>
   public DateTime ExpiresAt { get; set; }
-}
-
-/// <summary>
-/// A list of open invitations.
-/// </summary>
-public class Invitations
-{
-  /// <summary>
-  /// The total count of open invitations.
-  /// </summary>
-  public int TotalCount { get; set; }
-
-  /// <summary>
-  /// One chunk of loaded invitations.
-  /// </summary>
-  public IList<Invitation> Items { get; set; } = [];
 }

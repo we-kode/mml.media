@@ -13,4 +13,6 @@ public class FederationNotifier(IHubContext<FederationHub> hubContext) : IFedera
   public Task PeerChanged(Peer peer) => hubContext.Clients.All.SendAsync(FederationHub.StateChanged, peer);
 
   public Task AuditAdded(AuditEntry entry) => hubContext.Clients.All.SendAsync(FederationHub.AuditAdded, entry);
+
+  public Task Progress(TransferProgress progress) => hubContext.Clients.All.SendAsync(FederationHub.Progress, progress);
 }

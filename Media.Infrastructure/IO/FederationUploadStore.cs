@@ -1,6 +1,7 @@
 using Media.Application.Contracts.IO;
 using Media.Application.Models.Federation;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
@@ -163,11 +164,12 @@ public class FederationUploadStore(FederationOptions options) : IFederationUploa
     return Directory.Exists(folder) ? Directory.GetDirectories(folder).Length : 0;
   }
 
-  public void RemoveStale(DateTime before)
+  public IList<(Guid PeerId, Guid TransactionId)> RemoveStale(DateTime before)
   {
+    var removed = new List<(Guid PeerId, Guid TransactionId)>();
     if (!Directory.Exists(options.UploadPath))
     {
-      return;
+      return removed;
     }
 
     foreach (var folder in Directory.GetDirectories(options.UploadPath).SelectMany(Directory.GetDirectories))
@@ -176,8 +178,14 @@ public class FederationUploadStore(FederationOptions options) : IFederationUploa
       if (lastChange < before)
       {
         Directory.Delete(folder, recursive: true);
+        if (Guid.TryParse(Path.GetFileName(Path.GetDirectoryName(folder)), out var peerId) && Guid.TryParse(Path.GetFileName(folder), out var transactionId))
+        {
+          removed.Add((peerId, transactionId));
+        }
       }
     }
+
+    return removed;
   }
 
   private string SessionFolder(Guid peerId, Guid transactionId) => Path.Combine(options.UploadPath, peerId.ToString("N"), transactionId.ToString("N"));

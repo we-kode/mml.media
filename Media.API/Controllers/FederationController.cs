@@ -35,6 +35,7 @@ public class FederationController(
   IFederationAuditRepository auditRepository,
   IFederationInvitationRepository invitationRepository,
   IFederationRuleRepository ruleRepository,
+  IFederationSyncService syncService,
   IRecordRepository recordRepository) : ControllerBase
 {
   /// <summary>
@@ -133,6 +134,21 @@ public class FederationController(
   }
 
   /// <summary>
+  /// Changes the address of a partner, e.g. after it moved. The partner at the new address must have the same instance
+  /// name and publish at least one of its known public keys.
+  /// </summary>
+  /// <response code="400">If the new address is invalid or the partner there does not publish a known key.</response>
+  /// <response code="404">If the partner does not exist.</response>
+  /// <response code="502">If the partner is not reachable at the new address.</response>
+  [HttpPost("peers/{id:guid}/address")]
+  [ProducesResponseType(StatusCodes.Status502BadGateway)]
+  public async Task<ActionResult<Peer>> ChangeAddress(Guid id, [FromBody] PeerAddressRequest request)
+  {
+    var peer = peerRepository.Get(id) ?? throw new FederationException(FederationErrors.NotFound);
+    return await federationService.ChangeAddress(peer, request.BaseUrl).ConfigureAwait(false);
+  }
+
+  /// <summary>
   /// Loads the rules, oldest first.
   /// </summary>
   /// <param name="direction">Only rules of this direction are returned if set.</param>
@@ -207,7 +223,9 @@ public class FederationController(
   [HttpGet("audit")]
   public ActionResult<AuditEntries> ListAudit([FromQuery] AuditFilter query, [FromQuery] int skip = List.Skip, [FromQuery] int take = List.Take)
   {
-    return auditRepository.List(query.Map(), skip, take);
+    var entries = auditRepository.List(query.Map(), skip, take);
+    syncService.AddProgress(entries.Items);
+    return entries;
   }
 
   /// <summary>

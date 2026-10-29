@@ -107,9 +107,11 @@ public class SqlFederationPeerRepository(Func<ApplicationDBContext> contextFacto
       .ExecuteDeleteAsync().ConfigureAwait(false);
 
     // the operations are removed together with the partner, so their entries are not pending anymore.
+    // transfers received from the partner are removed as well.
+    var instance = context.FederationPeers.Where(p => p.PeerId == peerId).Select(p => p.Instance).FirstOrDefault();
     var entryIds = context.FederationJobs.Where(j => j.PeerId == peerId && j.AuditEntryId.HasValue).Select(j => j.AuditEntryId!.Value).ToList();
     await context.FederationAuditLog
-      .Where(e => entryIds.Contains(e.EntryId) && e.Status == (int)AuditStatus.Pending)
+      .Where(e => (entryIds.Contains(e.EntryId) || (e.Source == instance && e.Action == (int)AuditAction.RecordReceived)) && e.Status == (int)AuditStatus.Pending)
       .ExecuteUpdateAsync(s => s
         .SetProperty(e => e.Status, (int)AuditStatus.Skipped)
         .SetProperty(e => e.Message, "The partner was removed."))

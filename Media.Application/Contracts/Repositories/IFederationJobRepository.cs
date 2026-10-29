@@ -76,4 +76,41 @@ public interface IFederationJobRepository
   /// <param name="recordId">Id of the record.</param>
   /// <returns>The problems including the instance names of the partners.</returns>
   IList<RecordSyncProblem> ListProblems(Guid recordId);
+
+  /// <summary>
+  /// Removes the waiting, retried and failed transfers of the given records to the partner.
+  /// </summary>
+  /// <param name="peerId">Id of the partner.</param>
+  /// <param name="recordIds">Ids of the local records.</param>
+  /// <returns>The records and audit log entries of the removed transfers.</returns>
+  Task<IList<(Guid RecordId, Guid? AuditEntryId)>> CancelPush(Guid peerId, IEnumerable<Guid> recordIds);
+
+  /// <summary>
+  /// Executes all operations against the partner as soon as possible, including failed ones.
+  /// </summary>
+  /// <param name="peerId">Id of the partner.</param>
+  /// <param name="now">The current date.</param>
+  Task Reschedule(Guid peerId, DateTime now);
+
+  /// <summary>
+  /// Stores the progress of an operation sending a file.
+  /// </summary>
+  /// <param name="jobId">Id of the operation.</param>
+  /// <param name="transferred">The number of bytes the partner received.</param>
+  /// <param name="size">The size of the file in bytes.</param>
+  Task SetProgress(Guid jobId, long transferred, long size);
+
+  /// <summary>
+  /// Returns the progress of the operations sending a file which belong to the given audit log entries.
+  /// </summary>
+  /// <param name="entryIds">Ids of the audit log entries.</param>
+  /// <returns>The transferred bytes and the size by entry id.</returns>
+  IDictionary<Guid, (long Transferred, long Size)> Progress(IEnumerable<Guid> entryIds);
+
+  /// <summary>
+  /// Returns the transfers of a record to partners which are waiting or running.
+  /// </summary>
+  /// <param name="recordId">Id of the record.</param>
+  /// <returns>The transfers including the instance names of the partners.</returns>
+  IList<RecordSyncTransfer> ListTransfers(Guid recordId);
 }

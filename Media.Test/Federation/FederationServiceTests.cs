@@ -3,6 +3,7 @@ using Media.Application.Contracts.Repositories;
 using Media.Application.Contracts.Services;
 using Media.Application.Models.Federation;
 using Media.Application.Types;
+using Media.Infrastructure.IO;
 using Media.Infrastructure.Services;
 using Microsoft.Extensions.Caching.Memory;
 using Moq;
@@ -10,6 +11,8 @@ using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
+using System.Net.Http.Json;
+using System.Text.Json;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -28,20 +31,22 @@ public class FederationServiceTests
   private readonly Mock<IRecordRepository> records = new();
   private readonly Mock<IRecordService> recordService = new();
   private readonly Mock<IFederationUploadStore> uploadStore = new();
+  private readonly Mock<ISettingRepository> settings = new();
 
-  private FederationService CreateService() => new(
+  private FederationService CreateService(IFederationAssertionService? assertionService = null) => new(
     new FederationOptions { PublicUrl = "https://alpha.example" },
     peers.Object,
     jobs.Object,
     invitations.Object,
     client.Object,
-    assertions.Object,
+    assertionService ?? assertions.Object,
     keyStore.Object,
     audit.Object,
     notifier.Object,
     records.Object,
     recordService.Object,
     uploadStore.Object,
+    settings.Object,
     new MemoryCache(new MemoryCacheOptions()));
 
   private Peer AddPeer(PeerState state)
@@ -371,5 +376,188 @@ public class FederationServiceTests
     await CreateService().RotateKeys();
 
     jobs.Verify(j => j.Enqueue(linked.PeerId, FederationJobType.KeysChanged, null, null), Times.Once);
+  }
+
+  [Theory]
+  [InlineData("https://old.example", true)]
+  [InlineData("https://ALPHA.example", false)]
+  [InlineData("", false)]
+  public async Task AnnounceAddress_InformsPartnersOnlyWhenPublishedUrlChanged(string published, bool informed)
+  {
+    var linked = AddPeer(PeerState.Linked);
+    settings.Setup(s => s.Get("FederationPublishedUrl", string.Empty)).Returns(published);
+    peers.Setup(p => p.ListByState(PeerState.Requested, PeerState.ResponsePending, PeerState.Linked)).Returns([linked]);
+
+    await CreateService().AnnounceAddress();
+
+    jobs.Verify(j => j.Enqueue(linked.PeerId, FederationJobType.AddressChanged, null, null), informed ? Times.Once : Times.Never);
+    settings.Verify(s => s.Save("FederationPublishedUrl", "https://alpha.example"), published == "https://ALPHA.example" ? Times.Never : Times.Once);
+  }
+
+  private static FederationAssertionService CreateAssertions(string instance, out string jwks)
+  {
+    var store = new FederationKeyStore(new FederationOptions { PublicUrl = $"https://{instance}.example", KeysPath = TestEnvironment.CreateTempFolder() });
+    jwks = store.GetPublicJwks();
+    return new FederationAssertionService(store, new MemoryCache(new MemoryCacheOptions()));
+  }
+
+  // the server at the new address signs the nonce of the proof request with the given keys. Assertions are issued by
+  // the instance of the test environment, so the partner has its name.
+  private void PartnerMovesTo(string baseUrl, FederationAssertionService signer, string instance = TestEnvironment.Instance, bool otherNonce = false)
+  {
+    var endpoint = $"{baseUrl}{FederationOptions.EndpointPath}";
+    client.Setup(c => c.GetDiscovery(baseUrl)).ReturnsAsync(new FederationDiscovery(instance, FederationOptions.ProtocolVersion, endpoint, $"{endpoint}/jwks"));
+    client.Setup(c => c.GetJwks($"{endpoint}/jwks")).ReturnsAsync("new-jwks");
+    client
+      .Setup(c => c.Send(endpoint, TestEnvironment.Instance, HttpMethod.Post, "proof", It.IsAny<HttpContent?>(), null))
+      .ReturnsAsync((string _, string _, HttpMethod _, string _, HttpContent? content, IDictionary<string, object>? _) =>
+      {
+        var nonce = otherNonce ? "other" : JsonDocument.Parse(content!.ReadAsStringAsync().Result).RootElement.GetProperty("nonce").GetString()!;
+        var proof = signer.Create(TestEnvironment.Instance, new Dictionary<string, object> { ["nonce"] = nonce });
+        return new HttpResponseMessage(HttpStatusCode.OK) { Content = JsonContent.Create(new { assertion = proof }) };
+      });
+  }
+
+  private Peer AddPeerWithKeys(out FederationAssertionService partner)
+  {
+    var peer = AddPeer(PeerState.Linked);
+    partner = CreateAssertions("beta", out var jwks);
+    peer.Instance = TestEnvironment.Instance;
+    peer.Jwks = jwks;
+    return peer;
+  }
+
+  private FederationService CreateValidatingService() => CreateService(CreateAssertions("alpha", out _));
+
+  [Fact]
+  public async Task ChangeAddress_UpdatesPartnerWhichProvesItsKeyAndRetriesOperations()
+  {
+    var peer = AddPeerWithKeys(out var partner);
+    PartnerMovesTo("https://beta.new.example", partner);
+
+    var result = await CreateValidatingService().ChangeAddress(peer, "https://beta.new.example/");
+
+    Assert.Equal("https://beta.new.example", result.BaseUrl);
+    Assert.Equal($"https://beta.new.example{FederationOptions.EndpointPath}", result.Endpoint);
+    Assert.Equal("new-jwks", result.Jwks);
+    peers.Verify(p => p.Update(It.Is<Peer>(u => u.BaseUrl == "https://beta.new.example")), Times.Once);
+    jobs.Verify(j => j.Reschedule(peer.PeerId, It.IsAny<DateTime>()), Times.Once);
+    notifier.Verify(n => n.PeerChanged(peer), Times.Once);
+  }
+
+  [Theory]
+  [InlineData(false, false)]
+  [InlineData(true, true)]
+  public async Task ChangeAddress_RejectsServerWithCopiedKeysOrOtherNonce(bool genuineKeys, bool otherNonce)
+  {
+    var peer = AddPeerWithKeys(out var partner);
+    var signer = genuineKeys ? partner : CreateAssertions("beta", out _);
+    PartnerMovesTo("https://evil.example", signer, otherNonce: otherNonce);
+
+    var exception = await Assert.ThrowsAsync<FederationException>(() => CreateValidatingService().ChangeAddress(peer, "https://evil.example"));
+
+    Assert.Equal(FederationErrors.UnknownKeys, exception.Code);
+    peers.Verify(p => p.Update(It.IsAny<Peer>()), Times.Never);
+    jobs.Verify(j => j.Reschedule(It.IsAny<Guid>(), It.IsAny<DateTime>()), Times.Never);
+  }
+
+  [Theory]
+  [InlineData(HttpStatusCode.NotFound)]
+  [InlineData(HttpStatusCode.OK)]
+  public async Task ChangeAddress_RejectsPartnerWithoutValidProof(HttpStatusCode status)
+  {
+    var peer = AddPeerWithKeys(out var partner);
+    PartnerMovesTo("https://beta.new.example", partner);
+    client
+      .Setup(c => c.Send(It.IsAny<string>(), TestEnvironment.Instance, HttpMethod.Post, "proof", It.IsAny<HttpContent?>(), null))
+      .ReturnsAsync(() => new HttpResponseMessage(status) { Content = new StringContent("no json") });
+
+    var exception = await Assert.ThrowsAsync<FederationException>(() => CreateValidatingService().ChangeAddress(peer, "https://beta.new.example"));
+
+    Assert.Equal(FederationErrors.UnknownKeys, exception.Code);
+  }
+
+  [Fact]
+  public async Task ChangeAddress_RejectsOtherInstance()
+  {
+    var peer = AddPeerWithKeys(out var partner);
+    PartnerMovesTo("https://gamma.example", partner, instance: "gamma");
+
+    var exception = await Assert.ThrowsAsync<FederationException>(() => CreateValidatingService().ChangeAddress(peer, "https://gamma.example"));
+
+    Assert.Equal(FederationErrors.InvalidDiscovery, exception.Code);
+    client.Verify(c => c.Send(It.IsAny<string>(), It.IsAny<string>(), HttpMethod.Post, "proof", It.IsAny<HttpContent?>(), null), Times.Never);
+  }
+
+  [Fact]
+  public void CreateProof_SignsNonceForPartnerAndRejectsInvalidValues()
+  {
+    var peer = AddPeer(PeerState.Linked);
+    assertions.Setup(a => a.Create("beta", It.Is<IDictionary<string, object>>(c => (string)c["nonce"] == "abc"))).Returns("proof");
+
+    Assert.Equal("proof", CreateService().CreateProof(peer, "abc"));
+    Assert.Throws<FederationException>(() => CreateService().CreateProof(peer, ""));
+    Assert.Throws<FederationException>(() => CreateService().CreateProof(peer, new string('a', 129)));
+  }
+
+  [Theory]
+  [InlineData("http://beta.new.example")]
+  [InlineData("https://user@beta.new.example")]
+  public async Task ChangeAddress_RejectsInvalidUrl(string baseUrl)
+  {
+    var exception = await Assert.ThrowsAsync<FederationException>(() => CreateService().ChangeAddress(AddPeer(PeerState.Linked), baseUrl));
+
+    Assert.Equal(FederationErrors.InvalidUrl, exception.Code);
+    client.Verify(c => c.GetDiscovery(It.IsAny<string>()), Times.Never);
+  }
+
+  [Fact]
+  public async Task ChangeAddress_KeepsUnchangedAddress()
+  {
+    var peer = AddPeer(PeerState.Linked);
+
+    await CreateService().ChangeAddress(peer, "https://beta.example");
+
+    client.Verify(c => c.GetDiscovery(It.IsAny<string>()), Times.Never);
+    peers.Verify(p => p.Update(It.IsAny<Peer>()), Times.Never);
+  }
+
+  [Fact]
+  public async Task SendAddress_WaitsUntilPartnerReceivedApproval()
+  {
+    var peer = AddPeer(PeerState.ResponsePending);
+
+    var result = await CreateService().SendAddress(peer);
+
+    Assert.False(result.Done);
+    client.VerifyNoOtherCalls();
+  }
+
+  [Fact]
+  public async Task CompleteApproval_ExecutesWaitingOperations()
+  {
+    var peer = AddPeer(PeerState.ResponsePending);
+    PartnerResponds(HttpStatusCode.OK);
+
+    Assert.True(await CreateService().CompleteApproval(peer));
+
+    Assert.Equal(PeerState.Linked, peer.State);
+    jobs.Verify(j => j.Reschedule(peer.PeerId, It.IsAny<DateTime>()), Times.Once);
+  }
+
+  [Fact]
+  public async Task SendAddress_SendsPublicUrl()
+  {
+    var peer = AddPeer(PeerState.Linked);
+    string? body = null;
+    client
+      .Setup(c => c.Send(peer.Endpoint, peer.Instance, HttpMethod.Post, "address-changed", It.IsAny<HttpContent?>(), null))
+      .Callback((string _, string _, HttpMethod _, string _, HttpContent? content, IDictionary<string, object>? _) => body = content!.ReadAsStringAsync().Result)
+      .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.OK));
+
+    var result = await CreateService().SendAddress(peer);
+
+    Assert.Equal(FederationJobResult.Success, result);
+    Assert.Equal("{\"baseUrl\":\"https://alpha.example\"}", body);
   }
 }

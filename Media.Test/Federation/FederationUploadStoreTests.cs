@@ -118,13 +118,15 @@ public class FederationUploadStoreTests
   {
     await Start();
     var otherPeer = Guid.NewGuid();
-    await store.Start(otherPeer, Guid.NewGuid(), new SyncedRecord(), 10, Hash, null);
+    var otherTransaction = Guid.NewGuid();
+    await store.Start(otherPeer, otherTransaction, new SyncedRecord(), 10, Hash, null);
     Assert.Equal(1, store.Count(peerId));
 
-    store.RemoveStale(DateTime.UtcNow.AddMinutes(-1));
+    Assert.Empty(store.RemoveStale(DateTime.UtcNow.AddMinutes(-1)));
     Assert.Equal(1, store.Count(peerId));
 
-    store.RemoveStale(DateTime.UtcNow.AddMinutes(1));
+    var removed = store.RemoveStale(DateTime.UtcNow.AddMinutes(1));
+    Assert.Equivalent(new[] { (peerId, transactionId), (otherPeer, otherTransaction) }, removed);
     Assert.Equal(0, store.Count(peerId));
     Assert.Equal(0, store.Count(otherPeer));
   }

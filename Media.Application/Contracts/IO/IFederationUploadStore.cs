@@ -1,5 +1,6 @@
 using Media.Application.Models.Federation;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 
@@ -107,5 +108,6 @@ public interface IFederationUploadStore
   /// Removes transfers without progress since the given date.
   /// </summary>
   /// <param name="before">Transfers last changed before this date are removed.</param>
-  void RemoveStale(DateTime before);
+  /// <returns>The sending partners and transactions of the removed transfers.</returns>
+  IList<(Guid PeerId, Guid TransactionId)> RemoveStale(DateTime before);
 }

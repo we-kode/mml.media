@@ -49,4 +49,40 @@ public interface IFederationLinkRepository
   /// </summary>
   /// <param name="linkId">Id of the link.</param>
   Task Touch(Guid linkId);
+
+  /// <summary>
+  /// Removes the link of a local record to a partner.
+  /// </summary>
+  /// <param name="peerId">Id of the partner.</param>
+  /// <param name="localRecordId">Id of the local record.</param>
+  Task Delete(Guid peerId, Guid localRecordId);
+
+  /// <summary>
+  /// Returns the ids of the given records which are excluded from the synchronization with the partner.
+  /// </summary>
+  /// <param name="peerId">Id of the partner.</param>
+  /// <param name="localRecordIds">Ids of the local records.</param>
+  /// <returns>Ids of the excluded records.</returns>
+  ISet<Guid> ExcludedRecordIds(Guid peerId, IEnumerable<Guid> localRecordIds);
+
+  /// <summary>
+  /// Excludes the given records from the synchronization with the partner. Existing exclusions are kept.
+  /// </summary>
+  /// <param name="peerId">Id of the partner.</param>
+  /// <param name="localRecordIds">Ids of the local records.</param>
+  Task Exclude(Guid peerId, IEnumerable<Guid> localRecordIds);
+
+  /// <summary>
+  /// Removes the exclusions of the given records from the synchronization with the partner.
+  /// </summary>
+  /// <param name="peerId">Id of the partner.</param>
+  /// <param name="localRecordIds">Ids of the local records.</param>
+  Task Include(Guid peerId, IEnumerable<Guid> localRecordIds);
+
+  /// <summary>
+  /// Returns the partners a record is excluded from the synchronization with.
+  /// </summary>
+  /// <param name="localRecordId">Id of the local record.</param>
+  /// <returns>The exclusions including the instance names of the partners.</returns>
+  IList<RecordExclusion> ListExclusions(Guid localRecordId);
 }

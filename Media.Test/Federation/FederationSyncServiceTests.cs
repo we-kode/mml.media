@@ -29,6 +29,8 @@ public class FederationSyncServiceTests
   private readonly Mock<IFederationJobRepository> jobs = new();
   private readonly Mock<IFederationClient> client = new();
   private readonly Mock<IFederationAuditLogger> audit = new();
+  private readonly Mock<IFederationAuditRepository> auditRepository = new();
+  private readonly Mock<IFederationNotifier> notifier = new();
   private readonly Mock<IRecordRepository> records = new();
   private readonly Mock<IRecordService> recordService = new();
   private readonly Mock<ICoverLoader> covers = new();
@@ -49,6 +51,7 @@ public class FederationSyncServiceTests
     uploadStore = new FederationUploadStore(options);
     peers.Setup(p => p.ListByState(PeerState.Linked)).Returns([peer]);
     links.Setup(l => l.LinkedRecordIds(peer.PeerId, It.IsAny<IEnumerable<Guid>>())).Returns(new HashSet<Guid>());
+    links.Setup(l => l.ExcludedRecordIds(It.IsAny<Guid>(), It.IsAny<IEnumerable<Guid>>())).Returns(new HashSet<Guid>());
     rules.Setup(r => r.ListFor(peer.PeerId, It.IsAny<SyncDirection?>())).Returns(new Rules());
     jobs.Setup(j => j.PendingRecordIds(peer.PeerId, FederationJobType.PushRecord, It.IsAny<IEnumerable<Guid>>())).Returns(new HashSet<Guid>());
     records.Setup(r => r.GetRecordsByIds(It.IsAny<IEnumerable<Guid>>()))
@@ -63,7 +66,7 @@ public class FederationSyncServiceTests
   }
 
   private FederationSyncService CreateService() => new(
-    peers.Object, rules.Object, links.Object, jobs.Object, client.Object, audit.Object, records.Object, recordService.Object, covers.Object,
+    peers.Object, rules.Object, links.Object, jobs.Object, client.Object, audit.Object, auditRepository.Object, notifier.Object, records.Object, recordService.Object, covers.Object,
     uploadStore, audioInspector.Object, options);
 
   private Record AddRecord(string owner = TestEnvironment.Instance, string artist = "Artist A")
@@ -150,6 +153,107 @@ public class FederationSyncServiceTests
     var result = await CreateService().Synchronize([record.RecordId]);
 
     Assert.Equal(new SyncResult(0, 1), result);
+  }
+
+  [Fact]
+  public async Task Synchronize_SkipsExcludedRecordsUnlessIncluded()
+  {
+    OutgoingRules(new Rule());
+    var excluded = AddRecord();
+    links.Setup(l => l.ExcludedRecordIds(peer.PeerId, It.IsAny<IEnumerable<Guid>>())).Returns(new HashSet<Guid> { excluded.RecordId });
+
+    Assert.Equal(new SyncResult(0, 1), await CreateService().Synchronize([excluded.RecordId]));
+    links.Verify(l => l.Include(It.IsAny<Guid>(), It.IsAny<IEnumerable<Guid>>()), Times.Never);
+
+    Assert.Equal(new SyncResult(1, 0), await CreateService().Synchronize([excluded.RecordId], includeExcluded: true));
+    links.Verify(l => l.Include(peer.PeerId, It.Is<IEnumerable<Guid>>(ids => ids.Single() == excluded.RecordId)), Times.Once);
+    VerifyQueued(excluded.RecordId);
+  }
+
+  [Fact]
+  public async Task Synchronize_SendsOnlyToSelectedPartners()
+  {
+    var other = new Peer { PeerId = Guid.NewGuid(), Instance = "gamma", State = PeerState.Linked };
+    peers.Setup(p => p.ListByState(PeerState.Linked)).Returns([peer, other]);
+    OutgoingRules(new Rule());
+    var record = AddRecord();
+
+    await CreateService().Synchronize([record.RecordId], [peer.PeerId], includeExcluded: true);
+
+    VerifyQueued(record.RecordId);
+    links.Verify(l => l.Include(other.PeerId, It.IsAny<IEnumerable<Guid>>()), Times.Never);
+    rules.Verify(r => r.ListFor(other.PeerId, It.IsAny<SyncDirection?>()), Times.Never);
+  }
+
+  [Fact]
+  public async Task Synchronize_RejectsPartnerWhichIsNotLinked()
+  {
+    var exception = await Assert.ThrowsAsync<FederationException>(() => CreateService().Synchronize([AddRecord().RecordId], [Guid.NewGuid()]));
+
+    Assert.Equal(FederationErrors.InvalidPeer, exception.Code);
+  }
+
+  [Fact]
+  public async Task Revoke_ExcludesOwnRecordsCancelsTransfersAndQueuesRemovals()
+  {
+    var linked = AddRecord();
+    var transferring = AddRecord();
+    var notSent = AddRecord();
+    var foreign = AddRecord(owner: "gamma");
+    var cancelledEntry = Guid.NewGuid();
+    links.Setup(l => l.LinkedRecordIds(peer.PeerId, It.IsAny<IEnumerable<Guid>>())).Returns(new HashSet<Guid> { linked.RecordId });
+    jobs.Setup(j => j.CancelPush(peer.PeerId, It.IsAny<IEnumerable<Guid>>())).ReturnsAsync([(transferring.RecordId, cancelledEntry)]);
+    jobs.Setup(j => j.PendingRecordIds(peer.PeerId, FederationJobType.RevokeRecord, It.IsAny<IEnumerable<Guid>>())).Returns(new HashSet<Guid>());
+
+    var result = await CreateService().Revoke([linked.RecordId, transferring.RecordId, notSent.RecordId, foreign.RecordId]);
+
+    Assert.Equal(new SyncResult(2, 2), result);
+    links.Verify(l => l.Exclude(peer.PeerId, It.Is<IEnumerable<Guid>>(ids =>
+      ids.Order().SequenceEqual(new[] { linked.RecordId, transferring.RecordId, notSent.RecordId }.Order()))), Times.Once);
+    audit.Verify(a => a.Resolve(cancelledEntry, It.IsAny<string>()), Times.Once);
+    jobs.Verify(j => j.EnqueueRange(It.Is<IEnumerable<FederationJob>>(queued =>
+      queued.Count() == 2
+      && queued.All(job => job.PeerId == peer.PeerId && job.Type == FederationJobType.RevokeRecord)
+      && queued.Any(job => job.RecordId == linked.RecordId)
+      && queued.Any(job => job.RecordId == transferring.RecordId))), Times.Once);
+  }
+
+  [Fact]
+  public async Task Revoke_DoesNothingForForeignRecords()
+  {
+    var result = await CreateService().Revoke([AddRecord(owner: "gamma").RecordId]);
+
+    Assert.Equal(new SyncResult(0, 1), result);
+    links.Verify(l => l.Exclude(It.IsAny<Guid>(), It.IsAny<IEnumerable<Guid>>()), Times.Never);
+  }
+
+  [Theory]
+  [InlineData(HttpStatusCode.OK, true)]
+  [InlineData(HttpStatusCode.NotFound, true)]
+  [InlineData(HttpStatusCode.ServiceUnavailable, false)]
+  public async Task Execute_RevokeRemovesRecordOnPartnerAndLink(HttpStatusCode status, bool removed)
+  {
+    var record = AddRecord();
+    var link = new RecordLink { PeerId = peer.PeerId, LocalRecordId = record.RecordId, TransactionId = Guid.NewGuid(), Direction = SyncDirection.Outgoing };
+    links.Setup(l => l.GetByRecord(peer.PeerId, record.RecordId)).Returns(link);
+    client
+      .Setup(c => c.Send(peer.Endpoint, peer.Instance, HttpMethod.Delete, $"records/{link.TransactionId}", null, null))
+      .ReturnsAsync(new HttpResponseMessage(status));
+
+    var result = await CreateService().Execute(new FederationJob { Type = FederationJobType.RevokeRecord, RecordId = record.RecordId, PeerId = peer.PeerId }, peer);
+
+    Assert.Equal(removed, result == FederationJobResult.Success);
+    links.Verify(l => l.Delete(peer.PeerId, record.RecordId), removed ? Times.Once : Times.Never);
+    recordService.Verify(r => r.DeleteRecord(It.IsAny<Guid>(), It.IsAny<bool>()), Times.Never);
+  }
+
+  [Fact]
+  public async Task Execute_RevokeOfRecordWithoutLinkIsDone()
+  {
+    var result = await CreateService().Execute(new FederationJob { Type = FederationJobType.RevokeRecord, RecordId = Guid.NewGuid(), PeerId = peer.PeerId }, peer);
+
+    Assert.Equal(FederationJobResult.Success, result);
+    client.VerifyNoOtherCalls();
   }
 
   private static readonly string Sha256 = new('a', 64);
@@ -282,6 +386,93 @@ public class FederationSyncServiceTests
     recordService.Verify(r => r.SaveMetaData(It.IsAny<RecordMetaData>(), It.IsAny<List<Guid>>()), Times.Never);
   }
 
+  [Fact]
+  public async Task StartReceive_LogsPendingEntryOnceAndReportsProgress()
+  {
+    var transactionId = Guid.NewGuid();
+    var entryId = Guid.NewGuid();
+    await Start(Metadata(new string('d', 40)), transactionId);
+    auditRepository.Setup(a => a.FindPending(AuditAction.RecordReceived, peer.Instance, transactionId)).Returns(entryId);
+
+    await Start(Metadata(new string('d', 40)), transactionId);
+    await CreateService().AppendChunk(peer, transactionId, 0, new MemoryStream(new byte[40]));
+
+    audit.Verify(a => a.Log(AuditAction.RecordReceived, AuditStatus.Pending, peer.Instance, TestEnvironment.Instance, transactionId,
+      null, It.IsAny<string?>(), null), Times.Once);
+    notifier.Verify(n => n.Progress(new TransferProgress(entryId, null, peer.Instance, SyncDirection.Incoming, 40, 100)), Times.Once);
+  }
+
+  [Fact]
+  public async Task AppendChunk_ReportsNoProgressForRejectedChunk()
+  {
+    var transactionId = Guid.NewGuid();
+    await Start(Metadata(new string('d', 40)), transactionId);
+    notifier.Invocations.Clear();
+
+    await CreateService().AppendChunk(peer, transactionId, 10, new MemoryStream(new byte[40]));
+
+    notifier.Verify(n => n.Progress(It.IsAny<TransferProgress>()), Times.Never);
+  }
+
+  [Fact]
+  public async Task CompleteReceive_MarksPendingEntryOfFileWhichIsNoMp3AsFailed()
+  {
+    var transactionId = Guid.NewGuid();
+    var entryId = Guid.NewGuid();
+    var data = RandomNumberGenerator.GetBytes(100);
+    await Start(Metadata(new string('f', 40)), transactionId, sha256: Convert.ToHexString(SHA256.HashData(data)));
+    await CreateService().AppendChunk(peer, transactionId, 0, new MemoryStream(data));
+    auditRepository.Setup(a => a.FindPending(AuditAction.RecordReceived, peer.Instance, transactionId)).Returns(entryId);
+
+    await Assert.ThrowsAsync<FederationException>(() => CreateService().CompleteReceive(peer, transactionId));
+
+    audit.Verify(a => a.Log(AuditAction.RecordReceived, AuditStatus.Failed, peer.Instance, TestEnvironment.Instance, transactionId,
+      null, It.IsAny<string?>(), entryId), Times.Once);
+  }
+
+  [Fact]
+  public async Task AddProgress_CompletesRunningTransfersInBothDirections()
+  {
+    var transactionId = Guid.NewGuid();
+    await Start(Metadata(new string('d', 40)), transactionId);
+    await CreateService().AppendChunk(peer, transactionId, 0, new MemoryStream(new byte[40]));
+    peers.Setup(p => p.GetByInstance(peer.Instance)).Returns(peer);
+    var sent = new AuditEntry { EntryId = Guid.NewGuid(), Direction = SyncDirection.Outgoing, Action = AuditAction.RecordPushed, Status = AuditStatus.Pending };
+    var received = new AuditEntry
+    {
+      EntryId = Guid.NewGuid(),
+      Direction = SyncDirection.Incoming,
+      Action = AuditAction.RecordReceived,
+      Status = AuditStatus.Pending,
+      Instance = peer.Instance,
+      TransactionId = transactionId,
+    };
+    var finished = new AuditEntry { EntryId = Guid.NewGuid(), Direction = SyncDirection.Outgoing, Action = AuditAction.RecordPushed, Status = AuditStatus.Success };
+    jobs.Setup(j => j.Progress(It.IsAny<IEnumerable<Guid>>())).Returns(new Dictionary<Guid, (long, long)> { [sent.EntryId] = (5, 50) });
+
+    CreateService().AddProgress([sent, received, finished]);
+
+    Assert.Equal((5L, 50L), (sent.Transferred, sent.Size));
+    Assert.Equal((40L, 100L), (received.Transferred, received.Size));
+    Assert.Null(finished.Transferred);
+  }
+
+  [Fact]
+  public async Task DiscardStale_MarksPendingEntryOfRemovedTransferAsFailed()
+  {
+    var transactionId = Guid.NewGuid();
+    var entryId = Guid.NewGuid();
+    await Start(Metadata(new string('d', 40)), transactionId);
+    peers.Setup(p => p.Get(peer.PeerId)).Returns(peer);
+    auditRepository.Setup(a => a.FindPending(AuditAction.RecordReceived, peer.Instance, transactionId)).Returns(entryId);
+
+    await CreateService().DiscardStale(DateTime.UtcNow.AddMinutes(1));
+
+    Assert.Null(uploadStore.Get(peer.PeerId, transactionId));
+    audit.Verify(a => a.Log(AuditAction.RecordReceived, AuditStatus.Failed, peer.Instance, TestEnvironment.Instance, transactionId,
+      null, It.IsAny<string?>(), entryId), Times.Once);
+  }
+
   private (Record Record, byte[] Data) AddRecordWithFile(int size)
   {
     var record = AddRecord();
@@ -349,6 +540,22 @@ public class FederationSyncServiceTests
     Assert.Equal(FederationJobResult.Success, result);
     Assert.Equal([0L, 1_048_576L, 2_097_152L], offsets);
     links.Verify(l => l.Create(It.Is<RecordLink>(link => link.TransactionId == transactionId && link.Direction == SyncDirection.Outgoing)), Times.Once);
+  }
+
+  [Fact]
+  public async Task Execute_StoresAndReportsProgressAfterEveryChunk()
+  {
+    var (record, data) = AddRecordWithFile(2_500_000);
+    SimulatePartner(data, 0);
+    var job = new FederationJob { JobId = Guid.NewGuid(), Type = FederationJobType.PushRecord, RecordId = record.RecordId, TransactionId = Guid.NewGuid(), PeerId = peer.PeerId, AuditEntryId = Guid.NewGuid() };
+
+    await CreateService().Execute(job, peer);
+
+    foreach (var offset in new[] { 0L, 1_048_576L, 2_097_152L, 2_500_000L })
+    {
+      jobs.Verify(j => j.SetProgress(job.JobId, offset, 2_500_000), Times.Once);
+      notifier.Verify(n => n.Progress(new TransferProgress(job.AuditEntryId, record.RecordId, peer.Instance, SyncDirection.Outgoing, offset, 2_500_000)), Times.Once);
+    }
   }
 
   [Fact]

@@ -16,7 +16,7 @@ internal class FederationWorker(
   IFederationService federationService,
   IFederationJobProcessor jobProcessor,
   IFederationPeerRepository peerRepository,
-  IFederationUploadStore uploadStore,
+  IFederationSyncService syncService,
   IFederationAuditRepository auditRepository,
   ISettingRepository settingRepository,
   ILogger<FederationWorker> logger) : BackgroundService
@@ -57,7 +57,8 @@ internal class FederationWorker(
   private async Task Maintain(DateTime now)
   {
     await federationService.RotateKeys().ConfigureAwait(false);
-    uploadStore.RemoveStale(now.AddDays(-options.UploadRetentionDays));
+    await federationService.AnnounceAddress().ConfigureAwait(false);
+    await syncService.DiscardStale(now.AddDays(-options.UploadRetentionDays)).ConfigureAwait(false);
 
     var retentionDays = AuditRetention.Days(settingRepository.Get(AuditRetention.SettingKey, string.Empty));
     if (retentionDays > 0)

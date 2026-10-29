@@ -1,5 +1,3 @@
-using Media.Application.Types;
-using System;
 using System.Collections.Generic;
 
 namespace Media.Application.Models.Federation;
@@ -18,35 +16,14 @@ public class RecordSyncInfo
   /// The operations of the record which failed or are retried after an error.
   /// </summary>
   public IList<RecordSyncProblem> Problems { get; set; } = [];
-}
-
-/// <summary>
-/// A failed operation to synchronize a record with a partner.
-/// </summary>
-public class RecordSyncProblem
-{
-  /// <summary>
-  /// The instance name of the partner.
-  /// </summary>
-  public string Instance { get; set; } = string.Empty;
 
   /// <summary>
-  /// The failed operation.
+  /// The transfers of the record to partners which are waiting or running.
   /// </summary>
-  public FederationJobType Type { get; set; }
+  public IList<RecordSyncTransfer> Transfers { get; set; } = [];
 
   /// <summary>
-  /// The last error message.
+  /// The partners the synchronization of the record was revoked for.
   /// </summary>
-  public string? Error { get; set; }
-
-  /// <summary>
-  /// Indicates whether the operation failed finally. Otherwise it is retried.
-  /// </summary>
-  public bool Failed { get; set; }
-
-  /// <summary>
-  /// Date of the next attempt, if the operation is retried.
-  /// </summary>
-  public DateTime? NextAttemptAt { get; set; }
+  public IList<RecordExclusion> Exclusions { get; set; } = [];
 }

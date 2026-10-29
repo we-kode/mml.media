@@ -25,4 +25,10 @@ public interface IFederationNotifier
   /// </summary>
   /// <param name="entry">The new entry.</param>
   Task AuditAdded(AuditEntry entry);
+
+  /// <summary>
+  /// Informs about the progress of a transfer of a record.
+  /// </summary>
+  /// <param name="progress">The current progress.</param>
+  Task Progress(TransferProgress progress);
 }
