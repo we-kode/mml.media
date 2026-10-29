@@ -20,6 +20,8 @@ public static class FederationJobExtensions
       FederationJobType.KeysChanged => AuditAction.KeysChanged,
       FederationJobType.PushRecord => AuditAction.RecordPushed,
       FederationJobType.UpdateRecord => AuditAction.RecordUpdated,
+      FederationJobType.RevokeRecord => AuditAction.RecordRevoked,
+      FederationJobType.AddressChanged => AuditAction.AddressChanged,
       _ => AuditAction.RecordDeleted,
     };
   }

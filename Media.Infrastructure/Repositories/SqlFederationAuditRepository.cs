@@ -78,6 +78,15 @@ public class SqlFederationAuditRepository(Func<ApplicationDBContext> contextFact
     return Map(dbEntry);
   }
 
+  public Guid? FindPending(AuditAction action, string source, Guid transactionId)
+  {
+    using var context = contextFactory();
+    return context.FederationAuditLog
+      .Where(e => e.Action == (int)action && e.Source == source && e.TransactionId == transactionId && e.Status == (int)AuditStatus.Pending)
+      .Select(e => (Guid?)e.EntryId)
+      .FirstOrDefault();
+  }
+
   public async Task Delete(IEnumerable<Guid> entryIds)
   {
     using var context = contextFactory();

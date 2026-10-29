@@ -41,6 +41,15 @@ public interface IFederationAuditRepository
   Task<(AuditEntry Entry, AuditStatus Previous)?> Update(Guid entryId, AuditStatus status, string? message, bool onlyPending = false);
 
   /// <summary>
+  /// Returns the id of the pending entry of an action of a transaction or null if none exists.
+  /// </summary>
+  /// <param name="action">The action.</param>
+  /// <param name="source">The instance the action originated from.</param>
+  /// <param name="transactionId">The id of the transaction.</param>
+  /// <returns>The id of the entry or null.</returns>
+  Guid? FindPending(AuditAction action, string source, Guid transactionId);
+
+  /// <summary>
   /// Removes the given entries.
   /// </summary>
   /// <param name="entryIds">Ids of the entries.</param>

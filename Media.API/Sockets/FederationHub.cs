@@ -25,4 +25,9 @@ public class FederationHub : Hub
   /// Event sent when a new audit log entry is written.
   /// </summary>
   public const string AuditAdded = "FEDERATION_AUDIT_ADDED";
+
+  /// <summary>
+  /// Event sent when a part of a record was transferred.
+  /// </summary>
+  public const string Progress = "FEDERATION_PROGRESS";
 }

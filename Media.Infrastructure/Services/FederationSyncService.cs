@@ -31,6 +31,8 @@ public partial class FederationSyncService(
   IFederationJobRepository jobRepository,
   IFederationClient client,
   IFederationAuditLogger audit,
+  IFederationAuditRepository auditRepository,
+  IFederationNotifier notifier,
   IRecordRepository recordRepository,
   IRecordService recordService,
   ICoverLoader coverLoader,
@@ -42,10 +44,10 @@ public partial class FederationSyncService(
   private const long MEGABYTE = 1024 * 1024;
   private const int MAX_RESTARTS = 1;
 
-  public async Task<SyncResult> Synchronize(IEnumerable<Guid> recordIds)
+  public async Task<SyncResult> Synchronize(IEnumerable<Guid> recordIds, IReadOnlyCollection<Guid>? peerIds = null, bool includeExcluded = false)
   {
     var ids = recordIds.Distinct().ToList();
-    var peers = peerRepository.ListByState(PeerState.Linked);
+    var peers = LinkedPeers(peerIds);
     var ownRecords = peers.Count == 0
       ? []
       : recordRepository.GetRecordsByIds(ids).Where(r => r.OwnerInstance == Env.INSTANCE).ToList();
@@ -54,6 +56,11 @@ public partial class FederationSyncService(
     var jobs = new List<FederationJob>();
     foreach (var peer in peers)
     {
+      if (includeExcluded && ownIds.Count > 0)
+      {
+        await linkRepository.Include(peer.PeerId, ownIds).ConfigureAwait(false);
+      }
+
       var rules = ruleRepository.ListFor(peer.PeerId, SyncDirection.Outgoing).Items;
       if (rules.Count == 0)
       {
@@ -62,8 +69,9 @@ public partial class FederationSyncService(
 
       var linked = linkRepository.LinkedRecordIds(peer.PeerId, ownIds);
       var pending = jobRepository.PendingRecordIds(peer.PeerId, FederationJobType.PushRecord, ownIds);
+      var excluded = includeExcluded ? new HashSet<Guid>() : linkRepository.ExcludedRecordIds(peer.PeerId, ownIds);
       jobs.AddRange(ownRecords
-        .Where(r => !linked.Contains(r.RecordId) && !pending.Contains(r.RecordId))
+        .Where(r => !linked.Contains(r.RecordId) && !pending.Contains(r.RecordId) && !excluded.Contains(r.RecordId))
         .Where(r => rules.MostSpecific(r.Artist, r.Album, r.Genre, r.Groups.Select(g => g.Id)) != null)
         .Select(r => new FederationJob
         {
@@ -83,6 +91,61 @@ public partial class FederationSyncService(
     return new SyncResult(jobs.Count, ids.Count - queuedRecords);
   }
 
+  public async Task<SyncResult> Revoke(IEnumerable<Guid> recordIds, IReadOnlyCollection<Guid>? peerIds = null)
+  {
+    var ids = recordIds.Distinct().ToList();
+    var peers = LinkedPeers(peerIds);
+    var ownIds = peers.Count == 0
+      ? []
+      : recordRepository.GetRecordsByIds(ids).Where(r => r.OwnerInstance == Env.INSTANCE).Select(r => r.RecordId).ToList();
+
+    var jobs = new List<FederationJob>();
+    foreach (var peer in ownIds.Count == 0 ? [] : peers)
+    {
+      await linkRepository.Exclude(peer.PeerId, ownIds).ConfigureAwait(false);
+      var cancelled = await jobRepository.CancelPush(peer.PeerId, ownIds).ConfigureAwait(false);
+      foreach (var (_, entryId) in cancelled)
+      {
+        await audit.Resolve(entryId, "The synchronization was revoked.").ConfigureAwait(false);
+      }
+
+      // a cancelled transfer may finish meanwhile, so its record is removed on the partner as well.
+      var pending = jobRepository.PendingRecordIds(peer.PeerId, FederationJobType.RevokeRecord, ownIds);
+      jobs.AddRange(linkRepository.LinkedRecordIds(peer.PeerId, ownIds)
+        .Union(cancelled.Select(c => c.RecordId))
+        .Where(id => !pending.Contains(id))
+        .Select(id => new FederationJob
+        {
+          PeerId = peer.PeerId,
+          Type = FederationJobType.RevokeRecord,
+          RecordId = id,
+        }));
+    }
+
+    if (jobs.Count > 0)
+    {
+      await audit.Announce(await jobRepository.EnqueueRange(jobs).ConfigureAwait(false)).ConfigureAwait(false);
+    }
+
+    return new SyncResult(jobs.Count, ids.Count - jobs.Select(j => j.RecordId).Distinct().Count());
+  }
+
+  private IList<Peer> LinkedPeers(IReadOnlyCollection<Guid>? peerIds)
+  {
+    var peers = peerRepository.ListByState(PeerState.Linked);
+    if (peerIds == null)
+    {
+      return peers;
+    }
+
+    if (peerIds.Any(id => peers.All(p => p.PeerId != id)))
+    {
+      throw new FederationException(FederationErrors.InvalidPeer);
+    }
+
+    return [.. peers.Where(p => peerIds.Contains(p.PeerId))];
+  }
+
   public async Task<FederationJobResult> Execute(FederationJob job, Peer peer)
   {
     if (peer.State != PeerState.Linked)
@@ -95,6 +158,7 @@ public partial class FederationSyncService(
       FederationJobType.PushRecord => await Push(job, peer).ConfigureAwait(false),
       FederationJobType.UpdateRecord => await SendUpdate(job, peer).ConfigureAwait(false),
       FederationJobType.DeleteRecord => await SendDeletion(job, peer).ConfigureAwait(false),
+      FederationJobType.RevokeRecord => await SendRevocation(job, peer).ConfigureAwait(false),
       _ => FederationJobResult.Failed($"Unsupported operation {job.Type}."),
     };
   }
@@ -124,12 +188,68 @@ public partial class FederationSyncService(
     }
 
     var session = await uploadStore.Start(peer.PeerId, transactionId, record, size, sha256, cover).ConfigureAwait(false);
+
+    // the audit log shows the transfer as pending until it is finished.
+    if (auditRepository.FindPending(AuditAction.RecordReceived, peer.Instance, transactionId) == null)
+    {
+      await audit.Log(AuditAction.RecordReceived, AuditStatus.Pending, peer.Instance, Env.INSTANCE, transactionId,
+        message: $"Record '{record.Title}' is being received.").ConfigureAwait(false);
+    }
+
+    await ReportReceived(peer, transactionId, session.Offset, size).ConfigureAwait(false);
     return ReceiveResult.Pending(session.Offset);
   }
 
   public async Task<(bool Accepted, long Offset)> AppendChunk(Peer peer, Guid transactionId, long offset, Stream data)
   {
-    return await uploadStore.Append(peer.PeerId, transactionId, offset, data).ConfigureAwait(false);
+    var result = await uploadStore.Append(peer.PeerId, transactionId, offset, data).ConfigureAwait(false);
+    var session = result.Accepted ? uploadStore.Get(peer.PeerId, transactionId) : null;
+    if (session != null)
+    {
+      await ReportReceived(peer, transactionId, result.Offset, session.Size).ConfigureAwait(false);
+    }
+
+    return result;
+  }
+
+  public void AddProgress(IList<AuditEntry> entries)
+  {
+    var sent = jobRepository.Progress(entries.Where(e => e.Direction == SyncDirection.Outgoing).Select(e => e.EntryId));
+    foreach (var entry in entries)
+    {
+      if (sent.TryGetValue(entry.EntryId, out var progress))
+      {
+        (entry.Transferred, entry.Size) = progress;
+        continue;
+      }
+
+      if (entry is not { Direction: SyncDirection.Incoming, Action: AuditAction.RecordReceived, Status: AuditStatus.Pending, TransactionId: not null })
+      {
+        continue;
+      }
+
+      var sender = peerRepository.GetByInstance(entry.Instance);
+      var session = sender == null ? null : uploadStore.Get(sender.PeerId, entry.TransactionId.Value);
+      if (session != null)
+      {
+        entry.Transferred = session.Offset;
+        entry.Size = session.Size;
+      }
+    }
+  }
+
+  public async Task DiscardStale(DateTime before)
+  {
+    foreach (var (peerId, transactionId) in uploadStore.RemoveStale(before))
+    {
+      var sender = peerRepository.Get(peerId);
+      var entryId = sender == null ? null : auditRepository.FindPending(AuditAction.RecordReceived, sender.Instance, transactionId);
+      if (sender != null && entryId.HasValue)
+      {
+        await audit.Log(AuditAction.RecordReceived, AuditStatus.Failed, sender.Instance, Env.INSTANCE, transactionId,
+          message: "The transfer was discarded, because the partner did not continue it.", entryId: entryId).ConfigureAwait(false);
+      }
+    }
   }
 
   public async Task<ReceiveResult> CompleteReceive(Peer peer, Guid transactionId)
@@ -141,6 +261,7 @@ public partial class FederationSyncService(
     }
 
     var session = uploadStore.Get(peer.PeerId, transactionId) ?? throw new FederationException(FederationErrors.NotFound);
+    var entryId = auditRepository.FindPending(AuditAction.RecordReceived, peer.Instance, transactionId);
     if (!await uploadStore.IsComplete(session).ConfigureAwait(false))
     {
       // a complete file with a wrong hash is corrupted, so the transfer starts again.
@@ -162,6 +283,8 @@ public partial class FederationSyncService(
     if (!isMp3)
     {
       uploadStore.Remove(peer.PeerId, transactionId);
+      await audit.Log(AuditAction.RecordReceived, AuditStatus.Failed, peer.Instance, Env.INSTANCE, transactionId,
+        message: $"Record '{session.Metadata.Title}' is no mp3 file.", entryId: entryId).ConfigureAwait(false);
       throw new FederationException(FederationErrors.InvalidRecord);
     }
 
@@ -178,7 +301,7 @@ public partial class FederationSyncService(
     {
       uploadStore.Remove(peer.PeerId, transactionId);
       await audit.Log(AuditAction.RecordReceived, AuditStatus.Skipped, peer.Instance, Env.INSTANCE, transactionId,
-        message: $"Record '{record.Title}' exists already as file.").ConfigureAwait(false);
+        message: $"Record '{record.Title}' exists already as file.", entryId: entryId).ConfigureAwait(false);
       return new ReceiveResult(ReceiveStatus.Skipped, null);
     }
 
@@ -217,7 +340,7 @@ public partial class FederationSyncService(
     }).ConfigureAwait(false);
 
     await audit.Log(AuditAction.RecordReceived, AuditStatus.Success, peer.Instance, Env.INSTANCE, transactionId, [recordId],
-      groups.Count == 0 ? $"Record '{record.Title}' is not assigned to any group." : null).ConfigureAwait(false);
+      groups.Count == 0 ? $"Record '{record.Title}' is not assigned to any group." : null, entryId).ConfigureAwait(false);
     return new ReceiveResult(ReceiveStatus.Created, recordId);
   }
 
@@ -282,6 +405,8 @@ public partial class FederationSyncService(
     var maxSteps = 2 * (size / (options.ChunkSizeMb * MEGABYTE) + 1) + 10;
     while (error == null && received!.Status == ReceiveStatus.Pending)
     {
+      await jobRepository.SetProgress(job.JobId, received.Offset, size).ConfigureAwait(false);
+      await notifier.Progress(new TransferProgress(job.AuditEntryId, record.RecordId, peer.Instance, SyncDirection.Outgoing, received.Offset, size)).ConfigureAwait(false);
       if (--maxSteps < 0)
       {
         return FederationJobResult.Retry("The partner does not accept the transfer.");
@@ -407,6 +532,26 @@ public partial class FederationSyncService(
     return result;
   }
 
+  private async Task<FederationJobResult> SendRevocation(FederationJob job, Peer peer)
+  {
+    var link = job.RecordId.HasValue ? linkRepository.GetByRecord(peer.PeerId, job.RecordId.Value) : null;
+    if (link == null || link.Direction != SyncDirection.Outgoing)
+    {
+      return FederationJobResult.Success;
+    }
+
+    using var response = await client.Send(peer.Endpoint, peer.Instance, HttpMethod.Delete, $"records/{link.TransactionId}").ConfigureAwait(false);
+    var result = FederationJobResult.FromResponse(response, notFoundIsSuccess: true);
+    if (result == FederationJobResult.Success)
+    {
+      await linkRepository.Delete(peer.PeerId, link.LocalRecordId).ConfigureAwait(false);
+      await audit.Log(AuditAction.RecordRevoked, AuditStatus.Success, Env.INSTANCE, peer.Instance, link.TransactionId,
+        [link.LocalRecordId], entryId: job.AuditEntryId).ConfigureAwait(false);
+    }
+
+    return result;
+  }
+
   private async Task<MultipartFormDataContent> CreateContent(Record record, Guid transactionId)
   {
     var metadata = new SyncedRecord
@@ -474,8 +619,14 @@ public partial class FederationSyncService(
 
     uploadStore.Remove(peer.PeerId, transactionId);
     await audit.Log(AuditAction.RecordReceived, AuditStatus.Skipped, peer.Instance, Env.INSTANCE, transactionId,
-      message: $"Record '{record.Title}' exists already.").ConfigureAwait(false);
+      message: $"Record '{record.Title}' exists already.", entryId: auditRepository.FindPending(AuditAction.RecordReceived, peer.Instance, transactionId)).ConfigureAwait(false);
     return true;
+  }
+
+  private async Task ReportReceived(Peer peer, Guid transactionId, long transferred, long size)
+  {
+    var entryId = auditRepository.FindPending(AuditAction.RecordReceived, peer.Instance, transactionId);
+    await notifier.Progress(new TransferProgress(entryId, null, peer.Instance, SyncDirection.Incoming, transferred, size)).ConfigureAwait(false);
   }
 
   private async Task<string?> StoreCover(byte[]? cover)

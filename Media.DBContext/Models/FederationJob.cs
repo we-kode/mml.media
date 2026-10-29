@@ -58,6 +58,16 @@ public class FederationJob
   public bool Failed { get; set; }
 
   /// <summary>
+  /// The size of the transferred file in bytes if the operation sends a file.
+  /// </summary>
+  public long? Size { get; set; }
+
+  /// <summary>
+  /// The number of bytes the partner received so far.
+  /// </summary>
+  public long Transferred { get; set; }
+
+  /// <summary>
   /// Date when the operation was created.
   /// </summary>
   public DateTime CreatedAt { get; set; }

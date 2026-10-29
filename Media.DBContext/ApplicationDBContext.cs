@@ -21,6 +21,7 @@ namespace Media.DBContext
     public DbSet<FederationAuditEntry> FederationAuditLog { get; set; } = null!;
     public DbSet<FederationJob> FederationJobs { get; set; } = null!;
     public DbSet<FederationInvitation> FederationInvitations { get; set; } = null!;
+    public DbSet<FederationExclusion> FederationExclusions { get; set; } = null!;
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder) => optionsBuilder.UseSnakeCaseNamingConvention();
 
@@ -119,6 +120,17 @@ namespace Media.DBContext
       modelBuilder
        .Entity<FederationJob>()
        .HasIndex(j => j.NextAttemptAt);
+
+      modelBuilder
+       .Entity<FederationExclusion>()
+       .HasKey(e => new { e.PeerId, e.RecordId });
+
+      modelBuilder
+       .Entity<FederationExclusion>()
+       .HasOne(e => e.Record)
+       .WithMany()
+       .HasForeignKey(e => e.RecordId)
+       .OnDelete(DeleteBehavior.Cascade);
 
       modelBuilder
        .Entity<FederationInvitation>()

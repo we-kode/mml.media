@@ -106,4 +106,35 @@ public interface IFederationService
   /// Rotates the keys of this instance and informs all linked partners about a new key.
   /// </summary>
   Task RotateKeys();
+
+  /// <summary>
+  /// Informs all known partners if the public url of this instance changed since it was published the last time.
+  /// </summary>
+  Task AnnounceAddress();
+
+  /// <summary>
+  /// Sends the public url of this instance to a partner.
+  /// </summary>
+  /// <param name="peer">The partner.</param>
+  /// <returns><see cref="FederationJobResult"/></returns>
+  Task<FederationJobResult> SendAddress(Peer peer);
+
+  /// <summary>
+  /// Changes the address of a partner. The partner at the new address must have the same instance name and prove that
+  /// it owns one of the known keys by signing a random value. Operations against the partner are executed again as soon as possible.
+  /// </summary>
+  /// <param name="peer">The partner.</param>
+  /// <param name="baseUrl">The new public base url of the partner.</param>
+  /// <returns>The updated <see cref="Peer"/>.</returns>
+  /// <exception cref="FederationException">If the new address is invalid, not reachable or belongs to another instance.</exception>
+  Task<Peer> ChangeAddress(Peer peer, string baseUrl);
+
+  /// <summary>
+  /// Signs the random value sent by a partner, which proves that this instance owns its published keys.
+  /// </summary>
+  /// <param name="peer">The authenticated partner.</param>
+  /// <param name="nonce">The random value.</param>
+  /// <returns>The signed assertion for the partner.</returns>
+  /// <exception cref="FederationException">If the value is empty or too long.</exception>
+  string CreateProof(Peer peer, string nonce);
 }

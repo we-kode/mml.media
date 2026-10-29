@@ -68,27 +68,14 @@ public class AuditEntry
   /// Additional information or the error message.
   /// </summary>
   public string? Message { get; set; }
-}
-
-/// <summary>
-/// A record affected by an audit log entry.
-/// </summary>
-/// <param name="RecordId">Id of the record.</param>
-/// <param name="Title">Current title of the record.</param>
-public record AuditRecord(Guid RecordId, string Title);
-
-/// <summary>
-/// A list of audit log entries.
-/// </summary>
-public class AuditEntries
-{
-  /// <summary>
-  /// The total count of available entries.
-  /// </summary>
-  public int TotalCount { get; set; }
 
   /// <summary>
-  /// One chunk of loaded entries.
+  /// The number of transferred bytes if the entry is a running transfer.
   /// </summary>
-  public IList<AuditEntry> Items { get; set; } = [];
+  public long? Transferred { get; set; }
+
+  /// <summary>
+  /// The size of the file in bytes if the entry is a running transfer.
+  /// </summary>
+  public long? Size { get; set; }
 }

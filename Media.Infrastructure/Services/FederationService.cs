@@ -11,6 +11,8 @@ using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Json;
+using System.Security.Cryptography;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace Media.Infrastructure.Services;
@@ -28,12 +30,16 @@ public class FederationService(
   IRecordRepository recordRepository,
   IRecordService recordService,
   IFederationUploadStore uploadStore,
+  ISettingRepository settingRepository,
   IMemoryCache cache) : IFederationService
 {
+  private const string PUBLISHED_URL_KEY = "FederationPublishedUrl";
   private const string CLAIM_REQUEST_ID = "request_id";
   private const string CLAIM_BASE_URL = "base_url";
   private const string CLAIM_ACCEPTED = "accepted";
   private const string CLAIM_INVITATION = "invitation";
+  private const string CLAIM_NONCE = "nonce";
+  private const int MAX_NONCE_LENGTH = 128;
   private const string REFRESH_CACHE_KEY = "MML_FEDERATION_KEY_REFRESH_";
   private static readonly TimeSpan RefreshInterval = TimeSpan.FromMinutes(1);
 
@@ -212,6 +218,9 @@ public class FederationService(
 
     peer.State = PeerState.Linked;
     await peerRepository.Update(peer).ConfigureAwait(false);
+
+    // operations waiting for the approval, e.g. the announcement of a new address, are executed now.
+    await jobRepository.Reschedule(peer.PeerId, DateTime.UtcNow).ConfigureAwait(false);
     await notifier.PeerChanged(peer).ConfigureAwait(false);
     return true;
   }
@@ -345,6 +354,116 @@ public class FederationService(
     foreach (var peer in peerRepository.ListByState(PeerState.Linked, PeerState.ResponsePending))
     {
       await jobRepository.Enqueue(peer.PeerId, FederationJobType.KeysChanged).ConfigureAwait(false);
+    }
+  }
+
+  public async Task AnnounceAddress()
+  {
+    if (!options.IsEnabled)
+    {
+      return;
+    }
+
+    var current = options.PublicUrl!.TrimEnd('/');
+    var published = settingRepository.Get(PUBLISHED_URL_KEY, string.Empty);
+    if (string.Equals(published, current, StringComparison.OrdinalIgnoreCase))
+    {
+      return;
+    }
+
+    // partners waiting for the approval of this instance are informed after they received the approval.
+    if (!string.IsNullOrEmpty(published))
+    {
+      foreach (var peer in peerRepository.ListByState(PeerState.Requested, PeerState.ResponsePending, PeerState.Linked))
+      {
+        await jobRepository.Enqueue(peer.PeerId, FederationJobType.AddressChanged).ConfigureAwait(false);
+      }
+    }
+
+    settingRepository.Save(PUBLISHED_URL_KEY, current);
+  }
+
+  public async Task<FederationJobResult> SendAddress(Peer peer)
+  {
+    // the partner accepts requests of this instance only after it received the approval.
+    if (peer.State == PeerState.ResponsePending)
+    {
+      return FederationJobResult.Retry("The partner is informed after it received the approval.");
+    }
+
+    using var response = await client.Send(peer.Endpoint, peer.Instance, HttpMethod.Post, "address-changed",
+      JsonContent.Create(new { baseUrl = options.PublicUrl!.TrimEnd('/') })).ConfigureAwait(false);
+    var result = FederationJobResult.FromResponse(response);
+    if (result == FederationJobResult.Success)
+    {
+      await audit.Log(AuditAction.AddressChanged, AuditStatus.Success, Env.INSTANCE, peer.Instance, message: "Partner was informed about the new address.").ConfigureAwait(false);
+    }
+
+    return result;
+  }
+
+  public async Task<Peer> ChangeAddress(Peer peer, string baseUrl)
+  {
+    var normalizedUrl = FederationHttpHandler.ValidateUrl(baseUrl).GetLeftPart(UriPartial.Authority);
+    if (string.Equals(peer.BaseUrl, normalizedUrl, StringComparison.OrdinalIgnoreCase))
+    {
+      return peer;
+    }
+
+    var discovery = await client.GetDiscovery(normalizedUrl).ConfigureAwait(false);
+    if (discovery.Instance != peer.Instance)
+    {
+      throw new FederationException(FederationErrors.InvalidDiscovery);
+    }
+
+    // public keys can be copied, so the partner at the new address must sign a random value with a known key.
+    var nonce = Convert.ToHexString(RandomNumberGenerator.GetBytes(32));
+    using (var response = await client.Send(discovery.Endpoint, peer.Instance, HttpMethod.Post, "proof", JsonContent.Create(new { nonce })).ConfigureAwait(false))
+    {
+      var proof = response.IsSuccessStatusCode ? await ReadProof(response).ConfigureAwait(false) : null;
+      var result = proof == null ? null : await assertions.Validate(proof, peer.Instance, peer.Jwks).ConfigureAwait(false);
+      if (result is not { IsValid: true } || ClaimValue(result.Claims, CLAIM_NONCE) != nonce)
+      {
+        throw new FederationException(FederationErrors.UnknownKeys);
+      }
+    }
+
+    var jwks = await client.GetJwks(discovery.JwksUri).ConfigureAwait(false);
+
+    var previousUrl = peer.BaseUrl;
+    peer.BaseUrl = normalizedUrl;
+    peer.Endpoint = discovery.Endpoint;
+    peer.JwksUri = discovery.JwksUri;
+    peer.Jwks = jwks;
+    peer.JwksUpdatedAt = DateTime.UtcNow;
+    await peerRepository.Update(peer).ConfigureAwait(false);
+    await jobRepository.Reschedule(peer.PeerId, DateTime.UtcNow).ConfigureAwait(false);
+
+    await audit.Log(AuditAction.AddressChanged, AuditStatus.Success, peer.Instance, Env.INSTANCE,
+      message: $"Address of the partner changed from {previousUrl} to {normalizedUrl}.").ConfigureAwait(false);
+    await notifier.PeerChanged(peer).ConfigureAwait(false);
+    return peer;
+  }
+
+  public string CreateProof(Peer peer, string nonce)
+  {
+    if (string.IsNullOrWhiteSpace(nonce) || nonce.Length > MAX_NONCE_LENGTH)
+    {
+      throw new FederationException(FederationErrors.InvalidAssertion);
+    }
+
+    return assertions.Create(peer.Instance, new Dictionary<string, object> { [CLAIM_NONCE] = nonce });
+  }
+
+  private static async Task<string?> ReadProof(HttpResponseMessage response)
+  {
+    try
+    {
+      return (await response.Content.ReadFromJsonAsync<Dictionary<string, string>>().ConfigureAwait(false))?.GetValueOrDefault("assertion");
+    }
+    catch (JsonException)
+    {
+      return null;
     }
   }
 

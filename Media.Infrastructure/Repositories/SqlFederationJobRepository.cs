@@ -192,4 +192,63 @@ public class SqlFederationJobRepository(Func<ApplicationDBContext> contextFactor
         NextAttemptAt = j.Failed ? null : j.NextAttemptAt,
       })];
   }
+
+  public async Task<IList<(Guid RecordId, Guid? AuditEntryId)>> CancelPush(Guid peerId, IEnumerable<Guid> recordIds)
+  {
+    using var context = contextFactory();
+    var ids = recordIds.ToList();
+    var jobs = context.FederationJobs
+      .Where(j => j.PeerId == peerId && j.Type == (int)FederationJobType.PushRecord && j.RecordId.HasValue && ids.Contains(j.RecordId.Value));
+    var cancelled = jobs.Select(j => new { RecordId = j.RecordId!.Value, j.AuditEntryId }).AsEnumerable().Select(j => (j.RecordId, j.AuditEntryId)).ToList();
+    await jobs.ExecuteDeleteAsync().ConfigureAwait(false);
+    return cancelled;
+  }
+
+  public async Task Reschedule(Guid peerId, DateTime now)
+  {
+    using var context = contextFactory();
+    await context.FederationJobs
+      .Where(j => j.PeerId == peerId)
+      .ExecuteUpdateAsync(s => s
+        .SetProperty(j => j.Failed, false)
+        .SetProperty(j => j.Attempts, 0)
+        .SetProperty(j => j.NextAttemptAt, now))
+      .ConfigureAwait(false);
+  }
+
+  public async Task SetProgress(Guid jobId, long transferred, long size)
+  {
+    using var context = contextFactory();
+    await context.FederationJobs
+      .Where(j => j.JobId == jobId)
+      .ExecuteUpdateAsync(s => s
+        .SetProperty(j => j.Transferred, transferred)
+        .SetProperty(j => j.Size, size))
+      .ConfigureAwait(false);
+  }
+
+  public IDictionary<Guid, (long Transferred, long Size)> Progress(IEnumerable<Guid> entryIds)
+  {
+    using var context = contextFactory();
+    var ids = entryIds.ToList();
+    return context.FederationJobs
+      .Where(j => !j.Failed && j.Size.HasValue && j.AuditEntryId.HasValue && ids.Contains(j.AuditEntryId.Value))
+      .Select(j => new { EntryId = j.AuditEntryId!.Value, j.Transferred, Size = j.Size!.Value })
+      .ToDictionary(j => j.EntryId, j => (j.Transferred, j.Size));
+  }
+
+  public IList<RecordSyncTransfer> ListTransfers(Guid recordId)
+  {
+    using var context = contextFactory();
+    return [.. context.FederationJobs
+      .Where(j => j.RecordId == recordId && !j.Failed && j.Type == (int)FederationJobType.PushRecord)
+      .OrderBy(j => j.CreatedAt)
+      .Select(j => new RecordSyncTransfer
+      {
+        Instance = j.Peer.Instance,
+        Transferred = j.Transferred,
+        Size = j.Size,
+        NextAttemptAt = j.NextAttemptAt,
+      })];
+  }
 }

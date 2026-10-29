@@ -13,11 +13,25 @@ public interface IFederationSyncService
 {
   /// <summary>
   /// Queues the given records for every linked partner with a matching outgoing rule.
-  /// Records owned by other instances and records already sent to a partner are skipped.
+  /// Records owned by other instances, records already sent to a partner and records excluded from the synchronization with a partner are skipped.
   /// </summary>
   /// <param name="recordIds">Ids of the local records.</param>
+  /// <param name="peerIds">The partners to synchronize with or null for all linked partners.</param>
+  /// <param name="includeExcluded">Removes the exclusions of the records for the partners, so they are sent again.</param>
   /// <returns><see cref="SyncResult"/></returns>
-  Task<SyncResult> Synchronize(IEnumerable<Guid> recordIds);
+  /// <exception cref="FederationException">If a given partner does not exist or is not linked.</exception>
+  Task<SyncResult> Synchronize(IEnumerable<Guid> recordIds, IReadOnlyCollection<Guid>? peerIds = null, bool includeExcluded = false);
+
+  /// <summary>
+  /// Revokes the synchronization of the given own records with the partners: the records are removed on the partners,
+  /// kept on this instance and excluded from further synchronizations until they are synchronized manually.
+  /// Waiting transfers of the records to the partners are cancelled.
+  /// </summary>
+  /// <param name="recordIds">Ids of the local records.</param>
+  /// <param name="peerIds">The partners to revoke the synchronization for or null for all linked partners.</param>
+  /// <returns><see cref="SyncResult"/> with the number of queued removals.</returns>
+  /// <exception cref="FederationException">If a given partner does not exist or is not linked.</exception>
+  Task<SyncResult> Revoke(IEnumerable<Guid> recordIds, IReadOnlyCollection<Guid>? peerIds = null);
 
   /// <summary>
   /// Executes a queued record operation against a partner.
@@ -81,4 +95,16 @@ public interface IFederationSyncService
   /// <param name="transactionId">The id of the transaction.</param>
   /// <returns>False, if the record does not exist on this instance.</returns>
   Task<bool> ReceiveDeletion(Peer peer, Guid transactionId);
+
+  /// <summary>
+  /// Adds the progress of running transfers to the given audit log entries.
+  /// </summary>
+  /// <param name="entries">The entries to complete.</param>
+  void AddProgress(IList<AuditEntry> entries);
+
+  /// <summary>
+  /// Removes transfers from partners without progress since the given date and marks their audit log entries as failed.
+  /// </summary>
+  /// <param name="before">Transfers last changed before this date are removed.</param>
+  Task DiscardStale(DateTime before);
 }

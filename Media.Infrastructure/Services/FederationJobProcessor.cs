@@ -85,6 +85,7 @@ public class FederationJobProcessor(
         ? FederationJobResult.Success
         : FederationJobResult.Retry("Partner could not be informed about the approval."),
       FederationJobType.KeysChanged => await SendKeysChanged(peer).ConfigureAwait(false),
+      FederationJobType.AddressChanged => await federationService.SendAddress(peer).ConfigureAwait(false),
       _ => await syncService.Execute(job, peer).ConfigureAwait(false),
     };
   }

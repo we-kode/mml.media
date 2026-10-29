@@ -91,6 +91,30 @@ public class FederationPeerController(
   }
 
   /// <summary>
+  /// Informs this instance that the partner moved to a new address.
+  /// </summary>
+  /// <response code="400">If the new address is invalid or the partner there does not publish a known key.</response>
+  /// <response code="502">If the partner is not reachable at the new address.</response>
+  [HttpPost("address-changed")]
+  [Authorize(AuthenticationSchemes = FederationPeerAuthenticationHandler.SchemeName)]
+  public async Task<IActionResult> AddressChanged([FromBody] PeerAddressRequest request)
+  {
+    await federationService.ChangeAddress(CurrentPeer(), request.BaseUrl).ConfigureAwait(false);
+    return Ok();
+  }
+
+  /// <summary>
+  /// Signs the random value of the calling partner, which checks a new address of this instance.
+  /// </summary>
+  /// <response code="401">If the value is empty or too long.</response>
+  [HttpPost("proof")]
+  [Authorize(AuthenticationSchemes = FederationPeerAuthenticationHandler.SchemeName)]
+  public ActionResult<ProofResponse> Proof([FromBody] ProofRequest request)
+  {
+    return new ProofResponse(federationService.CreateProof(CurrentPeer(), request.Nonce));
+  }
+
+  /// <summary>
   /// Removes the registration of the calling partner.
   /// </summary>
   [HttpPost("unlink")]

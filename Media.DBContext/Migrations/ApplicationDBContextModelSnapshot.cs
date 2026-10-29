@@ -255,6 +255,29 @@ namespace Media.DBContext.Migrations
                     b.ToTable("federation_audit_log", "public");
                 });
 
+            modelBuilder.Entity("Media.DBContext.Models.FederationExclusion", b =>
+                {
+                    b.Property<Guid>("PeerId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("peer_id");
+
+                    b.Property<Guid>("RecordId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("record_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.HasKey("PeerId", "RecordId")
+                        .HasName("pk_federation_exclusions");
+
+                    b.HasIndex("RecordId")
+                        .HasDatabaseName("ix_federation_exclusions_record_id");
+
+                    b.ToTable("federation_exclusions", "public");
+                });
+
             modelBuilder.Entity("Media.DBContext.Models.FederationInvitation", b =>
                 {
                     b.Property<Guid>("InvitationId")
@@ -332,9 +355,17 @@ namespace Media.DBContext.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("record_id");
 
+                    b.Property<long?>("Size")
+                        .HasColumnType("bigint")
+                        .HasColumnName("size");
+
                     b.Property<Guid?>("TransactionId")
                         .HasColumnType("uuid")
                         .HasColumnName("transaction_id");
+
+                    b.Property<long>("Transferred")
+                        .HasColumnType("bigint")
+                        .HasColumnName("transferred");
 
                     b.Property<int>("Type")
                         .HasColumnType("integer")
@@ -895,6 +926,27 @@ namespace Media.DBContext.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_groups_records_records_records_record_id");
+                });
+
+            modelBuilder.Entity("Media.DBContext.Models.FederationExclusion", b =>
+                {
+                    b.HasOne("Media.DBContext.Models.FederationPeer", "Peer")
+                        .WithMany()
+                        .HasForeignKey("PeerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_federation_exclusions_federation_peers_peer_id");
+
+                    b.HasOne("Media.DBContext.Models.Record", "Record")
+                        .WithMany()
+                        .HasForeignKey("RecordId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_federation_exclusions_records_record_id");
+
+                    b.Navigation("Peer");
+
+                    b.Navigation("Record");
                 });
 
             modelBuilder.Entity("Media.DBContext.Models.FederationJob", b =>
