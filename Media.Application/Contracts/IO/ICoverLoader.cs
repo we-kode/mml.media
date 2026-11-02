@@ -1,4 +1,6 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace Media.Application.Contracts.IO;
 
@@ -21,4 +23,17 @@ public interface ICoverLoader
   /// <param name="fileName">File to load.</param>
   /// <returns>The byte data of the file or null if file not exists.</returns>
   Task<byte[]?> Load(string fileName);
+
+  /// <summary>
+  /// Deletes the cover file with the given name if it exists.
+  /// </summary>
+  /// <param name="fileName">File to delete.</param>
+  void Delete(string fileName);
+
+  /// <summary>
+  /// Returns the names of all stored cover files, which were last written before the given time.
+  /// </summary>
+  /// <param name="writtenBefore">Only files written before this time are returned.</param>
+  /// <returns>The file names.</returns>
+  IEnumerable<string> List(DateTime writtenBefore);
 }

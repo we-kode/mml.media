@@ -75,7 +75,7 @@ public class RecordService(
     }
   }
 
-  public async Task Update(Record record, byte[] cover)
+  public async Task Update(Record record, byte[] cover, bool removeCover = false)
   {
     using var scope = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled);
 
@@ -93,7 +93,7 @@ public class RecordService(
       return;
     }
 
-    await UpdateMetadata(recordToUpdated, record, cover, fromOwner: false).ConfigureAwait(false);
+    await UpdateMetadata(recordToUpdated, record, cover, fromOwner: false, removeCover).ConfigureAwait(false);
     var pending = await federationJobRepository.EnqueueForOutgoingLinks(record.RecordId, FederationJobType.UpdateRecord).ConfigureAwait(false);
     scope.Complete();
     scope.Dispose();
@@ -116,7 +116,7 @@ public class RecordService(
     scope.Complete();
   }
 
-  private async Task UpdateMetadata(Record recordToUpdated, Record record, byte[] cover, bool fromOwner)
+  private async Task UpdateMetadata(Record recordToUpdated, Record record, byte[] cover, bool fromOwner, bool removeCover = false)
   {
     // if to != null && new null remove
     // if new != null try remove old try get new and assign it
@@ -137,7 +137,7 @@ public class RecordService(
     var oldLang = recordToUpdated.Language;
     Guid? languageId = (await languageRepository.TryGetOrCreate(record.Language))?.LanguageId;
 
-    // update cover. Admins can only replace the cover, the owner also removes it.
+    // update cover. The owner sends the complete cover state, admins replace or remove it explicitly.
     if (cover is { Length: > 0 })
     {
       var fileName = cover.ToFileName();
@@ -146,10 +146,14 @@ public class RecordService(
     }
     else
     {
-      record.Cover = fromOwner ? null : recordToUpdated.Cover;
+      record.Cover = fromOwner || removeCover ? null : recordToUpdated.Cover;
     }
 
     await recordRepository.Update(record, (artistId, albumId, genreId, languageId), fromOwner);
+    if (recordToUpdated.Cover != record.Cover)
+    {
+      TryRemoveCover(recordToUpdated.Cover);
+    }
 
     // try remove old data
     await artistRepository.TryRemove(oldArtist);
@@ -179,6 +183,7 @@ public class RecordService(
 
     // Delete entry from db
     await recordRepository.RemoveRecord(id);
+    TryRemoveCover(record.Cover);
 
     // Remove artist if no record connected
     await artistRepository.TryRemove(record.Artist);
@@ -191,5 +196,14 @@ public class RecordService(
 
     // remove language if no record connected
     await languageRepository.TryRemove(record.Language);
+  }
+
+  // covers are named by their content, so several records can share one file.
+  private void TryRemoveCover(string? fileName)
+  {
+    if (!string.IsNullOrEmpty(fileName) && !recordRepository.IsCoverUsed(fileName))
+    {
+      coverLoader.Delete(fileName);
+    }
   }
 }

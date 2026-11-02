@@ -6,10 +6,12 @@ using Media.Application.Constants;
 using Media.Application.Contracts.IO;
 using Media.Application.Contracts.Repositories;
 using Media.Application.Contracts.Services;
+using Media.Application.Extensions;
 using Media.Application.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
 using OpenIddict.Validation.AspNetCore;
 using System;
 using System.Collections.Generic;
@@ -31,8 +33,10 @@ public class RecordController(
   IRecordService recordsService,
   ILanguageRepository languageRepository,
   ICoverLoader coverLoader,
-  IAuthorizationClient authClient) : ControllerBase
+  IAuthorizationClient authClient,
+  IConfiguration configuration) : ControllerBase
 {
+  private readonly long maxCoverSize = configuration.GetValue("Records:MaxCoverSizeMb", 8L) * 1024 * 1024;
 
   /// <summary>
   /// Loads a list of existing records.
@@ -184,8 +188,10 @@ public class RecordController(
   /// Changes record. Records owned by another instance only get groups and lock changed.
   /// </summary>
   /// <param name="request">New Record to store.</param>
+  /// <response code="400">If the cover is no JPEG or PNG image or larger than `Records:MaxCoverSizeMb`.</response>
   /// <response code="404">If record does not exists.</response>
   [HttpPost()]
+  [ProducesResponseType(StatusCodes.Status400BadRequest)]
   [ProducesResponseType(StatusCodes.Status404NotFound)]
   [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme, Policy = Roles.Admin)]
   public async Task<IActionResult> Post([FromBody] RecordChangeRequest request)
@@ -195,7 +201,13 @@ public class RecordController(
       return NotFound();
     }
 
-    await recordsService.Update(request.Map(), request.Cover ?? []).ConfigureAwait(false);
+    var cover = request.Cover ?? [];
+    if (cover.Length > 0 && (cover.Length > maxCoverSize || cover.ToContentType() == null))
+    {
+      return BadRequest();
+    }
+
+    await recordsService.Update(request.Map(), cover, request.RemoveCover).ConfigureAwait(false);
     return Ok();
   }
 
@@ -225,7 +237,7 @@ public class RecordController(
       return NotFound();
     }
 
-    return File(coverData, "image/jpeg");
+    return File(coverData, coverData.ToContentType() ?? "image/jpeg");
   }
 
   #region obsolete
