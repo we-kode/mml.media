@@ -19,7 +19,7 @@ namespace Media.DBContext.Migrations
                 nullable: false,
                 defaultValue: "");
 
-            migrationBuilder.Sql($"UPDATE public.records SET owner_instance = '{Environment.GetEnvironmentVariable("INSTANCE")}' WHERE owner_instance = ''");
+            migrationBuilder.Sql($"UPDATE public.records SET owner_instance = '{Environment.GetEnvironmentVariable("INSTANCE")}' WHERE owner_instance = '';");
     }
 
         /// <inheritdoc />

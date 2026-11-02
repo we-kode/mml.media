@@ -32,8 +32,15 @@ FROM build AS publish
 ARG DOT_NET_BUILD_CONFIG=Release
 RUN dotnet publish "Media.API.csproj" -c ${DOT_NET_BUILD_CONFIG} -o /app/publish/media
 
+# Third-party notices of all NuGet packages. Licenses of system packages like ffmpeg are in /usr/share/doc.
+FROM build AS licenses
+WORKDIR /src
+RUN dotnet tool install nuget-license --version 4.0.18 --tool-path /tools
+RUN /tools/nuget-license -i Media.API/Media.API.csproj -t -ignore WeKoDe.MML.Messages -o Markdown     -fo /licenses/THIRD-PARTY-NOTICES.md -d /licenses/texts
+
 FROM base AS final
 WORKDIR /app
 RUN mkdir -p /secrets
 COPY --from=publish /app/publish .
+COPY --from=licenses /licenses ./licenses
 ENTRYPOINT ["dotnet", "media/Media.API.dll"]

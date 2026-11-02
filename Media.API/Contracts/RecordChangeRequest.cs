@@ -52,9 +52,14 @@ public class RecordChangeRequest(Guid recordId, string title, string? artist, IC
   public bool Locked { get; set; }
 
   /// <summary>
-  /// The cover of tis record.
+  /// The new cover of this record as JPEG or PNG image or empty to keep the cover.
   /// </summary>
   public byte[] Cover { get; set; } = [];
+
+  /// <summary>
+  /// Indicates whether the cover is removed, if no new cover is given.
+  /// </summary>
+  public bool RemoveCover { get; set; }
 
   /// <summary>
   /// List of groups the record is assigned to.

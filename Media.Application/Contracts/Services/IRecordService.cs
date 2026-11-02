@@ -32,8 +32,9 @@ public interface IRecordService {
   /// Changed metadata of an own record are sent to all partners the record was synchronized with.
   /// </summary>
   /// <param name="record"><see cref="Record"/> to be updated.</param>
-  /// <param name="cover">The cover of the record as byte array.</param>
-  Task Update(Record record, byte[] cover);
+  /// <param name="cover">The new cover of the record as byte array or empty to keep the cover.</param>
+  /// <param name="removeCover">Removes the cover, if no new cover is given.</param>
+  Task Update(Record record, byte[] cover, bool removeCover = false);
 
   /// <summary>
   /// Updates the metadata of a record with the changes sent by its owner. Groups and lock are kept.

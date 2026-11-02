@@ -9,7 +9,7 @@ namespace Media.Application.Consumers;
 /// <summary>
 /// Handles messages for changed groups
 /// </summary>
-public class GroupConsumer(IGroupRepository groupRepository) : IHandleMessages<GroupCreated>, IHandleMessages<GroupUpdated>, IHandleMessages<GroupDeleted>
+public class GroupConsumer(IGroupRepository groupRepository, INotificationRepository notificationRepository) : IHandleMessages<GroupCreated>, IHandleMessages<GroupUpdated>, IHandleMessages<GroupDeleted>
 {
   public async Task Handle(GroupCreated context)
   {
@@ -23,6 +23,7 @@ public class GroupConsumer(IGroupRepository groupRepository) : IHandleMessages<G
 
   public async Task Handle(GroupDeleted context)
   {
+    await notificationRepository.RemoveTargetingOnly(context.Id).ConfigureAwait(false);
     await groupRepository.Delete(context.Id).ConfigureAwait(false);
   }
 }

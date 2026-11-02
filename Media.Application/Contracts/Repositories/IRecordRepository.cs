@@ -212,4 +212,17 @@ public interface IRecordRepository
   /// </summary>
   /// <returns>The instance names.</returns>
   IList<string> GetOwnerInstances();
+
+  /// <summary>
+  /// Checks whether a record uses the cover with the given file name.
+  /// </summary>
+  /// <param name="fileName">The file name of the cover.</param>
+  /// <returns>True if at least one record uses the cover.</returns>
+  bool IsCoverUsed(string fileName);
+
+  /// <summary>
+  /// Returns the file names of all covers used by records.
+  /// </summary>
+  /// <returns>The file names.</returns>
+  ISet<string> GetUsedCovers();
 }

@@ -9,6 +9,7 @@ namespace Media.DBContext
     public DbSet<Setting> Settings { get; set; } = null!;
     public DbSet<Record> Records { get; set; } = null!;
     public DbSet<Livestream> Livestreams { get; set; } = null!;
+    public DbSet<Notification> Notifications { get; set; } = null!;
     public DbSet<Artist> Artists { get; set; } = null!;
     public DbSet<Genre> Genres { get; set; } = null!;
     public DbSet<Album> Albums { get; set; } = null!;
@@ -51,6 +52,16 @@ namespace Media.DBContext
        .HasMany(g => g.Livestreams)
        .WithMany(l => l.Groups)
        .UsingEntity(e => e.ToTable("groups_livestreams"));
+
+      modelBuilder
+       .Entity<Notification>()
+       .HasMany(n => n.Groups)
+       .WithMany()
+       .UsingEntity(e => e.ToTable("groups_notifications"));
+
+      modelBuilder
+       .Entity<Notification>()
+       .HasIndex(n => n.ValidTo);
 
       modelBuilder
        .Entity<Setting>()

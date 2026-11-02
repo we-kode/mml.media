@@ -58,6 +58,8 @@ public class Startup(IConfiguration configuration)
     ConfigureAuth(services);
     services.AddHostedService<MigrateBitrates>();
     services.AddHostedService<MigrateCovers>();
+    services.AddHostedService<CleanupCovers>();
+    services.AddHostedService<CleanupNotifications>();
     ConfigureFederationServices(services);
   }
 
@@ -285,6 +287,7 @@ public class Startup(IConfiguration configuration)
     cBuilder.RegisterType<SqlRecordsRepository>().AsImplementedInterfaces();
     cBuilder.RegisterType<SqlGroupRepository>().AsImplementedInterfaces();
     cBuilder.RegisterType<SqlLivestreamRepository>().AsImplementedInterfaces();
+    cBuilder.RegisterType<SqlNotificationRepository>().AsImplementedInterfaces();
     cBuilder.RegisterType<RecordService>().AsImplementedInterfaces();
     cBuilder.RegisterType<IndexService>().AsImplementedInterfaces();
     cBuilder.RegisterType<CoverLoader>().AsImplementedInterfaces();

@@ -712,4 +712,16 @@ public class SqlRecordsRepository(Func<ApplicationDBContext> contextFactory, IGr
     using var context = contextFactory();
     return [.. context.Records.Select(rec => rec.OwnerInstance).Distinct().OrderBy(i => i)];
   }
+
+  public bool IsCoverUsed(string fileName)
+  {
+    using var context = contextFactory();
+    return context.Records.Any(rec => rec.Cover == fileName);
+  }
+
+  public ISet<string> GetUsedCovers()
+  {
+    using var context = contextFactory();
+    return context.Records.Where(rec => rec.Cover != null).Select(rec => rec.Cover!).Distinct().ToHashSet();
+  }
 }
