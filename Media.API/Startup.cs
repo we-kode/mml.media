@@ -1,15 +1,18 @@
 using Asp.Versioning;
 using Autofac;
 using Media.API.Authentication;
+using Media.API.Extensions;
 using Media.API.Filters;
 using Media.API.HostedServices;
 using Media.API.Middleware;
 using Media.API.Services;
+using Media.API.Share;
 using Media.API.Sockets;
 using Media.Application.Constants;
 using Media.Application.Consumers;
 using Media.Application.Contracts.Services;
 using Media.Application.Models.Federation;
+using Media.Application.Models.Options;
 using Media.DBContext;
 using Media.Infrastructure.IO;
 using Media.Infrastructure.Repositories;
@@ -60,6 +63,11 @@ public class Startup(IConfiguration configuration)
     services.AddHostedService<MigrateCovers>();
     services.AddHostedService<CleanupCovers>();
     services.AddHostedService<CleanupNotifications>();
+    services.AddOptions<ShareOptions>().Bind(Configuration.GetSection(ShareOptions.Section)).ValidateDataAnnotations().ValidateOnStart();
+    services.AddHostedService<CleanupShareLinks>();
+    services.AddSingleton<ShareLinkRevocationQueue>();
+    services.AddSingleton<IShareLinkRevocationQueue>(sp => sp.GetRequiredService<ShareLinkRevocationQueue>());
+    services.AddHostedService(sp => sp.GetRequiredService<ShareLinkRevocationQueue>());
     ConfigureFederationServices(services);
   }
 
@@ -288,6 +296,13 @@ public class Startup(IConfiguration configuration)
     cBuilder.RegisterType<SqlGroupRepository>().AsImplementedInterfaces();
     cBuilder.RegisterType<SqlLivestreamRepository>().AsImplementedInterfaces();
     cBuilder.RegisterType<SqlNotificationRepository>().AsImplementedInterfaces();
+    cBuilder.RegisterType<SqlShareRuleRepository>().AsImplementedInterfaces();
+    cBuilder.RegisterType<SqlShareQueryRepository>().AsImplementedInterfaces();
+    cBuilder.RegisterType<SqlShareLinkRepository>().AsImplementedInterfaces();
+    cBuilder.RegisterInstance((Configuration.GetSection(ShareOptions.Section).Get<ShareOptions>() ?? new ShareOptions()).LoadShareStyling());
+    cBuilder.RegisterType<SharePages>().SingleInstance();
+    cBuilder.RegisterType<ShareLinkRevoker>().AsImplementedInterfaces();
+    cBuilder.RegisterType<ShareArchiveService>().AsImplementedInterfaces();
     cBuilder.RegisterType<RecordService>().AsImplementedInterfaces();
     cBuilder.RegisterType<IndexService>().AsImplementedInterfaces();
     cBuilder.RegisterType<CoverLoader>().AsImplementedInterfaces();

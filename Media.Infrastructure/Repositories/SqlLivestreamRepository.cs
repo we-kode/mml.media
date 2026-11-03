@@ -1,5 +1,6 @@
 ﻿using Media.Application.Contracts.Repositories;
 using Media.Application.Models;
+using Media.Application.Models.Options;
 using Media.DBContext;
 using Microsoft.EntityFrameworkCore;
 using System;

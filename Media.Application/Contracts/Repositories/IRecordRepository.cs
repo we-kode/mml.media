@@ -115,6 +115,13 @@ public interface IRecordRepository
   IList<Record> GetRecordsByIds(IEnumerable<Guid> ids);
 
   /// <summary>
+  /// Returns the ids of the given ids, which belong to existing records.
+  /// </summary>
+  /// <param name="ids">Ids of the records.</param>
+  /// <returns>Ids of the existing records.</returns>
+  IList<Guid> GetExistingIds(IEnumerable<Guid> ids);
+
+  /// <summary>
   /// Updates one record.
   /// </summary>
   /// <param name="record"><see cref="Record"/> to be updated.</param>

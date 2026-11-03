@@ -4,6 +4,7 @@ using Microsoft.Extensions.Configuration;
 using Rebus.Handlers;
 using System;
 using System.Collections.Generic;
+using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
@@ -18,20 +19,25 @@ public class AuthorizationClient(HttpClient httpClient, IMemoryCache cache, ICon
   private DateTime expiresAt = DateTime.UtcNow;
   private const string CACHE_KEY = "MML_CLIENT_GROUPS_";
 
-  public async Task<List<Guid>> GetGroups(string clientId)
+  public async Task<List<Guid>?> GetGroups(string clientId, bool cached = true)
   {
-    if (cache.TryGetValue($"{CACHE_KEY}{clientId}", out List<Guid>? cached))
+    if (cached && cache.TryGetValue($"{CACHE_KEY}{clientId}", out List<Guid>? cachedGroups))
     {
-      return cached ?? [];
+      return cachedGroups ?? [];
     }
 
     var token = await GetAccessTokenAsync();
     httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
     var result = await httpClient.GetAsync($"api/v1.0/identity/internal/clientinfo/{clientId}/groups");
-    if (!result.IsSuccessStatusCode)
+    if (result.StatusCode == HttpStatusCode.NotFound)
     {
       return [];
+    }
+
+    if (!result.IsSuccessStatusCode)
+    {
+      return null;
     }
 
     var groups = await result.Content.ReadFromJsonAsync<List<Guid>>();

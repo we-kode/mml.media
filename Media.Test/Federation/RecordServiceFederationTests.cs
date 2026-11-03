@@ -32,7 +32,7 @@ public class RecordServiceFederationTests
     jobs.Setup(j => j.EnqueueForOutgoingLinks(It.IsAny<Guid>(), It.IsAny<FederationJobType>())).ReturnsAsync(pending);
   }
 
-  private RecordService CreateService() => new(records.Object, artists.Object, albums.Object, genres.Object, languages.Object, covers.Object, jobs.Object, audit.Object);
+  private RecordService CreateService() => new(records.Object, artists.Object, albums.Object, genres.Object, languages.Object, covers.Object, jobs.Object, new Mock<IShareRuleRepository>().Object, audit.Object);
 
   private Record AddRecord(string owner)
   {

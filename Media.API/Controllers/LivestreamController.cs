@@ -5,6 +5,7 @@ using Media.API.Services;
 using Media.Application.Constants;
 using Media.Application.Contracts.Repositories;
 using Media.Application.Models;
+using Media.Application.Models.Options;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;

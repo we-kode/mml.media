@@ -41,6 +41,6 @@ public static class HttpContextExtensions
       return [];
     }
 
-    return await authorization.GetGroups(clientId);
+    return await authorization.GetGroups(clientId) ?? [];
   }
 }

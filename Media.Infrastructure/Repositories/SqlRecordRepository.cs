@@ -549,16 +549,21 @@ public class SqlRecordsRepository(Func<ApplicationDBContext> contextFactory, IGr
     using var context = contextFactory();
     var record = context.Records.First(rec => rec.RecordId == id);
     var stream = File.OpenRead(Path.Combine(record.FilePath, record.Checksum));
-    return new RecordStream(record.MimeType, stream);
+    return new RecordStream(record.MimeType, stream) { FileName = record.Title };
   }
 
   public bool IsInGroup(Guid id, IEnumerable<Guid> clientGroups)
   {
     using var context = contextFactory();
-    var record = context.Records
-      .Include(r => r.Groups)
-      .First(rec => rec.RecordId == id);
-    return record.Groups.Any(g => clientGroups.Contains(g.GroupId));
+    var groups = clientGroups.ToList();
+    return context.Records.Any(rec => rec.RecordId == id && rec.Groups.Any(g => groups.Contains(g.GroupId)));
+  }
+
+  public IList<Guid> GetExistingIds(IEnumerable<Guid> ids)
+  {
+    using var context = contextFactory();
+    var recordIds = ids.Distinct().ToList();
+    return [.. context.Records.Where(rec => recordIds.Contains(rec.RecordId)).Select(rec => rec.RecordId)];
   }
 
   public string GetFilePath(Guid id)

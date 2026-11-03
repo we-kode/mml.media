@@ -23,6 +23,9 @@ namespace Media.DBContext
     public DbSet<FederationJob> FederationJobs { get; set; } = null!;
     public DbSet<FederationInvitation> FederationInvitations { get; set; } = null!;
     public DbSet<FederationExclusion> FederationExclusions { get; set; } = null!;
+    public DbSet<ShareRule> ShareRules { get; set; } = null!;
+    public DbSet<ShareLink> ShareLinks { get; set; } = null!;
+    public DbSet<ShareQuery> ShareQueries { get; set; } = null!;
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder) => optionsBuilder.UseSnakeCaseNamingConvention();
 
@@ -62,6 +65,53 @@ namespace Media.DBContext
       modelBuilder
        .Entity<Notification>()
        .HasIndex(n => n.ValidTo);
+
+      modelBuilder
+       .Entity<ShareRule>()
+       .HasMany(r => r.Groups)
+       .WithMany()
+       .UsingEntity(e => e.ToTable("share_rules_groups"));
+
+      modelBuilder
+       .Entity<ShareRule>()
+       .HasMany(r => r.Genres)
+       .WithMany()
+       .UsingEntity(e => e.ToTable("share_rules_genres"));
+
+      modelBuilder
+       .Entity<ShareRule>()
+       .HasMany(r => r.Albums)
+       .WithMany()
+       .UsingEntity(e => e.ToTable("share_rules_albums"));
+
+      modelBuilder
+       .Entity<ShareRule>()
+       .HasMany(r => r.Artists)
+       .WithMany()
+       .UsingEntity(e => e.ToTable("share_rules_artists"));
+
+      modelBuilder
+       .Entity<ShareLink>()
+       .HasIndex(l => l.TokenHash)
+       .IsUnique();
+
+      modelBuilder
+       .Entity<ShareLink>()
+       .HasIndex(l => l.ExpiresAt);
+
+      modelBuilder
+       .Entity<ShareQuery>()
+       .HasIndex(q => q.Token)
+       .IsUnique();
+
+      modelBuilder
+       .Entity<ShareQuery>()
+       .HasIndex(q => q.QueryHash)
+       .IsUnique();
+
+      modelBuilder
+       .Entity<ShareQuery>()
+       .HasIndex(q => q.LastUsedAt);
 
       modelBuilder
        .Entity<Setting>()

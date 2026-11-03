@@ -23,7 +23,7 @@ public class RecordServiceCoverTests
     jobs.Setup(j => j.EnqueueForOutgoingLinks(It.IsAny<Guid>(), It.IsAny<FederationJobType>())).ReturnsAsync([]);
   }
 
-  private RecordService CreateService() => new(records.Object, new Mock<IArtistRepository>().Object, new Mock<IAlbumRepository>().Object, new Mock<IGenreRepository>().Object, new Mock<ILanguageRepository>().Object, covers.Object, jobs.Object, new Mock<IFederationAuditLogger>().Object);
+  private RecordService CreateService() => new(records.Object, new Mock<IArtistRepository>().Object, new Mock<IAlbumRepository>().Object, new Mock<IGenreRepository>().Object, new Mock<ILanguageRepository>().Object, covers.Object, jobs.Object, new Mock<IShareRuleRepository>().Object, new Mock<IFederationAuditLogger>().Object);
 
   private Record AddRecord(string? cover, string owner = TestEnvironment.Instance)
   {

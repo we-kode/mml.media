@@ -43,6 +43,25 @@ namespace Media.DBContext.Migrations
                     b.ToTable("federation_rules_albums", "public");
                 });
 
+            modelBuilder.Entity("AlbumShareRule", b =>
+                {
+                    b.Property<Guid>("AlbumsAlbumId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("albums_album_id");
+
+                    b.Property<Guid>("ShareRuleId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("share_rule_id");
+
+                    b.HasKey("AlbumsAlbumId", "ShareRuleId")
+                        .HasName("pk_share_rules_albums");
+
+                    b.HasIndex("ShareRuleId")
+                        .HasDatabaseName("ix_share_rules_albums_share_rule_id");
+
+                    b.ToTable("share_rules_albums", "public");
+                });
+
             modelBuilder.Entity("ArtistFederationRule", b =>
                 {
                     b.Property<Guid>("ArtistsArtistId")
@@ -60,6 +79,25 @@ namespace Media.DBContext.Migrations
                         .HasDatabaseName("ix_federation_rules_artists_federation_rule_rule_id");
 
                     b.ToTable("federation_rules_artists", "public");
+                });
+
+            modelBuilder.Entity("ArtistShareRule", b =>
+                {
+                    b.Property<Guid>("ArtistsArtistId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("artists_artist_id");
+
+                    b.Property<Guid>("ShareRuleId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("share_rule_id");
+
+                    b.HasKey("ArtistsArtistId", "ShareRuleId")
+                        .HasName("pk_share_rules_artists");
+
+                    b.HasIndex("ShareRuleId")
+                        .HasDatabaseName("ix_share_rules_artists_share_rule_id");
+
+                    b.ToTable("share_rules_artists", "public");
                 });
 
             modelBuilder.Entity("FederationPeerFederationRule", b =>
@@ -119,6 +157,25 @@ namespace Media.DBContext.Migrations
                     b.ToTable("federation_rules_groups", "public");
                 });
 
+            modelBuilder.Entity("GenreShareRule", b =>
+                {
+                    b.Property<Guid>("GenresGenreId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("genres_genre_id");
+
+                    b.Property<Guid>("ShareRuleId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("share_rule_id");
+
+                    b.HasKey("GenresGenreId", "ShareRuleId")
+                        .HasName("pk_share_rules_genres");
+
+                    b.HasIndex("ShareRuleId")
+                        .HasDatabaseName("ix_share_rules_genres_share_rule_id");
+
+                    b.ToTable("share_rules_genres", "public");
+                });
+
             modelBuilder.Entity("GroupLivestream", b =>
                 {
                     b.Property<Guid>("GroupsGroupId")
@@ -174,6 +231,25 @@ namespace Media.DBContext.Migrations
                         .HasDatabaseName("ix_groups_records_records_record_id");
 
                     b.ToTable("groups_records", "public");
+                });
+
+            modelBuilder.Entity("GroupShareRule", b =>
+                {
+                    b.Property<Guid>("GroupsGroupId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("groups_group_id");
+
+                    b.Property<Guid>("ShareRuleId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("share_rule_id");
+
+                    b.HasKey("GroupsGroupId", "ShareRuleId")
+                        .HasName("pk_share_rules_groups");
+
+                    b.HasIndex("ShareRuleId")
+                        .HasDatabaseName("ix_share_rules_groups_share_rule_id");
+
+                    b.ToTable("share_rules_groups", "public");
                 });
 
             modelBuilder.Entity("Media.DBContext.Models.Album", b =>
@@ -876,6 +952,125 @@ namespace Media.DBContext.Migrations
                     b.ToTable("settings", "public");
                 });
 
+            modelBuilder.Entity("Media.DBContext.Models.ShareLink", b =>
+                {
+                    b.Property<Guid>("ShareLinkId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("share_link_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("created_by");
+
+                    b.Property<bool>("CreatedByAdmin")
+                        .HasColumnType("boolean")
+                        .HasColumnName("created_by_admin");
+
+                    b.Property<DateTime>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("expires_at");
+
+                    b.PrimitiveCollection<List<Guid>>("RecordIds")
+                        .IsRequired()
+                        .HasColumnType("uuid[]")
+                        .HasColumnName("record_ids");
+
+                    b.Property<bool>("SingleUse")
+                        .HasColumnType("boolean")
+                        .HasColumnName("single_use");
+
+                    b.Property<string>("TokenHash")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("token_hash");
+
+                    b.Property<DateTime?>("UsedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("used_at");
+
+                    b.HasKey("ShareLinkId")
+                        .HasName("pk_share_links");
+
+                    b.HasIndex("ExpiresAt")
+                        .HasDatabaseName("ix_share_links_expires_at");
+
+                    b.HasIndex("TokenHash")
+                        .IsUnique()
+                        .HasDatabaseName("ix_share_links_token_hash");
+
+                    b.ToTable("share_links", "public");
+                });
+
+            modelBuilder.Entity("Media.DBContext.Models.ShareQuery", b =>
+                {
+                    b.Property<Guid>("ShareQueryId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("share_query_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTime>("LastUsedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("last_used_at");
+
+                    b.Property<string>("Query")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("query");
+
+                    b.Property<string>("QueryHash")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("query_hash");
+
+                    b.Property<string>("Token")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("token");
+
+                    b.HasKey("ShareQueryId")
+                        .HasName("pk_share_queries");
+
+                    b.HasIndex("LastUsedAt")
+                        .HasDatabaseName("ix_share_queries_last_used_at");
+
+                    b.HasIndex("QueryHash")
+                        .IsUnique()
+                        .HasDatabaseName("ix_share_queries_query_hash");
+
+                    b.HasIndex("Token")
+                        .IsUnique()
+                        .HasDatabaseName("ix_share_queries_token");
+
+                    b.ToTable("share_queries", "public");
+                });
+
+            modelBuilder.Entity("Media.DBContext.Models.ShareRule", b =>
+                {
+                    b.Property<Guid>("ShareRuleId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("share_rule_id");
+
+                    b.Property<bool>("AllRecords")
+                        .HasColumnType("boolean")
+                        .HasColumnName("all_records");
+
+                    b.HasKey("ShareRuleId")
+                        .HasName("pk_share_rules");
+
+                    b.ToTable("share_rules", "public");
+                });
+
             modelBuilder.Entity("AlbumFederationRule", b =>
                 {
                     b.HasOne("Media.DBContext.Models.Album", null)
@@ -893,6 +1088,23 @@ namespace Media.DBContext.Migrations
                         .HasConstraintName("fk_federation_rules_albums_federation_rules_federation_rule_ru");
                 });
 
+            modelBuilder.Entity("AlbumShareRule", b =>
+                {
+                    b.HasOne("Media.DBContext.Models.Album", null)
+                        .WithMany()
+                        .HasForeignKey("AlbumsAlbumId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_share_rules_albums_albums_albums_album_id");
+
+                    b.HasOne("Media.DBContext.Models.ShareRule", null)
+                        .WithMany()
+                        .HasForeignKey("ShareRuleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_share_rules_albums_share_rules_share_rule_id");
+                });
+
             modelBuilder.Entity("ArtistFederationRule", b =>
                 {
                     b.HasOne("Media.DBContext.Models.Artist", null)
@@ -908,6 +1120,23 @@ namespace Media.DBContext.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_federation_rules_artists_federation_rules_federation_rule_r");
+                });
+
+            modelBuilder.Entity("ArtistShareRule", b =>
+                {
+                    b.HasOne("Media.DBContext.Models.Artist", null)
+                        .WithMany()
+                        .HasForeignKey("ArtistsArtistId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_share_rules_artists_artists_artists_artist_id");
+
+                    b.HasOne("Media.DBContext.Models.ShareRule", null)
+                        .WithMany()
+                        .HasForeignKey("ShareRuleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_share_rules_artists_share_rules_share_rule_id");
                 });
 
             modelBuilder.Entity("FederationPeerFederationRule", b =>
@@ -961,6 +1190,23 @@ namespace Media.DBContext.Migrations
                         .HasConstraintName("fk_federation_rules_groups_groups_groups_group_id");
                 });
 
+            modelBuilder.Entity("GenreShareRule", b =>
+                {
+                    b.HasOne("Media.DBContext.Models.Genre", null)
+                        .WithMany()
+                        .HasForeignKey("GenresGenreId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_share_rules_genres_genres_genres_genre_id");
+
+                    b.HasOne("Media.DBContext.Models.ShareRule", null)
+                        .WithMany()
+                        .HasForeignKey("ShareRuleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_share_rules_genres_share_rules_share_rule_id");
+                });
+
             modelBuilder.Entity("GroupLivestream", b =>
                 {
                     b.HasOne("Media.DBContext.Models.Group", null)
@@ -1010,6 +1256,23 @@ namespace Media.DBContext.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_groups_records_records_records_record_id");
+                });
+
+            modelBuilder.Entity("GroupShareRule", b =>
+                {
+                    b.HasOne("Media.DBContext.Models.Group", null)
+                        .WithMany()
+                        .HasForeignKey("GroupsGroupId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_share_rules_groups_groups_groups_group_id");
+
+                    b.HasOne("Media.DBContext.Models.ShareRule", null)
+                        .WithMany()
+                        .HasForeignKey("ShareRuleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_share_rules_groups_share_rules_share_rule_id");
                 });
 
             modelBuilder.Entity("Media.DBContext.Models.FederationExclusion", b =>

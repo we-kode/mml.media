@@ -11,6 +11,7 @@ public interface IAuthorizationClient
   /// Get groups for one app client.
   /// </summary>
   /// <param name="clientId">the id of client to load the groups for.</param>
-  /// <returns>List of group ids.</returns>
-  public Task<List<Guid>> GetGroups(string clientId);
+  /// <param name="cached">False, to load the current groups from the identity service instead of the cached groups.</param>
+  /// <returns>List of group ids, an empty list for unknown clients or null, if the identity service answered with an error.</returns>
+  public Task<List<Guid>?> GetGroups(string clientId, bool cached = true);
 }
