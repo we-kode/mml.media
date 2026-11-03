@@ -12,10 +12,13 @@ public class ApiKeyValidator(RequestDelegate next, IConfiguration configuration)
   private const string APP_KEY = "APP_KEY";
   // partner instances authenticate with signed assertions instead of an app key.
   private static readonly PathString FederationPeerPath = new(FederationOptions.EndpointPath);
+  // shared links are opened by browsers, which do not have an app key.
+  private static readonly PathString SharePath = new("/share");
 
   public async Task Invoke(HttpContext context)
   {
-    if (context.Request.Path.StartsWithSegments(FederationPeerPath, System.StringComparison.OrdinalIgnoreCase))
+    if (context.Request.Path.StartsWithSegments(FederationPeerPath, System.StringComparison.OrdinalIgnoreCase)
+      || context.Request.Path.StartsWithSegments(SharePath, System.StringComparison.OrdinalIgnoreCase))
     {
       await next.Invoke(context);
       return;

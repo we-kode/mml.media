@@ -25,6 +25,10 @@
   "Records": {
     "MaxCoverSizeMb": 8
   },
+  "Share": {
+    "MaxRecordsPerLink": 200,
+    "StylingPath": "/configs/styling.json"
+  },
   "Federation": {
     "PublicUrl": "",
     "AllowPrivateNetworks": false,

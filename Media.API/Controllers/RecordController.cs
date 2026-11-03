@@ -172,13 +172,20 @@ public class RecordController(
   /// <param name="id">id of the record to be loaded.</param>
   /// <returns><see cref="Record"/> of given id</returns>
   /// <response code="404">If record does not exist.</response>
+  /// <response code="403">If record is not in group of client.</response>
   [HttpGet("{id:Guid}")]
   [ProducesResponseType(StatusCodes.Status404NotFound)]
-  public ActionResult<Record> Get(Guid id)
+  [ProducesResponseType(StatusCodes.Status403Forbidden)]
+  public async Task<ActionResult<Record>> Get(Guid id)
   {
     if (!recordRepository.Exists(id))
     {
       return NotFound();
+    }
+
+    if (!HttpContext.IsAdmin() && !recordRepository.IsInGroup(id, await HttpContext.ClientGroups(authClient)))
+    {
+      return Forbid();
     }
 
     return recordRepository.GetRecord(id);

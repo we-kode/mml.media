@@ -22,6 +22,7 @@ public class RecordService(
   ILanguageRepository languageRepository,
   ICoverLoader coverLoader,
   IFederationJobRepository federationJobRepository,
+  IShareRuleRepository shareRuleRepository,
   IFederationAuditLogger federationAudit) : IRecordService
 {
   public async Task DeleteRecord(Guid guid, bool removeLocked = false)
@@ -160,6 +161,7 @@ public class RecordService(
     await genreRepository.TryRemove(oldGenre);
     await albumRepository.TryRemove(oldAlbum);
     await languageRepository.TryRemove(oldLang);
+    await shareRuleRepository.RemoveEmpty();
   }
 
   private async Task RemoveRecord(Guid id, List<AuditEntry> pending, bool removeLocked = false)
@@ -196,6 +198,9 @@ public class RecordService(
 
     // remove language if no record connected
     await languageRepository.TryRemove(record.Language);
+
+    // remove share rules, which lost all their criteria
+    await shareRuleRepository.RemoveEmpty();
   }
 
   // covers are named by their content, so several records can share one file.

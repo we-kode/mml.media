@@ -1,4 +1,5 @@
 ﻿using Media.Application.Contracts.Repositories;
+using Media.Application.Contracts.Services;
 using Media.Application.Models;
 using Messages.Events;
 using Rebus.Handlers;
@@ -9,7 +10,7 @@ namespace Media.Application.Consumers;
 /// <summary>
 /// Handles messages for changed groups
 /// </summary>
-public class GroupConsumer(IGroupRepository groupRepository, INotificationRepository notificationRepository) : IHandleMessages<GroupCreated>, IHandleMessages<GroupUpdated>, IHandleMessages<GroupDeleted>
+public class GroupConsumer(IGroupRepository groupRepository, INotificationRepository notificationRepository, IShareRuleRepository shareRuleRepository, IShareLinkRevoker shareLinkRevoker) : IHandleMessages<GroupCreated>, IHandleMessages<GroupUpdated>, IHandleMessages<GroupDeleted>
 {
   public async Task Handle(GroupCreated context)
   {
@@ -24,6 +25,8 @@ public class GroupConsumer(IGroupRepository groupRepository, INotificationReposi
   public async Task Handle(GroupDeleted context)
   {
     await notificationRepository.RemoveTargetingOnly(context.Id).ConfigureAwait(false);
+    await shareRuleRepository.RemoveTargetingOnly(context.Id).ConfigureAwait(false);
     await groupRepository.Delete(context.Id).ConfigureAwait(false);
+    await shareLinkRevoker.RevokeUnallowed().ConfigureAwait(false);
   }
 }

@@ -21,4 +21,9 @@ public class RecordStream(string mimeType, FileStream stream)
   /// The stream of the record.
   /// </summary>
   public FileStream Stream { get; set; } = stream;
+
+  /// <summary>
+  /// Name of the file without extension, i.e. the title of the record.
+  /// </summary>
+  public string FileName { get; init; } = string.Empty;
 }
