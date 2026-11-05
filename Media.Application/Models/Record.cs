@@ -40,6 +40,11 @@ public class Record
   public string? Album { get; set; }
 
   /// <summary>
+  /// Id of the album of the record or null if no one provided.
+  /// </summary>
+  public Guid? AlbumId { get; set; }
+
+  /// <summary>
   /// Language of the record or null if no one provided.
   /// </summary>
   public string? Language { get; set; }

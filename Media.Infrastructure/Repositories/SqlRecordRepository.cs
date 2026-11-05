@@ -347,7 +347,8 @@ public class SqlRecordsRepository(Func<ApplicationDBContext> contextFactory, IGr
       record.LanguageName ?? "",
       checksum: record.Checksum,
       record.Cover ?? string.Empty
-    );
+    )
+    { AlbumId = record.AlbumId };
   }
 
   public void SaveMetaData(RecordMetaData metaData, List<Guid> groups)
@@ -482,7 +483,8 @@ public class SqlRecordsRepository(Func<ApplicationDBContext> contextFactory, IGr
       record.Checksum,
       record.Cover ?? string.Empty,
       record.Locked,
-      record.OwnerInstance);
+      record.OwnerInstance)
+    { AlbumId = record.AlbumId };
   }
 
   public async Task Update(Record record, (Guid? artistId, Guid? albumId, Guid? genreId, Guid? languageId) references, bool fromOwner = false)
