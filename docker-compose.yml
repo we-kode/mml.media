@@ -14,11 +14,14 @@ services:
     environment:
       INSTANCE: ${INSTANCE}
       FEDERATION_KEY_SECRET: ${FEDERATION_KEY_SECRET:-}
+      FEDERATION_KEY_SECRET_FILE: /run/secrets/federation_key_secret
     volumes:
       - ${VOL_CERTS}:/etc/ssl/certs:ro,z
       - ${VOL_RECORDS}:/records:Z
       - ${APPSETTINGS}:/configs/appsettings.json:ro,Z
       - ${MEDIA_SECRETS_PATH:-./secrets}:/secrets
+      # optional secret file, /dev/null if not configured
+      - ${FEDERATION_KEY_SECRET_FILE:-/dev/null}:/run/secrets/federation_key_secret:ro
       - /etc/localtime:/etc/localtime:ro
     networks:
       - wekode.mml

@@ -51,6 +51,7 @@ public class Startup(IConfiguration configuration)
   {
     Console.WriteLine($"Starting up instance '{Env.INSTANCE}'");
 
+    services.AddTrustedForwardedHeaders(Configuration);
     services.AddMemoryCache();
     ConfigureFolders();
     services.AddControllers();
@@ -238,6 +239,7 @@ public class Startup(IConfiguration configuration)
   // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
   public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
   {
+    app.UseForwardedHeaders();
     app.UseApiKeyValidation();
     // Configure the HTTP request pipeline.
     if (env.IsDevelopment())
@@ -256,7 +258,10 @@ public class Startup(IConfiguration configuration)
         .AddSupportedUICultures(supportedCultures);
 
     app.UseRequestLocalization(localizationOptions);
-    app.UseHttpsRedirection();
+    if (Program.UseTls(Configuration))
+    {
+      app.UseHttpsRedirection();
+    }
     app.UseRouting();
     app.UseCors();
     app.UseAuthentication();

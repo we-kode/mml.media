@@ -12,6 +12,9 @@
     "Cert": "/certs/dev.wekode.pfx",
     "Password": "secret"
   },
+  "ForwardedHeaders": {
+    "KnownNetworks": []
+  },
   "ConnectionStrings": {
     "MediaConnection": "Server=wekode.mml.db;Port=5432;Database=media;User Id=media;Password=media;"
   },

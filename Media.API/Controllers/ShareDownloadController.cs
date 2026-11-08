@@ -19,7 +19,7 @@ namespace Media.API.Controllers;
 /// </summary>
 [ApiController]
 [AllowAnonymous]
-[Route("s")]
+[Route("media/s")]
 public class ShareDownloadController(IShareLinkRepository linkRepository, IShareArchiveService archive, IShareLinkRevoker revoker, SharePages pages) : ControllerBase
 {
   /// <summary>
