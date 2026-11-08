@@ -13,7 +13,7 @@ public class ApiKeyValidator(RequestDelegate next, IConfiguration configuration)
   // partner instances authenticate with signed assertions instead of an app key.
   private static readonly PathString FederationPeerPath = new(FederationOptions.EndpointPath);
   // shared links are opened by browsers, which do not have an app key.
-  private static readonly PathString SharePath = new("/s");
+  private static readonly PathString SharePath = new("/media/s");
 
   public async Task Invoke(HttpContext context)
   {

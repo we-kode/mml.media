@@ -12,8 +12,8 @@ public class ApiKeyValidatorTests
   private const string AppKey = "app-key";
 
   [Theory]
-  [InlineData("/s/open")]
-  [InlineData("/s/download/token")]
+  [InlineData("/media/s/open")]
+  [InlineData("/media/s/download/token")]
   public async Task SharePages_AreOpenedWithoutAppKey(string path)
   {
     Assert.True(await Passes(path));
@@ -22,6 +22,7 @@ public class ApiKeyValidatorTests
   [Theory]
   [InlineData("/api/v2.0/media/record")]
   [InlineData("/share/open")]
+  [InlineData("/s/open")]
   [InlineData("/search")]
   public async Task OtherPaths_NeedAppKey(string path)
   {
