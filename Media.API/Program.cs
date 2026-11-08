@@ -14,6 +14,14 @@ namespace Media.API
       return Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Test";
     }
 
+    /// <summary>
+    /// Determines whether the service listens on https, which is the case when a certificate is configured in <c>TLS:Cert</c>.
+    /// </summary>
+    public static bool UseTls(IConfiguration configuration)
+    {
+      return !string.IsNullOrWhiteSpace(configuration["TLS:Cert"]);
+    }
+
     public static void Main(string[] args)
     {
       CreateHostBuilder(args).Build().Run();
@@ -35,9 +43,14 @@ namespace Media.API
             {
               options.ListenAnyIP(5052, listenOptions =>
               {
-                var cert = config["TLS:Cert"] ?? string.Empty;
-                var pwd = config["TLS:Password"] ?? string.Empty;
-                listenOptions.UseHttps(cert, pwd);
+                if (UseTls(config))
+                {
+                  listenOptions.UseHttps(config["TLS:Cert"]!, config["TLS:Password"]);
+                }
+                else
+                {
+                  Console.WriteLine("No 'TLS:Cert' configured. Listening on http, TLS has to be terminated by the reverse proxy.");
+                }
               });
             });
           });

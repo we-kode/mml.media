@@ -162,15 +162,15 @@
     "semantic_hash": ""
   },
   "Media.API/Middleware/ApiKeyValidator.cs": {
-    "mtime": 1793808967.7724035,
-    "seen": 1793894825.7582529,
-    "ast_hash": "46b0cdd3f98e8531f1a15ab23adfcb16",
+    "mtime": 1794141114.957363,
+    "seen": 1794141630.3581336,
+    "ast_hash": "4668e4d3bbb65010a86f4c806f7c4835",
     "semantic_hash": ""
   },
   "Media.API/Program.cs": {
-    "mtime": 1720288355.4326732,
-    "seen": 1789824729.849587,
-    "ast_hash": "796904b9f265456f344b8b9c5348b1cf",
+    "mtime": 1794078798.8627484,
+    "seen": 1794079315.9037511,
+    "ast_hash": "3c970ead07edeea594dc200550264b8b",
     "semantic_hash": ""
   },
   "Media.API/Properties/launchSettings.json": {
@@ -186,15 +186,15 @@
     "semantic_hash": ""
   },
   "Media.API/Startup.cs": {
-    "mtime": 1793808734.0172079,
-    "seen": 1793808757.3176773,
-    "ast_hash": "f4f68ddb148207a45c74d0c8368e2c4a",
+    "mtime": 1794078798.8642657,
+    "seen": 1794079315.9037511,
+    "ast_hash": "82a6617e93750e36b028a0c127db9b20",
     "semantic_hash": ""
   },
   "Media.API/default.appsettings.json": {
-    "mtime": 1793808734.0172079,
-    "seen": 1793808757.3176773,
-    "ast_hash": "f3fe6cafca1997607255fa75186c816f",
+    "mtime": 1794078704.228421,
+    "seen": 1794079315.9037511,
+    "ast_hash": "005a4e960f830e511052e4a06decb39a",
     "semantic_hash": ""
   },
   "Media.API/test.appsettings.json": {
@@ -768,9 +768,9 @@
     "semantic_hash": ""
   },
   "docker-compose.yml": {
-    "mtime": 1792861185.8938816,
-    "seen": 1792861194.7838483,
-    "ast_hash": "f6184c0747b21e44258504440fb9df16",
+    "mtime": 1794081109.186834,
+    "seen": 1794081204.955255,
+    "ast_hash": "5011c419af043e013de42a7fa5d6cf80",
     "semantic_hash": ""
   },
   "Media.API/Authentication/FederationPeerAuthenticationHandler.cs": {
@@ -1128,9 +1128,9 @@
     "semantic_hash": ""
   },
   "Media.Infrastructure/IO/FederationKeyStore.cs": {
-    "mtime": 1792861185.865941,
-    "seen": 1793296212.1082587,
-    "ast_hash": "37ee3f9766716f212c3419a3910a89ec",
+    "mtime": 1794081035.7459335,
+    "seen": 1794081204.955255,
+    "ast_hash": "661c2d7d66427a4fddc031c1d906b187",
     "semantic_hash": ""
   },
   "Media.Infrastructure/IO/FederationUploadStore.cs": {
@@ -1578,9 +1578,9 @@
     "semantic_hash": ""
   },
   "Media.API/Contracts/ShareResponse.cs": {
-    "mtime": 1793808734.0041566,
-    "seen": 1793808757.3176773,
-    "ast_hash": "eb55ce4080056ddc85b39d9fecd495b3",
+    "mtime": 1794141114.957363,
+    "seen": 1794141630.3581336,
+    "ast_hash": "1a4cf9ab7d4f3ac5e4530b68f25a1760",
     "semantic_hash": ""
   },
   "Media.API/Contracts/ShareRuleRequest.cs": {
@@ -1614,9 +1614,9 @@
     "semantic_hash": ""
   },
   "Media.API/Controllers/ShareDownloadController.cs": {
-    "mtime": 1793808734.0081599,
-    "seen": 1793808757.3176773,
-    "ast_hash": "ded6fe5e2516c0e710877fcb2625eed8",
+    "mtime": 1794141114.9563634,
+    "seen": 1794141630.3581336,
+    "ast_hash": "167c0a8cb1fa0c6e5dca13ee0a422491",
     "semantic_hash": ""
   },
   "Media.API/Controllers/ShareQueryController.cs": {
@@ -2004,9 +2004,33 @@
     "semantic_hash": ""
   },
   "Media.Test/Share/ApiKeyValidatorTests.cs": {
-    "mtime": 1793808967.8745759,
-    "seen": 1793894825.7582529,
-    "ast_hash": "bb40d604fe569db185a78934cd03dcac",
+    "mtime": 1794141125.203926,
+    "seen": 1794141630.3581336,
+    "ast_hash": "0514e542b2564d88a072d3b28a4c3ae5",
+    "semantic_hash": ""
+  },
+  "Media.API/Middleware/TrustedForwardedHeadersExtensions.cs": {
+    "mtime": 1794078834.7125432,
+    "seen": 1794079315.9037511,
+    "ast_hash": "c1a1c52ddca43cd67f5ba859358efd48",
+    "semantic_hash": ""
+  },
+  "Media.Test/Share/TrustedForwardedHeadersExtensionsTests.cs": {
+    "mtime": 1794078834.7659783,
+    "seen": 1794079315.9048276,
+    "ast_hash": "39f3f0bcec90eec1c406f3bc1aa47f57",
+    "semantic_hash": ""
+  },
+  "Media.Infrastructure/IO/SecretReader.cs": {
+    "mtime": 1794081036.1686444,
+    "seen": 1794081204.955255,
+    "ast_hash": "75d628fbd3dd607e2977b016130068ca",
+    "semantic_hash": ""
+  },
+  "Media.Test/Federation/SecretReaderTests.cs": {
+    "mtime": 1794081047.189062,
+    "seen": 1794081204.955255,
+    "ast_hash": "a4e87b2750bde987c0b0312af368184f",
     "semantic_hash": ""
   }
 }

@@ -21,10 +21,10 @@ public class FederationKeyStore(FederationOptions options, string? secret) : IFe
   private List<StoredKey>? keys;
 
   /// <summary>
-  /// Initializes the key store, which encrypts the keys with the secret of the environment variable FEDERATION_KEY_SECRET if set.
+  /// Initializes the key store, which encrypts the keys with the secret of the file in FEDERATION_KEY_SECRET_FILE or the environment variable FEDERATION_KEY_SECRET if set.
   /// </summary>
   /// <param name="options">The federation options.</param>
-  public FederationKeyStore(FederationOptions options) : this(options, Environment.GetEnvironmentVariable(SECRET_ENV))
+  public FederationKeyStore(FederationOptions options) : this(options, SecretReader.Read(SECRET_ENV))
   {
   }
 
