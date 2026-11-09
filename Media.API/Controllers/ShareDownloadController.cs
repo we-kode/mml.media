@@ -1,3 +1,4 @@
+using Asp.Versioning;
 using Media.API.Services;
 using Media.API.Share;
 using Media.Application.Contracts.Repositories;
@@ -19,6 +20,7 @@ namespace Media.API.Controllers;
 /// </summary>
 [ApiController]
 [AllowAnonymous]
+[ApiVersionNeutral]
 [Route("media/s")]
 public class ShareDownloadController(IShareLinkRepository linkRepository, IShareArchiveService archive, IShareLinkRevoker revoker, SharePages pages) : ControllerBase
 {
