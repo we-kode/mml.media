@@ -28,7 +28,6 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.OpenApi;
 using OpenIddict.Abstractions;
 using OpenIddict.Validation.AspNetCore;
-using OpenIddict.Validation.SystemNetHttp;
 using Rebus.Config;
 using System;
 using System.IO;
@@ -180,7 +179,7 @@ public class Startup(IConfiguration configuration)
     });
   }
 
-  private void ConfigureAuth(IServiceCollection services)
+  internal void ConfigureAuth(IServiceCollection services)
   {
     services.AddHttpClient<IAuthorizationClient, AuthorizationClient>(c =>
     {
@@ -194,23 +193,6 @@ public class Startup(IConfiguration configuration)
 
     services.AddAuthentication(OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)
       .AddScheme<AuthenticationSchemeOptions, FederationPeerAuthenticationHandler>(FederationPeerAuthenticationHandler.SchemeName, null);
-
-    var httpClient = services
-      .AddHttpClient(typeof(OpenIddictValidationSystemNetHttpOptions).Assembly.GetName().Name!)
-      .ConfigureHttpClient(c =>
-      {
-        c.DefaultRequestHeaders.Add("ClientId", Configuration["ApiClient:ClientId"]);
-        c.DefaultRequestHeaders.Add("ClientSecret", Configuration["ApiClient:ClientSecret"]);
-      });
-
-    if (Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development")
-    {
-      httpClient
-      .ConfigurePrimaryHttpMessageHandler(_ => new HttpClientHandler
-      {
-        ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
-      });
-    }
 
     services.AddAuthorizationBuilder()
       .AddPolicy(Roles.Admin, policy =>
@@ -231,7 +213,19 @@ public class Startup(IConfiguration configuration)
     {
       options.SetIssuer(issuer);
       options.AddAudiences($"wekode.mml.media/{Env.INSTANCE.ToLower()}");
-      options.UseSystemNetHttp();
+      options.UseSystemNetHttp()
+        .ConfigureHttpClient(c =>
+        {
+          c.DefaultRequestHeaders.Add("ClientId", Configuration["ApiClient:ClientId"]);
+          c.DefaultRequestHeaders.Add("ClientSecret", Configuration["ApiClient:ClientSecret"]);
+        })
+        .ConfigureHttpClientHandler(handler =>
+        {
+          if (Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development")
+          {
+            handler.ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator;
+          }
+        });
       options.UseAspNetCore();
     });
   }
