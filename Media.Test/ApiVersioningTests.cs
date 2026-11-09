@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Hosting.Server.Features;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Swashbuckle.AspNetCore.Swagger;
 using System;
 using System.Linq;
 using System.Net;
@@ -62,6 +63,7 @@ public class ApiVersioningTests : IAsyncLifetime
   [InlineData("POST", "api/v2.0/media/record/list")]
   [InlineData("POST", "api/v2.0/media/record/check")]
   [InlineData("GET", $"api/v2.0/media/stream/{RecordId}")]
+  [InlineData("GET", $"api/v2.0/media/stream/{RecordId}.mp3")]
   [InlineData("GET", "api/v2.0/media/federation/peer/discovery")]
   // share pages without api version
   [InlineData("GET", "media/s/open")]
@@ -76,9 +78,35 @@ public class ApiVersioningTests : IAsyncLifetime
   [InlineData("GET", "api/v1.0/media/album/albums")]
   [InlineData("GET", "api/v2.0/media/record/artists")]
   [InlineData("GET", "api/v3.0/media/settings")]
+  [InlineData("GET", "api/v2.0/media/stream/no-record.mp3")]
   public async Task Request_WithUnsupportedVersion_IsRejected(string method, string path)
   {
     var response = await client!.SendAsync(new HttpRequestMessage(new HttpMethod(method), path), TestContext.Current.CancellationToken);
     Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+  }
+
+  [Theory]
+  [InlineData("v1.0", "/api/v1.0/media/Record/artists")]
+  [InlineData("v2.0", "/api/v2.0/media/Album/albums")]
+  public void Swagger_DescribesEachApiVersion(string documentName, string expectedPath)
+  {
+    var builder = WebApplication.CreateBuilder();
+    builder.Services.AddControllers().AddApplicationPart(typeof(Startup).Assembly);
+    Environment.SetEnvironmentVariable("ASPNETCORE_ENVIRONMENT", "Development");
+    try
+    {
+      Startup.ConfigureApiServices(builder.Services);
+    }
+    finally
+    {
+      Environment.SetEnvironmentVariable("ASPNETCORE_ENVIRONMENT", null);
+    }
+    using var swaggerApp = builder.Build();
+
+    var paths = swaggerApp.Services.GetRequiredService<ISwaggerProvider>().GetSwagger(documentName).Paths.Keys.ToList();
+
+    Assert.Contains(expectedPath, paths);
+    Assert.Contains("/media/s/open", paths);
+    Assert.DoesNotContain(paths, path => path.Contains("{version}"));
   }
 }

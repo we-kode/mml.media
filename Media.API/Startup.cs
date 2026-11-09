@@ -131,7 +131,11 @@ public class Startup(IConfiguration configuration)
     if (Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development")
     {
       // configuring Swagger/OpenAPI. More at https://aka.ms/aspnetcore/swashbuckle
-      services.AddSwaggerGen(config => config.EnableAnnotations());
+      services.AddSwaggerGen(config =>
+      {
+        config.EnableAnnotations();
+        config.CustomSchemaIds(type => type.FullName!.Replace('+', '.'));
+      });
       services.AddOptions<SwaggerGenOptions>().Configure<IApiVersionDescriptionProvider>((config, provider) =>
       {
         foreach (var description in provider.ApiVersionDescriptions)
