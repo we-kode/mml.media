@@ -54,7 +54,7 @@ public class Startup(IConfiguration configuration)
     services.AddTrustedForwardedHeaders(Configuration);
     services.AddMemoryCache();
     ConfigureFolders();
-    services.AddControllers();
+    services.AddControllers(options => options.Filters.Add<LegacyClientCoverFilter>());
     ConfigureLocaleServices(services);
     ConfigureApiServices(services);
     ConfigureMBusServices(services);
