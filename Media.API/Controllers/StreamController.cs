@@ -28,6 +28,7 @@ public class StreamController(IRecordRepository repository, IAuthorizationClient
   /// <response code="404">If record does not exist.</response>
   /// <response code="403">If record is not in group of client.</response>
   [HttpGet("{id:Guid}")]
+  [HttpGet("{id:Guid}.mp3")]
   public async Task<IActionResult> Get(Guid id)
   {
     if (!repository.Exists(id))
@@ -43,39 +44,6 @@ public class StreamController(IRecordRepository repository, IAuthorizationClient
     }
 
     var stream = repository.StreamRecord(id);
-    return File(stream.Stream, stream.MimeType, true);
-  }
-
-  /// <summary>
-  /// Streams the given record.
-  /// </summary>
-  /// <param name="id">Record to be streamed.</param>
-  /// <returns>Stream of the given record.</returns>
-  /// <response code="404">If record does not exist.</response>
-  /// <response code="403">If record is not in group of client.</response>
-  [HttpGet("{id}")]
-  public async Task<IActionResult> Get(string id)
-  {
-    if (string.IsNullOrEmpty(id) || !id.EndsWith(".mp3"))
-    {
-      return NotFound();
-    }
-
-    var recordId = new Guid(id.Split('.')[0]);
-
-    if (!repository.Exists(recordId))
-    {
-      return NotFound();
-    }
-
-    var isAdmin = HttpContext.IsAdmin();
-    var clientGroups = await HttpContext.ClientGroups(authClient);
-    if (!isAdmin && !repository.IsInGroup(recordId, clientGroups))
-    {
-      return Forbid();
-    }
-
-    var stream = repository.StreamRecord(recordId);
     return File(stream.Stream, stream.MimeType, true);
   }
 
