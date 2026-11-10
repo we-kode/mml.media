@@ -1,4 +1,5 @@
-﻿using Media.Application.Extensions;
+﻿using Media.Application.Contracts.IO;
+using Media.Application.Extensions;
 using Media.DBContext;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Hosting;
@@ -10,45 +11,91 @@ using System.Threading.Tasks;
 
 namespace Media.API.HostedServices;
 
-internal class MigrateCovers(Func<ApplicationDBContext> contextFactory) : BackgroundService
+/// <summary>
+/// Moves the base64 covers of records into cover files once on startup.
+/// </summary>
+public class MigrateCovers(Func<ApplicationDBContext> contextFactory, ICoverLoader coverLoader) : BackgroundService
 {
-  private readonly string coverPath = "/records/covers";
-  private readonly string migrationID = "20260304000000_Migrate_Covers";
-  private readonly string productVersion = "10.0.0";
+  private const int BatchSize = 100;
+  private const string MigrationID = "20261110000000_Migrate_Covers_To_Files";
+  private const string ProductVersion = "10.0.0";
+
   protected override async Task ExecuteAsync(CancellationToken stoppingToken)
   {
     using var ctx = contextFactory();
-    // check if migration is already applied
     var appliedMigrations = await ctx.Database.GetAppliedMigrationsAsync(stoppingToken);
-    if (appliedMigrations.Contains(migrationID))
+    if (appliedMigrations.Contains(MigrationID))
     {
       return;
     }
 
-    // get all records with covers
-    var records = await ctx.Records.Where(r => !string.IsNullOrWhiteSpace(r.Cover)).ToListAsync(stoppingToken);
+    var ids = await ctx.Records
+      .Where(r => r.Cover != null && r.Cover != string.Empty)
+      .Select(r => r.RecordId)
+      .ToListAsync(stoppingToken);
 
-    // extract covers from base64 and save them to disk with short hash as filename
-    foreach (var record in records)
+    var failed = 0;
+    foreach (var chunk in ids.Chunk(BatchSize))
     {
-      byte[] coverData = [];
-      if (!Convert.TryFromBase64String(record.Cover!, coverData, out _))
+      var records = await ctx.Records.Where(r => chunk.Contains(r.RecordId)).ToListAsync(stoppingToken);
+      foreach (var record in records)
       {
-        continue; 
+        try
+        {
+          record.Cover = await MigrateCover(record.Cover!) ?? record.Cover;
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+          failed++;
+          Console.WriteLine($"Migration of the cover of record {record.RecordId} failed: {e.Message}");
+        }
       }
 
-      var fileName = coverData.ToFileName();
-      var coverPathWithHash = $"{coverPath}/{fileName}";
-      await File.WriteAllBytesAsync(coverPathWithHash, coverData, stoppingToken);
-      record.Cover = fileName;
+      await ctx.SaveChangesAsync(stoppingToken);
+      ctx.ChangeTracker.Clear();
     }
 
-    // update records with new cover path
-    await ctx.SaveChangesAsync(stoppingToken);
+    if (failed > 0)
+    {
+      Console.WriteLine($"Migration of {failed} covers failed. The migration is repeated on the next start.");
+      return;
+    }
 
-    // apply migration
     await ctx.Database.ExecuteSqlRawAsync(
         "INSERT INTO \"__EFMigrationsHistory\" (\"migration_id\", \"product_version\") VALUES ({0}, {1})",
-        migrationID, productVersion);
+        [MigrationID, ProductVersion],
+        stoppingToken);
+  }
+
+  /// <summary>
+  /// Stores a base64 cover as cover file.
+  /// </summary>
+  /// <param name="cover">The stored cover of a record.</param>
+  /// <returns>The file name of the stored cover or null, if the cover is no base64 cover.</returns>
+  public async Task<string?> MigrateCover(string cover)
+  {
+    if (cover.IsCoverFileName())
+    {
+      return null;
+    }
+
+    byte[] data;
+    try
+    {
+      data = Convert.FromBase64String(cover);
+    }
+    catch (FormatException)
+    {
+      return null;
+    }
+
+    if (data.Length == 0)
+    {
+      return null;
+    }
+
+    var fileName = data.ToFileName();
+    await coverLoader.Save(data, fileName);
+    return fileName;
   }
 }

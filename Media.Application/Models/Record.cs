@@ -109,7 +109,7 @@ public class Record
   /// <param name="genre">The genre of the record.</param>
   /// <param name="language">The language of the record.</param>
   /// <param name="checksum">The checksum of record.</param>
-  /// <param name="cover">The cover as base64 string.</param>
+  /// <param name="cover">The file name of the cover.</param>
   /// <param name="isLocked">Indicates whether the record is locked.</param>
   /// <param name="ownerInstance">The owner of the record.</param>
   public Record(Guid recordId, string title, int tracknumber, string? artist, DateTime date, TimeSpan duration, int bitrate, ICollection<Group> groups, string album = "", string genre = "", string language = "", string checksum = "", string cover = "", bool isLocked = false, string ownerInstance = "")
