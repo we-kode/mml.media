@@ -1,8 +1,8 @@
 using Asp.Versioning;
+using Asp.Versioning.ApiExplorer;
 using Autofac;
 using Media.API.Authentication;
 using Media.API.Extensions;
-using Media.API.Filters;
 using Media.API.HostedServices;
 using Media.API.Middleware;
 using Media.API.Services;
@@ -28,8 +28,8 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.OpenApi;
 using OpenIddict.Abstractions;
 using OpenIddict.Validation.AspNetCore;
-using OpenIddict.Validation.SystemNetHttp;
 using Rebus.Config;
+using Swashbuckle.AspNetCore.SwaggerGen;
 using System;
 using System.IO;
 using System.Net.Http;
@@ -116,24 +116,33 @@ public class Startup(IConfiguration configuration)
     });
   }
 
-  private static void ConfigureApiServices(IServiceCollection services)
+  internal static void ConfigureApiServices(IServiceCollection services)
   {
     services.AddApiVersioning(config =>
     {
-      config.DefaultApiVersion = new ApiVersion(2.0);
-      config.AssumeDefaultVersionWhenUnspecified = true;
+      config.ApiVersionReader = new UrlSegmentApiVersionReader();
+    }).AddMvc().AddApiExplorer(options =>
+    {
+      options.GroupNameFormat = "'v'VV";
+      options.SubstituteApiVersionInUrl = true;
+      options.SubstitutionFormat = "VV";
     });
     services.AddEndpointsApiExplorer();
     if (Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development")
     {
       // configuring Swagger/OpenAPI. More at https://aka.ms/aspnetcore/swashbuckle
       services.AddSwaggerGen(config =>
-     {
-       config.SwaggerDoc("v2.0", new OpenApiInfo { Title = "Media Api", Version = "v2.0" });
-       config.OperationFilter<RemoveVersionParameterFilter>();
-       config.DocumentFilter<ReplaceVersionWithExactValueInPathFilter>();
-       config.EnableAnnotations();
-     });
+      {
+        config.EnableAnnotations();
+        config.CustomSchemaIds(type => type.FullName!.Replace('+', '.'));
+      });
+      services.AddOptions<SwaggerGenOptions>().Configure<IApiVersionDescriptionProvider>((config, provider) =>
+      {
+        foreach (var description in provider.ApiVersionDescriptions)
+        {
+          config.SwaggerDoc(description.GroupName, new OpenApiInfo { Title = "Media Api", Version = description.GroupName });
+        }
+      });
     }
   }
 
@@ -180,7 +189,7 @@ public class Startup(IConfiguration configuration)
     });
   }
 
-  private void ConfigureAuth(IServiceCollection services)
+  internal void ConfigureAuth(IServiceCollection services)
   {
     services.AddHttpClient<IAuthorizationClient, AuthorizationClient>(c =>
     {
@@ -194,23 +203,6 @@ public class Startup(IConfiguration configuration)
 
     services.AddAuthentication(OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)
       .AddScheme<AuthenticationSchemeOptions, FederationPeerAuthenticationHandler>(FederationPeerAuthenticationHandler.SchemeName, null);
-
-    var httpClient = services
-      .AddHttpClient(typeof(OpenIddictValidationSystemNetHttpOptions).Assembly.GetName().Name!)
-      .ConfigureHttpClient(c =>
-      {
-        c.DefaultRequestHeaders.Add("ClientId", Configuration["ApiClient:ClientId"]);
-        c.DefaultRequestHeaders.Add("ClientSecret", Configuration["ApiClient:ClientSecret"]);
-      });
-
-    if (Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development")
-    {
-      httpClient
-      .ConfigurePrimaryHttpMessageHandler(_ => new HttpClientHandler
-      {
-        ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
-      });
-    }
 
     services.AddAuthorizationBuilder()
       .AddPolicy(Roles.Admin, policy =>
@@ -231,7 +223,19 @@ public class Startup(IConfiguration configuration)
     {
       options.SetIssuer(issuer);
       options.AddAudiences($"wekode.mml.media/{Env.INSTANCE.ToLower()}");
-      options.UseSystemNetHttp();
+      options.UseSystemNetHttp()
+        .ConfigureHttpClient(c =>
+        {
+          c.DefaultRequestHeaders.Add("ClientId", Configuration["ApiClient:ClientId"]);
+          c.DefaultRequestHeaders.Add("ClientSecret", Configuration["ApiClient:ClientSecret"]);
+        })
+        .ConfigureHttpClientHandler(handler =>
+        {
+          if (Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development")
+          {
+            handler.ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator;
+          }
+        });
       options.UseAspNetCore();
     });
   }
@@ -247,7 +251,10 @@ public class Startup(IConfiguration configuration)
       app.UseSwagger();
       app.UseSwaggerUI(config =>
       {
-        config.SwaggerEndpoint("/swagger/v2.0/swagger.json", "Media API v2.0");
+        foreach (var description in app.ApplicationServices.GetRequiredService<IApiVersionDescriptionProvider>().ApiVersionDescriptions)
+        {
+          config.SwaggerEndpoint($"/swagger/{description.GroupName}/swagger.json", $"Media API {description.GroupName}");
+        }
       });
       app.UseDeveloperExceptionPage();
     }
