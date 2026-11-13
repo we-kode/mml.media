@@ -1,9 +1,9 @@
-using AutoMapper;
+using Media.Application.Constants;
 using Media.Application.Contracts.Repositories;
 using Media.Application.Models;
+using Media.Application.Types;
 using Media.DBContext;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -14,7 +14,7 @@ using System.Transactions;
 
 namespace Media.Infrastructure.Repositories;
 
-public class SqlRecordsRepository(Func<ApplicationDBContext> contextFactory, IMapper mapper, IGroupRepository groupRepository) : IRecordRepository
+public class SqlRecordsRepository(Func<ApplicationDBContext> contextFactory, IGroupRepository groupRepository) : IRecordRepository
 {
   public bool IsIndexed(string checksum)
   {
@@ -37,12 +37,39 @@ public class SqlRecordsRepository(Func<ApplicationDBContext> contextFactory, IMa
       .Take(take)
       .Select(rec => MapModel(rec))
       .ToList();
+    SetSyncStates(context, records);
 
     return new Records
     {
       TotalCount = count,
       Items = records
     };
+  }
+
+  private static void SetSyncStates(ApplicationDBContext context, IList<Record> records)
+  {
+    var ids = records.Select(r => r.RecordId).ToList();
+    var sent = context.FederationRecordLinks
+      .Where(l => l.Direction == (int)SyncDirection.Outgoing && ids.Contains(l.LocalRecordId))
+      .Select(l => l.LocalRecordId)
+      .ToHashSet();
+    var problems = context.FederationJobs
+      .Where(j => j.RecordId.HasValue && ids.Contains(j.RecordId.Value) && (j.Failed || j.LastError != null))
+      .Select(j => j.RecordId!.Value)
+      .ToHashSet();
+    var pending = context.FederationJobs
+      .Where(j => j.RecordId.HasValue && ids.Contains(j.RecordId.Value) && !j.Failed && j.Type == (int)FederationJobType.PushRecord)
+      .Select(j => j.RecordId!.Value)
+      .ToHashSet();
+
+    foreach (var record in records)
+    {
+      record.SyncState = problems.Contains(record.RecordId) ? RecordSyncState.Problem
+        : pending.Contains(record.RecordId) ? RecordSyncState.Pending
+        : record.OwnerInstance != Env.INSTANCE ? RecordSyncState.Received
+        : sent.Contains(record.RecordId) ? RecordSyncState.Sent
+        : RecordSyncState.None;
+    }
   }
 
   public RecordFolders ListFolder(string? filter, TagFilter tagFilter, bool filterByGroups, IList<Guid> groups, int skip, int take)
@@ -98,6 +125,37 @@ public class SqlRecordsRepository(Func<ApplicationDBContext> contextFactory, IMa
       query = query.Where(rec => rec.Groups.Any(g => tagFilter.Groups.Contains(g.GroupId)));
     }
 
+    if (tagFilter.Unassigned)
+    {
+      query = query.Where(rec => !rec.Groups.Any());
+    }
+
+    if (tagFilter.Instances.Count > 0)
+    {
+      query = query.Where(rec => tagFilter.Instances.Contains(rec.OwnerInstance));
+    }
+
+    if (tagFilter.SyncStates.Count > 0)
+    {
+      // the states are evaluated in the same order as in the list: problem, pending, received, sent and none.
+      var instance = Env.INSTANCE;
+      var states = tagFilter.SyncStates;
+      var outgoing = (int)SyncDirection.Outgoing;
+      var push = (int)FederationJobType.PushRecord;
+      query = query.Where(rec =>
+        (states.Contains(RecordSyncState.Problem)
+          && context.FederationJobs.Any(j => j.RecordId == rec.RecordId && (j.Failed || j.LastError != null)))
+        || (!context.FederationJobs.Any(j => j.RecordId == rec.RecordId && (j.Failed || j.LastError != null))
+          && states.Contains(RecordSyncState.Pending)
+          && context.FederationJobs.Any(j => j.RecordId == rec.RecordId && !j.Failed && j.Type == push))
+        || (!context.FederationJobs.Any(j => j.RecordId == rec.RecordId && (j.Failed || j.LastError != null || j.Type == push))
+          && ((states.Contains(RecordSyncState.Received) && rec.OwnerInstance != instance)
+            || (states.Contains(RecordSyncState.Sent) && rec.OwnerInstance == instance
+              && context.FederationRecordLinks.Any(l => l.LocalRecordId == rec.RecordId && l.Direction == outgoing))
+            || (states.Contains(RecordSyncState.None) && rec.OwnerInstance == instance
+              && !context.FederationRecordLinks.Any(l => l.LocalRecordId == rec.RecordId && l.Direction == outgoing)))));
+    }
+
     if (tagFilter.Artists.Count > 0)
     {
       query = query.Where(rec => rec.ArtistId.HasValue && tagFilter.Artists.Contains(rec.ArtistId.Value));
@@ -144,14 +202,14 @@ public class SqlRecordsRepository(Func<ApplicationDBContext> contextFactory, IMa
   public Record? Next(Guid id, string? filter, TagFilter tagFilter, bool filterByGroups, IEnumerable<Guid> clientGroups, bool repeat, bool shuffle)
   {
     using var context = contextFactory();
-    var query = Filter(context, filter, tagFilter, filterByGroups, clientGroups.ToList());
+    var query = Filter(context, filter, tagFilter, filterByGroups, [.. clientGroups]);
     return DetermineRecord(query, id, repeat, shuffle);
   }
 
   public Record? Previous(Guid id, string? filter, TagFilter tagFilter, bool filterByGroups, IEnumerable<Guid> clientGroups, bool repeat)
   {
     using var context = contextFactory();
-    var query = Filter(context, filter, tagFilter, filterByGroups, clientGroups.ToList());
+    var query = Filter(context, filter, tagFilter, filterByGroups, [.. clientGroups]);
     return DetermineRecord(query, id, repeat, reverse: true);
   }
 
@@ -207,7 +265,7 @@ public class SqlRecordsRepository(Func<ApplicationDBContext> contextFactory, IMa
     return MapModel(query.FirstOrDefault(rec => rec.RecordId == previousId));
   }
 
-  private IQueryable<DBContext.Models.SeedRecord> Filter(ApplicationDBContext context, string? filter, TagFilter tagFilter, bool filterByGroups, IList<Guid> groups)
+  private static IQueryable<DBContext.Models.SeedRecord> Filter(ApplicationDBContext context, string? filter, TagFilter tagFilter, bool filterByGroups, IList<Guid> groups)
   {
     var selectQuery = @"SELECT 
                   rec.*, a.name as artist_name, al.album_name as album_name, g.name as genre_name, l.name as language_name,
@@ -251,7 +309,7 @@ public class SqlRecordsRepository(Func<ApplicationDBContext> contextFactory, IMa
     sb.AppendLine(filterLanguageQuery);
     sb.AppendLine("ORDER BY Cast(rec.date as Date) desc, rec.Date asc");
 
-    var args = (object[]) [
+    var args = (object[])[
       ..groups,
       ilikeFilter,
       ..tagFilter.Artists,
@@ -288,7 +346,9 @@ public class SqlRecordsRepository(Func<ApplicationDBContext> contextFactory, IMa
       record.GenreName ?? "",
       record.LanguageName ?? "",
       checksum: record.Checksum,
-      record.Cover ?? string.Empty);
+      record.Cover ?? string.Empty
+    )
+    { AlbumId = record.AlbumId };
   }
 
   public void SaveMetaData(RecordMetaData metaData, List<Guid> groups)
@@ -312,6 +372,7 @@ public class SqlRecordsRepository(Func<ApplicationDBContext> contextFactory, IMa
       Title = metaData.Title ?? metaData.OriginalFileName,
       Bitrate = metaData.Bitrate,
       Cover = metaData.Cover,
+      OwnerInstance = metaData.OwnerInstance ?? Env.INSTANCE,
     };
 
     // add groups
@@ -330,7 +391,8 @@ public class SqlRecordsRepository(Func<ApplicationDBContext> contextFactory, IMa
     context.SaveChanges();
   }
 
-  public async Task RemoveRecord(Guid recordId) {
+  public async Task RemoveRecord(Guid recordId)
+  {
     using var context = contextFactory();
     var record = context.Records.FirstOrDefault(rec => rec.RecordId == recordId);
     if (record == null)
@@ -388,6 +450,22 @@ public class SqlRecordsRepository(Func<ApplicationDBContext> contextFactory, IMa
     return record == null ? null : MapModel(record);
   }
 
+  public IList<Record> GetRecordsByIds(IEnumerable<Guid> ids)
+  {
+    using var context = contextFactory();
+    var recordIds = ids.Distinct().ToList();
+    return [.. context.Records
+      .Include(rec => rec.Album)
+      .Include(rec => rec.Genre)
+      .Include(rec => rec.Artist)
+      .Include(rec => rec.Groups)
+      .Include(rec => rec.Language)
+      .AsSplitQuery()
+      .Where(rec => recordIds.Contains(rec.RecordId))
+      .AsEnumerable()
+      .Select(MapModel)];
+  }
+
   private static Record MapModel(DBContext.Models.Record record)
   {
     return new Record(
@@ -398,16 +476,18 @@ public class SqlRecordsRepository(Func<ApplicationDBContext> contextFactory, IMa
       record.Date,
       record.Duration,
       record.Bitrate ?? 0,
-      record.Groups.Select(g => new Group(g.GroupId, g.Name, g.IsDefault)).ToArray(),
+      [.. record.Groups.Select(g => new Group(g.GroupId, g.Name, g.IsDefault))],
       record.Album?.AlbumName ?? string.Empty,
       record.Genre?.Name ?? string.Empty,
       record.Language?.Name ?? string.Empty,
       record.Checksum,
       record.Cover ?? string.Empty,
-      record.Locked);
+      record.Locked,
+      record.OwnerInstance)
+    { AlbumId = record.AlbumId };
   }
 
-  public async Task Update(Record record, (Guid? artistId, Guid? albumId, Guid? genreId, Guid? languageId) references)
+  public async Task Update(Record record, (Guid? artistId, Guid? albumId, Guid? genreId, Guid? languageId) references, bool fromOwner = false)
   {
     using var context = contextFactory();
 
@@ -424,12 +504,17 @@ public class SqlRecordsRepository(Func<ApplicationDBContext> contextFactory, IMa
     }
 
     // Update title
-    recordToUpdated.Title = record.Title;
+    if (recordToUpdated.OwnerInstance == Env.INSTANCE || fromOwner)
+    {
+      recordToUpdated.Title = record.Title;
+      recordToUpdated.ArtistId = references.artistId;
+      recordToUpdated.AlbumId = references.albumId;
+      recordToUpdated.GenreId = references.genreId;
+      recordToUpdated.LanguageId = references.languageId;
+      recordToUpdated.Cover = record.Cover;
+    }
 
-    recordToUpdated.ArtistId = references.artistId;
-    recordToUpdated.AlbumId = references.albumId;
-    recordToUpdated.GenreId = references.genreId;
-    recordToUpdated.LanguageId = references.languageId;
+    recordToUpdated.Locked = record.Locked;
 
     // update groups
     var addedGroups = record.Groups
@@ -457,9 +542,6 @@ public class SqlRecordsRepository(Func<ApplicationDBContext> contextFactory, IMa
       recordToUpdated.Groups.Remove(deletedGroup);
     }
 
-    recordToUpdated.Cover = record.Cover.Length > 0 ? Convert.ToBase64String(record.Cover) : null;
-    recordToUpdated.Locked = record.Locked;
-
     await context.SaveChangesAsync().ConfigureAwait(false);
   }
 
@@ -469,16 +551,21 @@ public class SqlRecordsRepository(Func<ApplicationDBContext> contextFactory, IMa
     using var context = contextFactory();
     var record = context.Records.First(rec => rec.RecordId == id);
     var stream = File.OpenRead(Path.Combine(record.FilePath, record.Checksum));
-    return new RecordStream(record.MimeType, stream);
+    return new RecordStream(record.MimeType, stream) { FileName = record.Title };
   }
 
   public bool IsInGroup(Guid id, IEnumerable<Guid> clientGroups)
   {
     using var context = contextFactory();
-    var record = context.Records
-      .Include(r => r.Groups)
-      .First(rec => rec.RecordId == id);
-    return record.Groups.Any(g => clientGroups.Contains(g.GroupId));
+    var groups = clientGroups.ToList();
+    return context.Records.Any(rec => rec.RecordId == id && rec.Groups.Any(g => groups.Contains(g.GroupId)));
+  }
+
+  public IList<Guid> GetExistingIds(IEnumerable<Guid> ids)
+  {
+    using var context = contextFactory();
+    var recordIds = ids.Distinct().ToList();
+    return [.. context.Records.Where(rec => recordIds.Contains(rec.RecordId)).Select(rec => rec.RecordId)];
   }
 
   public string GetFilePath(Guid id)
@@ -513,7 +600,7 @@ public class SqlRecordsRepository(Func<ApplicationDBContext> contextFactory, IMa
      .Where(g => groups.Contains(g.GroupId));
     foreach (var record in rAssign)
     {
-      record.Groups = record.Groups = record.Groups.Where(rg => initGroups.Contains(rg.GroupId) && !groups.Contains(rg.GroupId)).Union(gAssign).ToList();
+      record.Groups = record.Groups = [.. record.Groups.Where(rg => initGroups.Contains(rg.GroupId) && !groups.Contains(rg.GroupId)).Union(gAssign)];
     }
     context.SaveChanges();
     scope.Complete();
@@ -531,7 +618,7 @@ public class SqlRecordsRepository(Func<ApplicationDBContext> contextFactory, IMa
 
       foreach (var record in records)
       {
-        record.Groups = record.Groups = record.Groups.Where(rg => initGroups.Contains(rg.GroupId) && !groups.Contains(rg.GroupId)).Union(gAssign).ToList();
+        record.Groups = record.Groups = [.. record.Groups.Where(rg => initGroups.Contains(rg.GroupId) && !groups.Contains(rg.GroupId)).Union(gAssign)];
       }
     }
     context.SaveChanges();
@@ -581,7 +668,7 @@ public class SqlRecordsRepository(Func<ApplicationDBContext> contextFactory, IMa
     return new Groups
     {
       TotalCount = count,
-      Items = [..mapper.ProjectTo<Group>(groups)],
+      Items = [.. groups.Select(g => new Group(g.GroupId, g.Name, g.IsDefault))],
     };
   }
 
@@ -603,7 +690,7 @@ public class SqlRecordsRepository(Func<ApplicationDBContext> contextFactory, IMa
     return new Groups
     {
       TotalCount = count,
-      Items = [..mapper.ProjectTo<Group>(groups)],
+      Items = [.. groups.Select(g => new Group(g.GroupId, g.Name, g.IsDefault))],
     };
   }
 
@@ -611,6 +698,37 @@ public class SqlRecordsRepository(Func<ApplicationDBContext> contextFactory, IMa
   {
     using var context = contextFactory();
     var dateRange = folder.ToDateRange();
-    return context.Records.Where(rec => rec.Date.Date >= dateRange.Item1 && rec.Date.Date <= dateRange.Item2).Select(rec => rec.RecordId).ToList();
+    return [.. context.Records.Where(rec => rec.Date.Date >= dateRange.Item1 && rec.Date.Date <= dateRange.Item2).Select(rec => rec.RecordId)];
+  }
+
+
+  public IList<Guid> GetRecordIdsByOwner(string ownerInstance)
+  {
+    using var context = contextFactory();
+    return [.. context.Records.Where(rec => rec.OwnerInstance == ownerInstance).Select(rec => rec.RecordId)];
+  }
+
+  public Guid? GetRecordIdByChecksum(string checksum)
+  {
+    using var context = contextFactory();
+    return context.Records.Where(rec => rec.Checksum == checksum).Select(rec => (Guid?)rec.RecordId).FirstOrDefault();
+  }
+
+  public IList<string> GetOwnerInstances()
+  {
+    using var context = contextFactory();
+    return [.. context.Records.Select(rec => rec.OwnerInstance).Distinct().OrderBy(i => i)];
+  }
+
+  public bool IsCoverUsed(string fileName)
+  {
+    using var context = contextFactory();
+    return context.Records.Any(rec => rec.Cover == fileName);
+  }
+
+  public ISet<string> GetUsedCovers()
+  {
+    using var context = contextFactory();
+    return context.Records.Where(rec => rec.Cover != null).Select(rec => rec.Cover!).Distinct().ToHashSet();
   }
 }

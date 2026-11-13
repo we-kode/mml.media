@@ -1,30 +1,38 @@
+using Asp.Versioning;
+using Asp.Versioning.ApiExplorer;
 using Autofac;
-using AutoMapper;
-using MassTransit;
-using Media.API.Contracts;
+using Media.API.Authentication;
+using Media.API.Extensions;
+using Media.API.HostedServices;
+using Media.API.Middleware;
+using Media.API.Services;
+using Media.API.Share;
+using Media.API.Sockets;
+using Media.Application.Constants;
 using Media.Application.Consumers;
-using Media.Application.Models;
+using Media.Application.Contracts.Services;
+using Media.Application.Models.Federation;
+using Media.Application.Models.Options;
 using Media.DBContext;
-using Media.Filters;
-using Media.Middleware;
-using Messages;
+using Media.Infrastructure.IO;
+using Media.Infrastructure.Repositories;
+using Media.Infrastructure.Services;
+using Messages.Events;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.OpenApi.Models;
+using Microsoft.OpenApi;
 using OpenIddict.Abstractions;
 using OpenIddict.Validation.AspNetCore;
+using Rebus.Config;
+using Swashbuckle.AspNetCore.SwaggerGen;
 using System;
+using System.IO;
 using System.Net.Http;
-using OpenIddict.Validation.SystemNetHttp;
-using Media.API.HostedServices;
-using Asp.Versioning;
-using Media.Infrastructure.Repositories;
-using Media.Application.Contracts.Repositories;
-using Media.Infrastructure.Services;
 
 namespace Media.API;
 
@@ -33,16 +41,70 @@ public class Startup(IConfiguration configuration)
 {
   public IConfiguration Configuration { get; } = configuration;
 
+  private readonly Uri issuer = new(configuration["OpenId:Issuer"] ?? throw new ArgumentNullException("OpenId:Issuer"));
+
+  private readonly FederationOptions federationOptions = (configuration.GetSection("Federation").Get<FederationOptions>() ?? new FederationOptions())
+    .UseIssuerAsDefault(configuration["OpenId:Issuer"]);
+
   // This method gets called by the runtime. Use this method to add services to the container.
   public void ConfigureServices(IServiceCollection services)
   {
-    services.AddControllers();
+    Console.WriteLine($"Starting up instance '{Env.INSTANCE}'");
+
+    services.AddTrustedForwardedHeaders(Configuration);
+    services.AddMemoryCache();
+    ConfigureFolders();
+    services.AddControllers(options => options.Filters.Add<LegacyClientCoverFilter>());
     ConfigureLocaleServices(services);
     ConfigureApiServices(services);
     ConfigureMBusServices(services);
     ConfigureCorsServices(services);
     ConfigureAuth(services);
     services.AddHostedService<MigrateBitrates>();
+    services.AddHostedService<MigrateCovers>();
+    services.AddHostedService<CleanupCovers>();
+    services.AddHostedService<CleanupNotifications>();
+    services.AddOptions<ShareOptions>().Bind(Configuration.GetSection(ShareOptions.Section)).ValidateDataAnnotations().ValidateOnStart();
+    services.AddHostedService<CleanupShareLinks>();
+    services.AddSingleton<ShareLinkRevocationQueue>();
+    services.AddSingleton<IShareLinkRevocationQueue>(sp => sp.GetRequiredService<ShareLinkRevocationQueue>());
+    services.AddHostedService(sp => sp.GetRequiredService<ShareLinkRevocationQueue>());
+    ConfigureFederationServices(services);
+  }
+
+  private void ConfigureFederationServices(IServiceCollection services)
+  {
+    if (!federationOptions.IsEnabled)
+    {
+      Console.WriteLine("Federation is disabled, because neither 'Federation:PublicUrl' nor 'OpenId:Issuer' is configured.");
+    }
+
+    federationOptions.EnsureValidInstance(Env.INSTANCE);
+
+    services.AddSignalR();
+    services
+      .AddHttpClient<IFederationClient, FederationClient>(c =>
+      {
+        c.Timeout = TimeSpan.FromMinutes(30);
+        c.MaxResponseContentBufferSize = 1024 * 1024;
+      })
+      .ConfigurePrimaryHttpMessageHandler(_ => FederationHttpHandler.Create(
+        federationOptions,
+        acceptAnyCertificate: Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development"));
+    services.AddHostedService<FederationWorker>();
+  }
+
+  private static void ConfigureFolders()
+  {
+    var folders = new[] { "covers" };
+    foreach (var folder in folders)
+    {
+      var path = Path.Combine("/records", folder);
+      if (!Directory.Exists(path))
+      {
+        Directory.CreateDirectory(path);
+      }
+    }
   }
 
   private static void ConfigureLocaleServices(IServiceCollection services)
@@ -54,57 +116,64 @@ public class Startup(IConfiguration configuration)
     });
   }
 
-  private static void ConfigureApiServices(IServiceCollection services)
+  internal static void ConfigureApiServices(IServiceCollection services)
   {
     services.AddApiVersioning(config =>
     {
-      config.DefaultApiVersion = new ApiVersion(2.0);
-      config.AssumeDefaultVersionWhenUnspecified = true;
+      config.ApiVersionReader = new UrlSegmentApiVersionReader();
+    }).AddMvc().AddApiExplorer(options =>
+    {
+      options.GroupNameFormat = "'v'VV";
+      options.SubstituteApiVersionInUrl = true;
+      options.SubstitutionFormat = "VV";
     });
     services.AddEndpointsApiExplorer();
     if (Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development")
     {
       // configuring Swagger/OpenAPI. More at https://aka.ms/aspnetcore/swashbuckle
       services.AddSwaggerGen(config =>
-     {
-       config.SwaggerDoc("v2.0", new OpenApiInfo { Title = "Media Api", Version = "v2.0" });
-       config.OperationFilter<RemoveVersionParameterFilter>();
-       config.DocumentFilter<ReplaceVersionWithExactValueInPathFilter>();
-       config.EnableAnnotations();
-     });
+      {
+        config.EnableAnnotations();
+        config.CustomSchemaIds(type => type.FullName!.Replace('+', '.'));
+      });
+      services.AddOptions<SwaggerGenOptions>().Configure<IApiVersionDescriptionProvider>((config, provider) =>
+      {
+        foreach (var description in provider.ApiVersionDescriptions)
+        {
+          config.SwaggerDoc(description.GroupName, new OpenApiInfo { Title = "Media Api", Version = description.GroupName });
+        }
+      });
     }
   }
 
   private void ConfigureMBusServices(IServiceCollection services)
   {
-    services.AddMassTransit(mt =>
-    {
-      mt.AddConsumer<IndexingRecordConsumer>(cc =>
-      {
-        if (int.TryParse(Configuration["MassTransit:ConcurrentMessageLimit"], out var limit))
-        {
-          cc.ConcurrentMessageLimit = limit;
-        }
-      });
-      mt.AddConsumer<GroupConsumer>();
-      mt.UsingRabbitMq((context, cfg) =>
-      {
-        cfg.Host(Configuration["MassTransit:Host"], Configuration["MassTransit:VirtualHost"], h =>
-        {
-          h.Username(Configuration["MassTransit:User"] ?? throw new ArgumentNullException("MassTransit:User"));
-          h.Password(Configuration["MassTransit:Password"] ?? throw new ArgumentNullException("MassTransit:Password"));
-        });
+    // Configure Rebus with RabbitMQ transport
+    var mBusHost = Configuration["MessageBus:Host"] ?? throw new ArgumentNullException("MessageBus:Host");
+    var mBusVirtualHost = Configuration["MessageBus:VirtualHost"];
+    var mBusUser = Configuration["MessageBus:User"] ?? throw new ArgumentNullException("MessageBus:User");
+    var mBusPassword = Configuration["MessageBus:Password"] ?? throw new ArgumentNullException("MessageBus:Password");
 
-        cfg.ConfigureEndpoints(context);
-      });
-    });
-    services.AddOptions<MassTransitHostOptions>()
-      .Configure(options =>
+    var mBusConnection = $"amqp://{mBusUser}:{mBusPassword}@{mBusHost}";
+    if (!string.IsNullOrEmpty(mBusVirtualHost))
+    {
+      mBusConnection += $"/{mBusVirtualHost}";
+    }
+
+    services.AddRebus(mt =>
+      mt.Transport(t => t.UseRabbitMq(mBusConnection, "mml.media.queue")),
+      onCreated: async bus =>
       {
-        options.WaitUntilStarted = bool.Parse(Configuration["MassTransit:WaitUntilStarted"] ?? "True");
-        options.StartTimeout = TimeSpan.FromSeconds(double.Parse(Configuration["MassTransit:StartTimeoutSeconds"] ?? "60"));
-        options.StopTimeout = TimeSpan.FromSeconds(double.Parse(Configuration["MassTransit:StopTimeoutSeconds"] ?? "60"));
-      });
+        // Hier werden alle Abonnements beim Start einmalig registriert
+        await bus.Subscribe<GroupCreated>();
+        await bus.Subscribe<GroupDeleted>();
+        await bus.Subscribe<GroupUpdated>();
+        await bus.Subscribe<ClientStateUpdated>();
+      }
+    );
+
+    services.AutoRegisterHandlersFromAssemblyOf<GroupConsumer>();
+    services.AutoRegisterHandlersFromAssemblyOf<AuthorizationClient>();
   }
 
   private static void ConfigureCorsServices(IServiceCollection services)
@@ -120,58 +189,61 @@ public class Startup(IConfiguration configuration)
     });
   }
 
-  private void ConfigureAuth(IServiceCollection services)
+  internal void ConfigureAuth(IServiceCollection services)
   {
-    services
-      .AddAuthentication(OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme);
-
-    var httpClient = services
-      .AddHttpClient(typeof(OpenIddictValidationSystemNetHttpOptions).Assembly.GetName().Name!)
-      .ConfigureHttpClient(c =>
-      {
-        c.DefaultRequestHeaders.Add("ClientId", Configuration["ApiClient:ClientId"]);
-        c.DefaultRequestHeaders.Add("ClientSecret", Configuration["ApiClient:ClientSecret"]);
-      });
-
-    if (Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development")
+    services.AddHttpClient<IAuthorizationClient, AuthorizationClient>(c =>
     {
-      httpClient
-      .ConfigurePrimaryHttpMessageHandler(_ => new HttpClientHandler
-      {
-        ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
-      });
-    }
+      c.BaseAddress = issuer!;
+    })
+    .ConfigureHttpClient(c =>
+    {
+      c.DefaultRequestHeaders.Add("ClientId", Configuration["ApiClient:ClientId"]);
+      c.DefaultRequestHeaders.Add("ClientSecret", Configuration["ApiClient:ClientSecret"]);
+    });
+
+    services.AddAuthentication(OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)
+      .AddScheme<AuthenticationSchemeOptions, FederationPeerAuthenticationHandler>(FederationPeerAuthenticationHandler.SchemeName, null);
 
     services.AddAuthorizationBuilder()
-      .AddPolicy(Application.Constants.Roles.Admin, policy =>
+      .AddPolicy(Roles.Admin, policy =>
       {
         policy.AddAuthenticationSchemes(OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme);
         policy.RequireAuthenticatedUser();
-        policy.RequireClaim(OpenIddictConstants.Claims.Role, Application.Constants.Roles.Admin);
+        policy.RequireClaim(OpenIddictConstants.Claims.Role, Roles.Admin);
       })
-      .AddPolicy(Application.Constants.Roles.Client, policy =>
+      .AddPolicy(Roles.Client, policy =>
       {
         policy.AddAuthenticationSchemes(OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme);
         policy.RequireAuthenticatedUser();
-        policy.RequireClaim(OpenIddictConstants.Claims.Role, Application.Constants.Roles.Client);
+        policy.RequireClaim(OpenIddictConstants.Claims.Role, Roles.Client);
       });
+
     services.AddOpenIddict()
     .AddValidation(options =>
     {
-      options.SetIssuer(new Uri(Configuration["OpenId:Issuer"] ?? throw new ArgumentNullException("OpenId:Issuer")));
-      options.AddAudiences(Configuration["ApiClient:ClientId"] ?? throw new ArgumentNullException("ApiClient:ClientId"));
-      options.AddEncryptionCertificate(new System.Security.Cryptography.X509Certificates.X509Certificate2(Configuration["OpenId:EncryptionCert"] ?? throw new ArgumentNullException("OpenId:EncryptionCert")));
-      options.UseIntrospection()
-               .SetClientId(Configuration["ApiClient:ClientId"] ?? string.Empty)
-               .SetClientSecret(Configuration["ApiClient:ClientSecret"] ?? string.Empty);
+      options.SetIssuer(issuer);
+      options.AddAudiences($"wekode.mml.media/{Env.INSTANCE.ToLower()}");
+      options.UseSystemNetHttp()
+        .ConfigureHttpClient(c =>
+        {
+          c.DefaultRequestHeaders.Add("ClientId", Configuration["ApiClient:ClientId"]);
+          c.DefaultRequestHeaders.Add("ClientSecret", Configuration["ApiClient:ClientSecret"]);
+        })
+        .ConfigureHttpClientHandler(handler =>
+        {
+          if (Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development")
+          {
+            handler.ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator;
+          }
+        });
       options.UseAspNetCore();
-      options.UseSystemNetHttp();
     });
   }
 
   // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
   public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
   {
+    app.UseForwardedHeaders();
     app.UseApiKeyValidation();
     // Configure the HTTP request pipeline.
     if (env.IsDevelopment())
@@ -179,7 +251,10 @@ public class Startup(IConfiguration configuration)
       app.UseSwagger();
       app.UseSwaggerUI(config =>
       {
-        config.SwaggerEndpoint("/swagger/v2.0/swagger.json", "Media API v2.0");
+        foreach (var description in app.ApplicationServices.GetRequiredService<IApiVersionDescriptionProvider>().ApiVersionDescriptions)
+        {
+          config.SwaggerEndpoint($"/swagger/{description.GroupName}/swagger.json", $"Media API {description.GroupName}");
+        }
       });
       app.UseDeveloperExceptionPage();
     }
@@ -190,7 +265,10 @@ public class Startup(IConfiguration configuration)
         .AddSupportedUICultures(supportedCultures);
 
     app.UseRequestLocalization(localizationOptions);
-    app.UseHttpsRedirection();
+    if (Program.UseTls(Configuration))
+    {
+      app.UseHttpsRedirection();
+    }
     app.UseRouting();
     app.UseCors();
     app.UseAuthentication();
@@ -199,6 +277,7 @@ public class Startup(IConfiguration configuration)
     app.UseEndpoints(endpoints =>
     {
       endpoints.MapControllers();
+      endpoints.MapHub<FederationHub>("/hub/federation");
     });
   }
 
@@ -220,37 +299,6 @@ public class Startup(IConfiguration configuration)
     cBuilder.RegisterInstance(factory);
     MigrateDB(factory);
 
-    // automapper
-    cBuilder.Register(context => new MapperConfiguration(cfg =>
-    {
-      // configure automapping classes here
-      cfg.CreateMap<GroupCreated, Group>();
-      cfg.CreateMap<GroupUpdated, Group>();
-      cfg.CreateMap<Contracts.TagFilter, Application.Contracts.Repositories.TagFilter>();
-      cfg.CreateMap<DBContext.Models.Album, Album>();
-      cfg.CreateMap<DBContext.Models.Genre, Genre>();
-      cfg.CreateMap<DBContext.Models.Genre, GenreBitrate>();
-      cfg.CreateMap<DBContext.Models.Artist, Artist>();
-      cfg.CreateMap<DBContext.Models.Language, Language>();
-      cfg.CreateMap<RecordChangeRequest, Record>();
-      cfg.CreateMap<DBContext.Models.Livestream, Livestream>();
-      cfg.CreateMap<DBContext.Models.Livestream, LivestreamSettings>();
-      cfg.CreateMap<LivestreamChangeRequest, LivestreamSettings>();
-      cfg.CreateMap<SettingsRequest, Settings>();
-      cfg.CreateMap<Contracts.RecordFolder, Application.Models.RecordFolder>();
-      cfg.CreateMap<DBContext.Models.Group, Group>()
-        .ConstructUsing(g => new Group(g.GroupId, g.Name, g.IsDefault));
-    })).AsSelf().SingleInstance();
-    cBuilder.Register(c =>
-    {
-      //This resolves a new context that can be used later.
-      var context = c.Resolve<IComponentContext>();
-      var config = context.Resolve<MapperConfiguration>();
-      return config.CreateMapper(context.Resolve);
-    })
-    .As<IMapper>()
-    .InstancePerLifetimeScope();
-
     cBuilder.RegisterType<SqlAlbumRepository>().AsImplementedInterfaces();
     cBuilder.RegisterType<SqlArtistRepository>().AsImplementedInterfaces();
     cBuilder.RegisterType<SqlGenreRepository>().AsImplementedInterfaces();
@@ -259,7 +307,35 @@ public class Startup(IConfiguration configuration)
     cBuilder.RegisterType<SqlRecordsRepository>().AsImplementedInterfaces();
     cBuilder.RegisterType<SqlGroupRepository>().AsImplementedInterfaces();
     cBuilder.RegisterType<SqlLivestreamRepository>().AsImplementedInterfaces();
+    cBuilder.RegisterType<SqlNotificationRepository>().AsImplementedInterfaces();
+    cBuilder.RegisterType<SqlShareRuleRepository>().AsImplementedInterfaces();
+    cBuilder.RegisterType<SqlShareQueryRepository>().AsImplementedInterfaces();
+    cBuilder.RegisterType<SqlShareLinkRepository>().AsImplementedInterfaces();
+    cBuilder.RegisterInstance((Configuration.GetSection(ShareOptions.Section).Get<ShareOptions>() ?? new ShareOptions()).LoadShareStyling());
+    cBuilder.RegisterType<SharePages>().SingleInstance();
+    cBuilder.RegisterType<ShareLinkRevoker>().AsImplementedInterfaces();
+    cBuilder.RegisterType<ShareArchiveService>().AsImplementedInterfaces();
     cBuilder.RegisterType<RecordService>().AsImplementedInterfaces();
+    cBuilder.RegisterType<IndexService>().AsImplementedInterfaces();
+    cBuilder.RegisterType<CoverLoader>().AsImplementedInterfaces();
+    cBuilder.RegisterType<Mp3Inspector>().AsImplementedInterfaces().SingleInstance();
+
+    // federation
+    cBuilder.RegisterInstance(federationOptions);
+    cBuilder.RegisterType<FederationKeyStore>().UsingConstructor(typeof(FederationOptions)).AsImplementedInterfaces().SingleInstance();
+    cBuilder.RegisterType<FederationAssertionService>().AsImplementedInterfaces().SingleInstance();
+    cBuilder.RegisterType<FederationUploadStore>().AsImplementedInterfaces().SingleInstance();
+    cBuilder.RegisterType<SqlFederationPeerRepository>().AsImplementedInterfaces();
+    cBuilder.RegisterType<SqlFederationAuditRepository>().AsImplementedInterfaces();
+    cBuilder.RegisterType<SqlFederationJobRepository>().AsImplementedInterfaces();
+    cBuilder.RegisterType<SqlFederationInvitationRepository>().AsImplementedInterfaces();
+    cBuilder.RegisterType<SqlFederationRuleRepository>().AsImplementedInterfaces();
+    cBuilder.RegisterType<SqlFederationLinkRepository>().AsImplementedInterfaces();
+    cBuilder.RegisterType<FederationNotifier>().AsImplementedInterfaces();
+    cBuilder.RegisterType<FederationAuditLogger>().AsImplementedInterfaces();
+    cBuilder.RegisterType<FederationService>().AsImplementedInterfaces();
+    cBuilder.RegisterType<FederationSyncService>().AsImplementedInterfaces();
+    cBuilder.RegisterType<FederationJobProcessor>().AsImplementedInterfaces();
   }
 
   private static void MigrateDB(Func<ApplicationDBContext> factory)
@@ -269,5 +345,7 @@ public class Startup(IConfiguration configuration)
     {
       context.Database.Migrate();
     }
+
+    InstanceNameGuard.Ensure(new SqlSettingsRepository(factory), Env.INSTANCE);
   }
 }

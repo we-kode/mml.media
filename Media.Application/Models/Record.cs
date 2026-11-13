@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Media.Application.Types;
+using System;
 using System.Collections.Generic;
 
 namespace Media.Application.Models;
@@ -39,6 +40,11 @@ public class Record
   public string? Album { get; set; }
 
   /// <summary>
+  /// Id of the album of the record or null if no one provided.
+  /// </summary>
+  public Guid? AlbumId { get; set; }
+
+  /// <summary>
   /// Language of the record or null if no one provided.
   /// </summary>
   public string? Language { get; set; }
@@ -61,7 +67,7 @@ public class Record
   /// <summary>
   /// The cover of this record.
   /// </summary>
-  public byte[] Cover { get; set; } = Array.Empty<byte>();
+  public string? Cover { get; set; }
 
   /// <summary>
   ///  Checksum of the record.
@@ -74,9 +80,19 @@ public class Record
   public bool Locked { get; set; }
 
   /// <summary>
+  /// The name of the instance, which is the owner of the record. This is used to identify the instance that owns the record in a multi-instance setup.
+  /// </summary>
+  public string OwnerInstance { get; set; }
+
+  /// <summary>
   /// List of groups the record is assigned to.
   /// </summary>
   public ICollection<Group> Groups { get; set; }
+
+  /// <summary>
+  /// The synchronization state of the record with partner instances. Only set in lists of records.
+  /// </summary>
+  public RecordSyncState SyncState { get; set; }
 
   /// <summary>
   /// Inits a record.
@@ -93,9 +109,10 @@ public class Record
   /// <param name="genre">The genre of the record.</param>
   /// <param name="language">The language of the record.</param>
   /// <param name="checksum">The checksum of record.</param>
-  /// <param name="cover">The cover as base64 string.</param>
-  /// <param name="isLock">Indicates whether the record is locked.</param>
-  public Record(Guid recordId, string title, int tracknumber, string? artist, DateTime date, TimeSpan duration, int bitrate, ICollection<Group> groups, string album = "", string genre = "", string language = "", string checksum = "", string cover = "", bool isLocked = false)
+  /// <param name="cover">The file name of the cover.</param>
+  /// <param name="isLocked">Indicates whether the record is locked.</param>
+  /// <param name="ownerInstance">The owner of the record.</param>
+  public Record(Guid recordId, string title, int tracknumber, string? artist, DateTime date, TimeSpan duration, int bitrate, ICollection<Group> groups, string album = "", string genre = "", string language = "", string checksum = "", string cover = "", bool isLocked = false, string ownerInstance = "")
   {
     RecordId = recordId;
     Title = title;
@@ -107,16 +124,18 @@ public class Record
     Date = date;
     Duration = duration.TotalMilliseconds;
     Checksum = checksum;
-    Groups = groups ?? new List<Group>();
+    Groups = groups ?? [];
     Bitrate = bitrate;
-    Cover = string.IsNullOrEmpty(cover) ? Array.Empty<byte>() : Convert.FromBase64String(cover);
+    Cover = cover;
     Locked = isLocked;
+    OwnerInstance = ownerInstance;
   }
 
-  public Record(Guid recordId, string title)
+  public Record(Guid recordId, string title, string ownerInstance)
   {
     RecordId = recordId;
     Title = title;
-    Groups = new List<Group>();
+    OwnerInstance = ownerInstance;
+    Groups = [];
   }
 }

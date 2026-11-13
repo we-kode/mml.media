@@ -11,7 +11,8 @@ public interface IRecordService {
   /// Album, Artist and Genre.
   /// </summary>
   /// <param name="guid">Id of record to be deleted.</param>
-  Task DeleteRecord(Guid guid);
+  /// <param name="removeLocked">Deletes the record even if it is locked.</param>
+  Task DeleteRecord(Guid guid, bool removeLocked = false);
 
   /// <summary>
   /// Removes all records, which are in given folders.
@@ -27,8 +28,18 @@ public interface IRecordService {
   Task SaveMetaData(RecordMetaData metaData, List<Guid> groups);
 
   /// <summary>
-  /// Updates one record.
+  /// Updates one record. Records owned by another instance only get groups and lock updated.
+  /// Changed metadata of an own record are sent to all partners the record was synchronized with.
   /// </summary>
   /// <param name="record"><see cref="Record"/> to be updated.</param>
-  Task Update(Record record);
+  /// <param name="cover">The new cover of the record as byte array or empty to keep the cover.</param>
+  /// <param name="removeCover">Removes the cover, if no new cover is given.</param>
+  Task Update(Record record, byte[] cover, bool removeCover = false);
+
+  /// <summary>
+  /// Updates the metadata of a record with the changes sent by its owner. Groups and lock are kept.
+  /// </summary>
+  /// <param name="record"><see cref="Record"/> with the new metadata.</param>
+  /// <param name="cover">The cover of the record as byte array.</param>
+  Task UpdateFromOwner(Record record, byte[] cover);
 }

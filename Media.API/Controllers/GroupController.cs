@@ -6,23 +6,15 @@ using Microsoft.AspNetCore.Mvc;
 using OpenIddict.Validation.AspNetCore;
 using Asp.Versioning;
 
-namespace Media.Controllers;
+namespace Media.API.Controllers;
 
 [ApiController]
 [ApiVersion(1.0)]
 [ApiVersion(2.0)]
 [Route("api/v{version:apiVersion}/media/[controller]")]
 [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme, Policy = Roles.Admin)]
-public class GroupController : ControllerBase
+public class GroupController(IGroupRepository repository) : ControllerBase
 {
-  private IGroupRepository _repository;
-
-  public GroupController(
-    IGroupRepository repository
-  )
-  {
-    _repository = repository;
-  }
 
   /// <summary>
   /// Loads a list of existing groups.
@@ -34,6 +26,6 @@ public class GroupController : ControllerBase
   [HttpGet()]
   public ActionResult<Groups> List([FromQuery] string? filter, [FromQuery] int skip = Application.Constants.List.Skip, [FromQuery] int take = Application.Constants.List.Take)
   {
-    return _repository.List(filter, skip, take);
+    return repository.List(filter, skip, take);
   }
 }

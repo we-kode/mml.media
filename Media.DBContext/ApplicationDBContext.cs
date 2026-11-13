@@ -4,21 +4,28 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Media.DBContext
 {
-  public class ApplicationDBContext : DbContext
+  public class ApplicationDBContext(DbContextOptions<ApplicationDBContext> options) : DbContext(options)
   {
     public DbSet<Setting> Settings { get; set; } = null!;
     public DbSet<Record> Records { get; set; } = null!;
     public DbSet<Livestream> Livestreams { get; set; } = null!;
+    public DbSet<Notification> Notifications { get; set; } = null!;
     public DbSet<Artist> Artists { get; set; } = null!;
     public DbSet<Genre> Genres { get; set; } = null!;
     public DbSet<Album> Albums { get; set; } = null!;
     public DbSet<Group> Groups { get; set; } = null!;
     public DbSet<Language> Languages { get; set; } = null!;
     public DbSet<SeedRecord> SeedRecords { get; set; } = null!;
-
-    public ApplicationDBContext(DbContextOptions<ApplicationDBContext> options) : base(options)
-    {
-    }
+    public DbSet<FederationPeer> FederationPeers { get; set; } = null!;
+    public DbSet<FederationRule> FederationRules { get; set; } = null!;
+    public DbSet<FederationRecordLink> FederationRecordLinks { get; set; } = null!;
+    public DbSet<FederationAuditEntry> FederationAuditLog { get; set; } = null!;
+    public DbSet<FederationJob> FederationJobs { get; set; } = null!;
+    public DbSet<FederationInvitation> FederationInvitations { get; set; } = null!;
+    public DbSet<FederationExclusion> FederationExclusions { get; set; } = null!;
+    public DbSet<ShareRule> ShareRules { get; set; } = null!;
+    public DbSet<ShareLink> ShareLinks { get; set; } = null!;
+    public DbSet<ShareQuery> ShareQueries { get; set; } = null!;
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder) => optionsBuilder.UseSnakeCaseNamingConvention();
 
@@ -50,6 +57,63 @@ namespace Media.DBContext
        .UsingEntity(e => e.ToTable("groups_livestreams"));
 
       modelBuilder
+       .Entity<Notification>()
+       .HasMany(n => n.Groups)
+       .WithMany()
+       .UsingEntity(e => e.ToTable("groups_notifications"));
+
+      modelBuilder
+       .Entity<Notification>()
+       .HasIndex(n => n.ValidTo);
+
+      modelBuilder
+       .Entity<ShareRule>()
+       .HasMany(r => r.Groups)
+       .WithMany()
+       .UsingEntity(e => e.ToTable("share_rules_groups"));
+
+      modelBuilder
+       .Entity<ShareRule>()
+       .HasMany(r => r.Genres)
+       .WithMany()
+       .UsingEntity(e => e.ToTable("share_rules_genres"));
+
+      modelBuilder
+       .Entity<ShareRule>()
+       .HasMany(r => r.Albums)
+       .WithMany()
+       .UsingEntity(e => e.ToTable("share_rules_albums"));
+
+      modelBuilder
+       .Entity<ShareRule>()
+       .HasMany(r => r.Artists)
+       .WithMany()
+       .UsingEntity(e => e.ToTable("share_rules_artists"));
+
+      modelBuilder
+       .Entity<ShareLink>()
+       .HasIndex(l => l.TokenHash)
+       .IsUnique();
+
+      modelBuilder
+       .Entity<ShareLink>()
+       .HasIndex(l => l.ExpiresAt);
+
+      modelBuilder
+       .Entity<ShareQuery>()
+       .HasIndex(q => q.Token)
+       .IsUnique();
+
+      modelBuilder
+       .Entity<ShareQuery>()
+       .HasIndex(q => q.QueryHash)
+       .IsUnique();
+
+      modelBuilder
+       .Entity<ShareQuery>()
+       .HasIndex(q => q.LastUsedAt);
+
+      modelBuilder
        .Entity<Setting>()
        .HasIndex(s => s.Key)
        .IsUnique();
@@ -57,6 +121,82 @@ namespace Media.DBContext
       modelBuilder
        .Entity<SeedRecord>()
        .HasNoKey();
+
+      modelBuilder
+       .Entity<FederationPeer>()
+       .HasIndex(p => p.Instance)
+       .IsUnique();
+
+      modelBuilder
+       .Entity<FederationRule>()
+       .HasMany(r => r.Groups)
+       .WithMany()
+       .UsingEntity(e => e.ToTable("federation_rules_groups"));
+
+      modelBuilder
+       .Entity<FederationRule>()
+       .HasMany(r => r.Peers)
+       .WithMany(p => p.Rules)
+       .UsingEntity(e => e.ToTable("federation_rules_peers"));
+
+      modelBuilder
+       .Entity<FederationRule>()
+       .HasMany(r => r.Artists)
+       .WithMany()
+       .UsingEntity(e => e.ToTable("federation_rules_artists"));
+
+      modelBuilder
+       .Entity<FederationRule>()
+       .HasMany(r => r.Albums)
+       .WithMany()
+       .UsingEntity(e => e.ToTable("federation_rules_albums"));
+
+      modelBuilder
+       .Entity<FederationRule>()
+       .HasMany(r => r.Genres)
+       .WithMany()
+       .UsingEntity(e => e.ToTable("federation_rules_genres"));
+
+      modelBuilder
+       .Entity<FederationRecordLink>()
+       .HasIndex(l => new { l.PeerId, l.LocalRecordId })
+       .IsUnique();
+
+      modelBuilder
+       .Entity<FederationRecordLink>()
+       .HasIndex(l => new { l.PeerId, l.TransactionId })
+       .IsUnique();
+
+      modelBuilder
+       .Entity<FederationRecordLink>()
+       .HasOne(l => l.LocalRecord)
+       .WithMany()
+       .HasForeignKey(l => l.LocalRecordId)
+       .OnDelete(DeleteBehavior.Cascade);
+
+      modelBuilder
+       .Entity<FederationAuditEntry>()
+       .HasIndex(a => a.Timestamp);
+
+      modelBuilder
+       .Entity<FederationJob>()
+       .HasIndex(j => j.NextAttemptAt);
+
+      modelBuilder
+       .Entity<FederationExclusion>()
+       .HasKey(e => new { e.PeerId, e.RecordId });
+
+      modelBuilder
+       .Entity<FederationExclusion>()
+       .HasOne(e => e.Record)
+       .WithMany()
+       .HasForeignKey(e => e.RecordId)
+       .OnDelete(DeleteBehavior.Cascade);
+
+      modelBuilder
+       .Entity<FederationInvitation>()
+       .HasIndex(i => i.CodeHash)
+       .IsUnique();
     }
   }
 }

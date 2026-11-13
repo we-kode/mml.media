@@ -5,24 +5,31 @@ using System.ComponentModel.DataAnnotations;
 
 namespace Media.API.Contracts;
 
-public class RecordChangeRequest
+/// <summary>
+/// Inits a record.
+/// </summary>
+/// <param name="recordId">Id of the record entry.</param>
+/// <param name="title">Title of the record.</param>
+/// <param name="artist">The artists or null if no one provided.</param>
+/// <param name="groups">List of groups the record is assigned to.</param>
+public class RecordChangeRequest(Guid recordId, string title, string? artist, ICollection<Group> groups)
 {
   /// <summary>
   /// Id of the record entry.
   /// </summary>
   [Required(ErrorMessageResourceName = nameof(Resources.ValidationMessages.Required), ErrorMessageResourceType = typeof(Resources.ValidationMessages))]
-  public Guid RecordId { get; set; }
+  public Guid RecordId { get; set; } = recordId;
 
   /// <summary>
   /// Title of the record or null if no one provided.
   /// </summary>
   [Required(ErrorMessageResourceName = nameof(Resources.ValidationMessages.Required), ErrorMessageResourceType = typeof(Resources.ValidationMessages))]
-  public string Title { get; set; }
+  public string Title { get; set; } = title;
 
   /// <summary>
   /// The artists or null if no one provided.
   /// </summary>
-  public string? Artist { get; set; }
+  public string? Artist { get; set; } = artist;
 
   /// <summary>
   /// Genre of the record or null if no one provided.
@@ -45,27 +52,17 @@ public class RecordChangeRequest
   public bool Locked { get; set; }
 
   /// <summary>
-  /// The cover of tis record.
+  /// The new cover of this record as JPEG or PNG image or empty to keep the cover.
   /// </summary>
-  public byte[] Cover { get; set; } = Array.Empty<byte>();
+  public byte[] Cover { get; set; } = [];
+
+  /// <summary>
+  /// Indicates whether the cover is removed, if no new cover is given.
+  /// </summary>
+  public bool RemoveCover { get; set; }
 
   /// <summary>
   /// List of groups the record is assigned to.
   /// </summary>
-  public ICollection<Group> Groups { get; set; }
-
-  /// <summary>
-  /// Inits a record.
-  /// </summary>
-  /// <param name="recordId">Id of the record entry.</param>
-  /// <param name="title">Title of the record.</param>
-  /// <param name="artist">The artists or null if no one provided.</param>
-  /// <param name="groups">List of groups the record is assigned to.</param>
-  public RecordChangeRequest(Guid recordId, string title, string? artist, ICollection<Group> groups)
-  {
-    RecordId = recordId;
-    Title = title;
-    Artist = artist;
-    Groups = groups ?? new List<Group>();
-  }
+  public ICollection<Group> Groups { get; set; } = groups ?? [];
 }

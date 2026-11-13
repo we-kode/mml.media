@@ -1,4 +1,3 @@
-using AutoMapper;
 using Media.Application.Contracts.Repositories;
 using Media.Application.Models;
 using Media.DBContext;
@@ -10,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace Media.Infrastructure.Repositories;
 
-public class SqlLanguageRepository(Func<ApplicationDBContext> contextFactory, IMapper mapper) : ILanguageRepository
+public class SqlLanguageRepository(Func<ApplicationDBContext> contextFactory) : ILanguageRepository
 {
   public Languages ListLanguages(string? filter, bool filterByGroups, IEnumerable<Guid> clientGroups, int skip = 0, int take = 100)
   {
@@ -28,7 +27,7 @@ public class SqlLanguageRepository(Func<ApplicationDBContext> contextFactory, IM
       .OrderBy(lang => lang.Name)
       .Skip(skip)
       .Take(take)
-      .Select(lang => mapper.Map<Language>(lang))
+      .Select(lang => new Language { LanguageId = lang.LanguageId, Name = lang.Name})
       .ToList();
 
     return new Languages
@@ -77,6 +76,6 @@ public class SqlLanguageRepository(Func<ApplicationDBContext> contextFactory, IM
       await context.SaveChangesAsync().ConfigureAwait(false);
     }
     
-    return mapper.Map<Language?>(lang);
+    return lang != null ? new Language { LanguageId = lang.LanguageId, Name = lang.Name } : null;
   }
 }

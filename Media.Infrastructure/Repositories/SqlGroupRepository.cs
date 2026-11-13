@@ -1,5 +1,4 @@
-﻿using AutoMapper;
-using Media.Application.Contracts.Repositories;
+﻿using Media.Application.Contracts.Repositories;
 using Media.Application.Models;
 using Media.DBContext;
 using Microsoft.EntityFrameworkCore;
@@ -10,10 +9,9 @@ using System.Threading.Tasks;
 
 namespace Media.Infrastructure.Repositories;
 
-public class SqlGroupRepository(Func<ApplicationDBContext> contextFactory, IMapper mapper) : IGroupRepository
+public class SqlGroupRepository(Func<ApplicationDBContext> contextFactory) : IGroupRepository
 {
   private readonly Func<ApplicationDBContext> _contextFactory = contextFactory;
-  private readonly IMapper _mapper = mapper;
 
   public Groups List(
     string? filter,
@@ -36,7 +34,7 @@ public class SqlGroupRepository(Func<ApplicationDBContext> contextFactory, IMapp
     return new Groups
     {
       TotalCount = count,
-      Items = _mapper.ProjectTo<Group>(groups).ToList()
+      Items = [.. groups.Select(g => new Group(g.GroupId, g.Name, g.IsDefault))]
     };
   }
 
@@ -74,7 +72,7 @@ public class SqlGroupRepository(Func<ApplicationDBContext> contextFactory, IMapp
   public IList<Guid>? GetDefaultGroups()
   {
     var context = _contextFactory();
-    return context.Groups.Where(g => g.IsDefault).Select(g => g.GroupId).ToList();
+    return [.. context.Groups.Where(g => g.IsDefault).Select(g => g.GroupId)];
   }
 
   public async Task Update(Group group)

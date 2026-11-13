@@ -35,5 +35,5 @@ public class Genre
   /// <summary>
   /// List of records, which belong to the genre.
   /// </summary>
-  public ICollection<Record> Records { get; set; } = new List<Record>();
+  public ICollection<Record> Records { get; set; } = [];
 }

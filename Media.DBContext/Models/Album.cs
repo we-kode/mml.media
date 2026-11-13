@@ -30,5 +30,5 @@ public class Album
   /// <summary>
   /// List of records, which belong to the album.
   /// </summary>
-  public ICollection<Record> Records { get; set; } = new List<Record>();
+  public ICollection<Record> Records { get; set; } = [];
 }

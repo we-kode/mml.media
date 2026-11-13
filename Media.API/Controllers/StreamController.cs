@@ -1,6 +1,6 @@
 ﻿using Asp.Versioning;
-using AutoMapper;
 using Media.API.Extensions;
+using Media.API.Services;
 using Media.Application.Contracts.Repositories;
 using Media.Application.Models;
 using Microsoft.AspNetCore.Authorization;
@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using OpenIddict.Validation.AspNetCore;
 using System;
+using System.Threading.Tasks;
 
 namespace Media.API.Controllers;
 
@@ -16,17 +17,8 @@ namespace Media.API.Controllers;
 [ApiVersion(2.0)]
 [Route("api/v{version:apiVersion}/media/[controller]")]
 [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
-public class StreamController : ControllerBase
+public class StreamController(IRecordRepository repository, IAuthorizationClient authClient) : ControllerBase
 {
-
-  private readonly IRecordRepository repository;
-  private readonly IMapper mapper;
-
-  public StreamController(IRecordRepository repository, IMapper mapper)
-  {
-    this.repository = repository;
-    this.mapper = mapper;
-  }
 
   /// <summary>
   /// Streams the given record.
@@ -36,7 +28,8 @@ public class StreamController : ControllerBase
   /// <response code="404">If record does not exist.</response>
   /// <response code="403">If record is not in group of client.</response>
   [HttpGet("{id:Guid}")]
-  public IActionResult Get(Guid id)
+  [HttpGet("{id:Guid}.mp3")]
+  public async Task<IActionResult> Get(Guid id)
   {
     if (!repository.Exists(id))
     {
@@ -44,46 +37,13 @@ public class StreamController : ControllerBase
     }
 
     var isAdmin = HttpContext.IsAdmin();
-    var clientGroups = HttpContext.ClientGroups();
+    var clientGroups = await HttpContext.ClientGroups(authClient);
     if (!isAdmin && !repository.IsInGroup(id, clientGroups))
     {
       return Forbid();
     }
 
     var stream = repository.StreamRecord(id);
-    return File(stream.Stream, stream.MimeType, true);
-  }
-
-  /// <summary>
-  /// Streams the given record.
-  /// </summary>
-  /// <param name="id">Record to be streamed.</param>
-  /// <returns>Stream of the given record.</returns>
-  /// <response code="404">If record does not exist.</response>
-  /// <response code="403">If record is not in group of client.</response>
-  [HttpGet("{id}")]
-  public IActionResult Get(string id)
-  {
-    if (string.IsNullOrEmpty(id) || !id.EndsWith(".mp3"))
-    {
-      return NotFound();
-    }
-
-    var recordId = new Guid(id.Split('.')[0]);
-
-    if (!repository.Exists(recordId))
-    {
-      return NotFound();
-    }
-
-    var isAdmin = HttpContext.IsAdmin();
-    var clientGroups = HttpContext.ClientGroups();
-    if (!isAdmin && !repository.IsInGroup(recordId, clientGroups))
-    {
-      return Forbid();
-    }
-
-    var stream = repository.StreamRecord(recordId);
     return File(stream.Stream, stream.MimeType, true);
   }
 
@@ -100,11 +60,11 @@ public class StreamController : ControllerBase
   /// <param name="shuffle">True, if a random record should be loaded next.</param>
   /// <returns><see cref="Guid" /> or null if no next record exists.</returns>
   [HttpPost("next/{id:Guid}")]
-  public Record? Next(Guid id, [FromBody] Contracts.TagFilter tagFilter, [FromQuery] string? filter, [FromQuery] bool? repeat, [FromQuery] bool? shuffle)
+  public async Task<Record?> Next(Guid id, [FromBody] Contracts.TagFilter tagFilter, [FromQuery] string? filter, [FromQuery] bool? repeat, [FromQuery] bool? shuffle)
   {
     var isAdmin = HttpContext.IsAdmin();
-    var clientGroups = HttpContext.ClientGroups();
-    return repository.Next(id, filter, mapper.Map<TagFilter>(tagFilter), !isAdmin, clientGroups, repeat ?? false, shuffle ?? false);
+    var clientGroups = await HttpContext.ClientGroups(authClient);
+    return repository.Next(id, filter, tagFilter.Map(), !isAdmin, clientGroups, repeat ?? false, shuffle ?? false);
   }
 
   /// <summary>
@@ -118,11 +78,11 @@ public class StreamController : ControllerBase
   /// <param name="repeat">True, if the records should play endless.</param>
   /// <returns><see cref="Guid" /> or null if no previous record exists.</returns>
   [HttpPost("previous/{id:Guid}")]
-  public Record? Previous(Guid id, [FromBody] Contracts.TagFilter tagFilter, [FromQuery] string? filter, [FromQuery] bool? repeat)
+  public async Task<Record?> Previous(Guid id, [FromBody] Contracts.TagFilter tagFilter, [FromQuery] string? filter, [FromQuery] bool? repeat)
   {
     var isAdmin = HttpContext.IsAdmin();
-    var clientGroups = HttpContext.ClientGroups();
-    return repository.Previous(id, filter, mapper.Map<TagFilter>(tagFilter), !isAdmin, clientGroups, repeat ?? false);
+    var clientGroups = await HttpContext.ClientGroups(authClient);
+    return repository.Previous(id, filter, tagFilter.Map(), !isAdmin, clientGroups, repeat ?? false);
   }
 
 }

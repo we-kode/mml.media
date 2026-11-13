@@ -93,5 +93,10 @@ namespace Media.Application.Models
     /// The compressed bitrate of the record.
     /// </summary>
     public int Bitrate {  get; set; }
+
+    /// <summary>
+    /// The instance owning the record or null if this instance owns it.
+    /// </summary>
+    public string? OwnerInstance { get; set; }
   }
 }

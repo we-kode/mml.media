@@ -1,5 +1,4 @@
 ﻿using Asp.Versioning;
-using AutoMapper;
 using Media.API.Contracts;
 using Media.Application.Contracts.Repositories;
 using Media.Application.Models;
@@ -13,18 +12,8 @@ namespace Media.API.Controllers;
 [ApiVersion(2.0)]
 [Route("api/v{version:apiVersion}/media/[controller]")]
 [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme, Policy = Application.Constants.Roles.Admin)]
-public class SettingsController : ControllerBase
+public class SettingsController(ISettingRepository settingsRepository) : ControllerBase
 {
-
-  private readonly ISettingRepository settingsRepository;
-  private readonly IMapper mapper;
-
-  public SettingsController(ISettingRepository settingsRepository, IMapper mapper)
-  {
-    this.settingsRepository = settingsRepository;
-    this.mapper = mapper;
-  }
-
   /// <summary>
   /// Returns available settings.
   /// </summary>
@@ -62,7 +51,10 @@ public class SettingsController : ControllerBase
   [HttpPost]
   public IActionResult Post([FromBody] SettingsRequest settings)
   {
-    settingsRepository.Save(mapper.Map<Settings>(settings));
+    settingsRepository.Save(new Settings
+    {
+      CompressionRate = settings.CompressionRate
+    });
     return Ok();
   }
 }

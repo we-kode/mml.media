@@ -1,9 +1,8 @@
 ﻿using Asp.Versioning;
-using MassTransit;
-using Media.Messages;
+using Media.Application.Contracts.IO;
+using Media.Application.Contracts.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using MimeDetective;
 using OpenIddict.Validation.AspNetCore;
 using System;
 using System.Collections.Generic;
@@ -18,21 +17,16 @@ namespace Media.API.Controllers;
 [ApiVersion(2.0)]
 [Route("api/v{version:apiVersion}/media/[controller]")]
 [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme, Policy = Application.Constants.Roles.Admin)]
-public class UploadController(IPublishEndpoint publishEndpoint) : ControllerBase
+public class UploadController(IIndexService indexService, IAudioInspector audioInspector) : ControllerBase
 {
-  private readonly ContentInspector inspector = new ContentInspectorBuilder()
-  {
-    Definitions = MimeDetective.Definitions.Default.FileTypes.Audio.MP3(),
-    Parallel = true
-  }.Build();
-
   /// <summary>
-  /// Uploads one file to the tmp folder.
+  /// Uploads one file to the tmp folder. The maximum file size is limited by the reverse proxy.
   /// </summary>
   /// <response code="400">If wrong or no file is uploaded.</response>
   /// <response code="500">If error on uploading file.</response>
   [HttpPost()]
   [DisableRequestSizeLimit]
+  [RequestFormLimits(MultipartBodyLengthLimit = long.MaxValue)]
   public async Task<IActionResult> Post()
   {
     try
@@ -45,17 +39,21 @@ public class UploadController(IPublishEndpoint publishEndpoint) : ControllerBase
       {
 
         using var readStream = file.OpenReadStream();
-        var mimeResult = inspector.Inspect(readStream);
-        var resultsByMimeType = mimeResult.ByMimeType();
+        var isMp3 = audioInspector.IsMp3(readStream);
         readStream.Close();
 
-        if (!resultsByMimeType.Any(result => result.MimeType == "audio/mpeg3"))
+        if (!isMp3)
         {
           return BadRequest("INVALID_FORMAT_MP3");
         }
 
-        var fileName = file.FileName;
-        var fullPath = Path.Combine(pathToSave, file.FileName);
+        var fileName = Path.GetFileName(file.FileName.Replace('\\', '/'));
+        if (string.IsNullOrWhiteSpace(fileName) || fileName == "." || fileName == "..")
+        {
+          return BadRequest("INVALID_FILE_NAME");
+        }
+
+        var fullPath = Path.Combine(pathToSave, fileName);
         using (var stream = new FileStream(fullPath, FileMode.Create))
         {
           file.CopyTo(stream);
@@ -74,13 +72,8 @@ public class UploadController(IPublishEndpoint publishEndpoint) : ControllerBase
           }
         }
 
-        // publish message to start compressing file and indexing.
-        await publishEndpoint.Publish<FileUploaded>(new
-        {
-          FileName = fileName,
-          Date = DateTime.Parse(Request.Form["LastModifiedDate"]!),
-          Groups = groups
-        }).ConfigureAwait(false);
+        // index file and extract metadata from it.
+        _ = indexService.IndexFile(fileName, DateTime.Parse(Request.Form["LastModifiedDate"]!), groups);
 
         return Ok();
       }

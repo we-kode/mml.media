@@ -1,10 +1,11 @@
 ﻿using Asp.Versioning;
-using AutoMapper;
 using Media.API.Contracts;
 using Media.API.Extensions;
+using Media.API.Services;
 using Media.Application.Constants;
 using Media.Application.Contracts.Repositories;
 using Media.Application.Models;
+using Media.Application.Models.Options;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -22,18 +23,11 @@ namespace Media.API.Controllers;
 [ApiVersion(2.0)]
 [Route("api/v{version:apiVersion}/media/[controller]")]
 [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
-public class LivestreamController : ControllerBase
+public class LivestreamController(ILivestreamRepository repository, IAuthorizationClient authClient) : ControllerBase
 {
 
-  private readonly ILivestreamRepository repository;
-  private readonly IMapper mapper;
-  static Lazy<HttpClient> client = new Lazy<HttpClient>();
-
-  public LivestreamController(ILivestreamRepository repository, IMapper mapper)
-  {
-    this.repository = repository;
-    this.mapper = mapper;
-  }
+  private readonly ILivestreamRepository repository = repository;
+  static readonly Lazy<HttpClient> client = new();
 
   /// <summary>
   /// Loads a list of existing livestreams.
@@ -43,10 +37,10 @@ public class LivestreamController : ControllerBase
   /// <param name="take">Size of chunk to be loaded</param>
   /// <returns><see cref="Records"/></returns>
   [HttpPost("list")]
-  public Livestreams List([FromQuery] string? filter, [FromQuery] int skip = Application.Constants.List.Skip, [FromQuery] int take = Application.Constants.List.Take)
+  public async Task<Livestreams> List([FromQuery] string? filter, [FromQuery] int skip = Application.Constants.List.Skip, [FromQuery] int take = Application.Constants.List.Take)
   {
     var isAdmin = HttpContext.IsAdmin();
-    var clientGroups = HttpContext.ClientGroups();
+    var clientGroups = await HttpContext.ClientGroups(authClient);
     return repository.List(filter, !isAdmin, clientGroups, skip, take);
   }
 
@@ -123,7 +117,13 @@ public class LivestreamController : ControllerBase
       return NotFound();
     }
 
-    await repository.Update(mapper.Map<LivestreamSettings>(request)).ConfigureAwait(false);
+    await repository.Update(new LivestreamSettings
+    {
+      Url = request.Url,
+      Title = request.Title,
+      RecordId = request.RecordId ?? Guid.NewGuid(),
+      Groups = request.Groups
+    }).ConfigureAwait(false);
     return Ok();
   }
 
@@ -143,7 +143,7 @@ public class LivestreamController : ControllerBase
     }
 
     var isAdmin = HttpContext.IsAdmin();
-    var clientGroups = HttpContext.ClientGroups();
+    var clientGroups = await HttpContext.ClientGroups(authClient);
     if (!isAdmin && !repository.IsInGroup(id, clientGroups))
     {
       return Forbid();

@@ -1,5 +1,4 @@
-﻿using AutoMapper;
-using Media.Application.Contracts.Repositories;
+﻿using Media.Application.Contracts.Repositories;
 using Media.Application.Models;
 using Media.DBContext;
 using System;
