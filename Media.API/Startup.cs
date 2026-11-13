@@ -3,6 +3,7 @@ using Asp.Versioning.ApiExplorer;
 using Autofac;
 using Media.API.Authentication;
 using Media.API.Extensions;
+using Media.API.Filters;
 using Media.API.HostedServices;
 using Media.API.Middleware;
 using Media.API.Services;
