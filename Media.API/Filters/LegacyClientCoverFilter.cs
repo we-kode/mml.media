@@ -15,7 +15,7 @@ public class LegacyClientCoverFilter : IResultFilter
 {
   public void OnResultExecuting(ResultExecutingContext context)
   {
-    if (context.HttpContext.GetRequestedApiVersion()?.MajorVersion != 1 || context.HttpContext.IsAdmin())
+    if (context.HttpContext.RequestedApiVersion?.MajorVersion != 1 || context.HttpContext.IsAdmin())
     {
       return;
     }

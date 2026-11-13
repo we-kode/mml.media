@@ -23,7 +23,7 @@ public class LegacyClientCoverFilterTests
   private static void Execute(object value, int majorVersion, bool isAdmin = false)
   {
     var httpContext = new DefaultHttpContext();
-    httpContext.ApiVersioningFeature().RequestedApiVersion = new ApiVersion(majorVersion, 0);
+    httpContext.ApiVersioningFeature.RequestedApiVersion = new ApiVersion(majorVersion, 0);
     if (isAdmin)
     {
       httpContext.User = new ClaimsPrincipal(new ClaimsIdentity([new Claim("role", "Admin")], "test"));
