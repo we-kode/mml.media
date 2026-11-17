@@ -150,16 +150,7 @@ public class Startup(IConfiguration configuration)
   private void ConfigureMBusServices(IServiceCollection services)
   {
     // Configure Rebus with RabbitMQ transport
-    var mBusHost = Configuration["MessageBus:Host"] ?? throw new ArgumentNullException("MessageBus:Host");
-    var mBusVirtualHost = Configuration["MessageBus:VirtualHost"];
-    var mBusUser = Configuration["MessageBus:User"] ?? throw new ArgumentNullException("MessageBus:User");
-    var mBusPassword = Configuration["MessageBus:Password"] ?? throw new ArgumentNullException("MessageBus:Password");
-
-    var mBusConnection = $"amqp://{mBusUser}:{mBusPassword}@{mBusHost}";
-    if (!string.IsNullOrEmpty(mBusVirtualHost))
-    {
-      mBusConnection += $"/{mBusVirtualHost}";
-    }
+    var mBusConnection = Configuration.GetMessageBusConnectionString();
 
     services.AddRebus(mt =>
       mt.Transport(t => t.UseRabbitMq(mBusConnection, "mml.media.queue")),
